@@ -62,6 +62,15 @@ matching game version, and the game will tell you if they do not match. Your
 save is stored at `SD:/3ds/emerald3ds/emerald3ds.sav`; installing or updating
 does not overwrite it.
 
+## HOME Menu shortcut (optional)
+
+Releases after 0.1.2 include `Emerald3DS-Forwarder.cia`. Install it once with
+FBI (copy it to the SD card, or use FBI's *Remote Install → Scan QR Code* with
+the QR code on the website) and the game gets its own icon on the HOME Menu.
+The shortcut needs Luma3DS: it starts the installed
+`SD:/3ds/emerald3ds/Emerald3DS.3dsx`, so install the game first as above.
+Updates keep working as described above and never need the CIA again.
+
 ## Command line and other systems
 
 The Windows ZIP also includes `emerald3ds-builder-cli.exe`:

@@ -9,6 +9,9 @@
   builder); the Windows builder and the command line are unchanged.
 - The Windows ZIP's `LICENSES/` folder again includes `LICENSE-PORT.md`,
   `NOTICE.md` and `AI_DISCLOSURE.md`.
+- Optional HOME Menu forwarder, `Emerald3DS-Forwarder.cia`: installed once
+  with FBI, it starts the game's 3DSX through Luma3DS, so updates only
+  replace the 3DSX. The game's own icon is the new project icon.
 
 ## 0.1.2 — 2026-09-30
 
