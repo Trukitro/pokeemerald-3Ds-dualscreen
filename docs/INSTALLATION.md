@@ -64,9 +64,9 @@ also refuses an incompatible pack when it starts.
 **Full update: generate the pack again.** When a release changes the data
 (most of them while the game is in Alpha):
 
-1. Either use the **web builder at <https://emerald-3ds.com>**, which builds the
-   pack in your browser from your ROM (nothing is uploaded) and gives you the
-   ZIP to copy to the SD card, or download and extract the **new release's**
+1. Either use the **web builder at <https://emerald-3ds.com>**, where you select your ROM
+   and the pack is built inside your browser: the ROM is read locally and never
+   leaves your computer. It gives you the ZIP to copy to the SD card, or download and extract the **new release's**
    Windows ZIP.
 2. With the Windows builder: run its `Emerald3DS-Builder.exe` with your ROM and
    the same SD card (or another folder to copy to the card). Press **Install**
