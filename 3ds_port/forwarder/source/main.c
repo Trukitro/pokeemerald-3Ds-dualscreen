@@ -2,8 +2,10 @@
 //
 // Installed once as a CIA, it starts sdmc:/3ds/emerald3ds/Emerald3DS.3dsx, so
 // updating the game only ever replaces the 3DSX. It asks Luma3DS's hb:ldr to
-// load that file and jumps to the title Luma loads 3DSX files through (the
-// Homebrew Launcher title, or whatever title Rosalina was switched to).
+// load that file, makes its own title the one Luma loads 3DSX files through
+// (no Homebrew Launcher title has to be installed) and restarts itself, so Luma
+// starts the game in its place. The game puts Luma's previous title back as
+// soon as it starts (main_3ds.c), so the next start runs this code again.
 
 #include <3ds.h>
 #include <stdio.h>
@@ -12,6 +14,8 @@
 
 #define TARGET_SD_PATH "/3ds/emerald3ds/Emerald3DS.3dsx"
 #define TARGET_ARGV0   "sdmc:" TARGET_SD_PATH
+#define RESTORE_ARG    "emerald3ds-forwarder:hbldr-tid="
+#define FORWARDER_TID  0x000400000E3D5200ULL
 
 // Luma3DS shared config page (private layout, stable since v10).
 typedef struct {
@@ -36,11 +40,14 @@ static Result HbldrSetTarget(Handle h, const char *path)
     return R_FAILED(res) ? res : (Result)cmd[1];
 }
 
-static Result HbldrSetArgv(Handle h, const char *argv0)
+// argv[0] is the game's path (its RomFS), argv[1] the title to restore.
+static Result HbldrSetArgv(Handle h, const char *argv0, u64 restoreTid)
 {
     u32 *cmd = getThreadCommandBuffer();
-    sArgv[0] = 1;
-    strncpy((char *)&sArgv[1], argv0, sizeof(sArgv) - 5);
+    char *p = (char *)&sArgv[1];
+    sArgv[0] = 2;
+    p += sprintf(p, "%s", argv0) + 1;
+    sprintf(p, RESTORE_ARG "%016llX", (unsigned long long)restoreTid);
     cmd[0] = IPC_MakeHeader(3, 0, 2);
     cmd[1] = IPC_Desc_StaticBuffer(sizeof(sArgv), 1);
     cmd[2] = (u32)sArgv;
@@ -54,7 +61,9 @@ static bool IsLuma(void)
     return R_SUCCEEDED(svcGetSystemInfo(&version, 0x10000, 0));
 }
 
-static Result Forward(const char **why)
+// Prepares hb:ldr and Luma's 3DSX title; on success main() returns and
+// libctru's chainloader restarts this title, which Luma loads as the game.
+static Result Forward(const char **why, u64 *chainTid)
 {
     struct stat st;
     if (stat(TARGET_ARGV0, &st) != 0)
@@ -72,13 +81,19 @@ static Result Forward(const char **why)
         return -1;
     }
 
+    u64 selfTid;
+    if (R_FAILED(APT_GetProgramID(&selfTid)))
+        selfTid = FORWARDER_TID;
+    u64 previousTid = LUMA_SHARED_CONFIG->selectedHbldr3dsxTid;
+
     Handle hbldr;
-    Result res = srvGetServiceHandle(&hbldr, "hb:ldr");
+    // A global named port, not an srv service (srv would wait for it forever).
+    Result res = svcConnectToPort(&hbldr, "hb:ldr");
     if (R_SUCCEEDED(res))
     {
         res = HbldrSetTarget(hbldr, TARGET_SD_PATH);
         if (R_SUCCEEDED(res))
-            res = HbldrSetArgv(hbldr, TARGET_ARGV0);
+            res = HbldrSetArgv(hbldr, TARGET_ARGV0, previousTid);
         svcCloseHandle(hbldr);
     }
     if (R_FAILED(res))
@@ -89,32 +104,27 @@ static Result Forward(const char **why)
         return res;
     }
 
-    // System titles (Download Play) live in NAND, the Homebrew Launcher on SD.
-    u64 tid = LUMA_SHARED_CONFIG->hbldr3dsxTid;
-    FS_MediaType media = ((tid >> 32) & 0x10) ? MEDIATYPE_NAND : MEDIATYPE_SD;
-    res = APT_PrepareToDoApplicationJump(0, tid, media);
-    if (R_SUCCEEDED(res))
-        res = APT_DoApplicationJump(NULL, 0, NULL);
-    if (R_FAILED(res))
-        *why = "Could not start the Homebrew Launcher title\n"
-               "Luma3DS uses to load homebrew.\n\n"
-               "Start the game from the Homebrew Launcher.";
-    return res;
+    // Luma's PM makes the selected title current when this process exits;
+    // the restart is then loaded as the 3DSX.
+    LUMA_SHARED_CONFIG->selectedHbldr3dsxTid = selfTid;
+    *chainTid = selfTid;
+    return 0;
 }
 
 int main(void)
 {
-    gfxInitDefault();
     const char *why = NULL;
-    Result res = Forward(&why);
+    u64 chainTid = 0;
+    Result res = Forward(&why, &chainTid);
 
     if (R_SUCCEEDED(res))
     {
-        while (aptMainLoop())
-            svcSleepThread(10 * 1000 * 1000);
+        aptSetChainloader(chainTid, MEDIATYPE_SD);
+        return 0;
     }
     else
     {
+        gfxInitDefault();
         consoleInit(GFX_TOP, NULL);
         printf("\n Pokemon Emerald 3Ds Dual Screen\n\n");
         printf(" %s\n", why);

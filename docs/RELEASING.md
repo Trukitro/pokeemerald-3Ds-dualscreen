@@ -170,9 +170,12 @@ sound are `3ds_port/assets/artwork/` (`icon.png` 48×48, `banner.png` 256×128,
 `banner-sound.wav` up to 3 s).
 
 The CIA contains no game code: it asks Luma3DS's `hb:ldr` to load
-`sdmc:/3ds/emerald3ds/Emerald3DS.3dsx` and jumps to the title Luma loads 3DSX
-files through, the same way the Homebrew Launcher is started. It is installed
-once; later updates only replace the 3DSX. Without Luma3DS, or without the
+`sdmc:/3ds/emerald3ds/Emerald3DS.3dsx`, makes its own title the one Luma loads
+3DSX files through (so no Homebrew Launcher title has to be installed) and
+restarts itself; Luma then starts the game in its place. The game puts Luma's
+previous title back as soon as it starts (`3ds_port/src/main_3ds.c`, argument
+`emerald3ds-forwarder:hbldr-tid=`), so the forwarder needs a game from the
+same release or later. It is installed once; later updates only replace the 3DSX. Without Luma3DS, or without the
 3DSX on the SD card, it shows what is missing. Its title ID (unique ID
 `0xE3D52`) and version (`APP_VERSION` in its Makefile) only change when the
 forwarder itself changes.

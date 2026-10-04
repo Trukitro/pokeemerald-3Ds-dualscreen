@@ -32,7 +32,7 @@ AccessControlInfo:
   HandleTableSize               : 0x200
   DisableDebug                  : false
   EnableForceDebug              : false
-  CanWriteSharedPage            : false
+  CanWriteSharedPage            : true
   CanUsePrivilegedPriority      : false
   CanUseNonAlphabetAndNumber    : true
   PermitMainFunctionArgument    : true
@@ -185,7 +185,6 @@ AccessControlInfo:
    - csnd:SND
    - am:u
    - ns:s
-   - hb:ldr
 
 SystemControlInfo:
   SaveDataSize: 0KB
