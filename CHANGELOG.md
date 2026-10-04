@@ -12,10 +12,9 @@ New and improved:
 - 3D BATTLE option (off by default, needs VOXEL 3D): battles are drawn in
   front of the voxel world, on level ground found near the player, with the
   camera gliding in from the field's.
-- SHOW FPS option on the bottom screen (off by default).
-- Starter choice centred on the top screen, with the meadow carried to the
-  edges.
-- Voxel: HD-2D look - tilt-shift blur at the top and bottom of the screen
+- The FPS counter is now the SHOW FPS option of the bottom screen's OPTION
+  list: off by default, turn it on there (it used to be always shown).
+- Voxel (experimental, still full of errors and under active work): HD-2D look - tilt-shift blur at the top and bottom of the screen
   (3D BLUR option), bloom, sunlit dust, natural sunlight with richer colour,
   sun rays, soft sun dapples that stay on the ground across map crossings,
   lighter tree crowns and softer shadows.
@@ -66,7 +65,10 @@ Fixes:
   healing machine's balls were not on the machine.
 - Graphics that were read past their stubs and never showed: PC wallpapers,
   party menu and summary tilemaps, Deoxys's form icon.
-- The starter choice's left label (Treecko) lost its darkened box.
+- The starter choice screen was drawn at the top-left of the top screen with
+  a teal backdrop beyond the meadow; it is now centred 1:1 with the meadow
+  carried to every edge, and the left starter's label (Treecko) keeps its
+  darkened box.
 - The forwarder hung on a black screen.
 
 ## 0.1.2 — 2026-09-30
