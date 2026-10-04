@@ -58,6 +58,105 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# The commonest item of a list, ties broken as 64-bit CPython breaks them
+# for max(set(seq), key=seq.count): by the order of the set's hash table.
+# That order follows hash(), which is 32-bit on WebAssembly (the web
+# builder's Pyodide), so the table is rebuilt here with 64-bit hashes and
+# the same output comes out of every interpreter.
+_M64 = (1 << 64) - 1
+_P61 = (1 << 61) - 1
+
+
+def _hash64(o):
+    """hash(o) as 64-bit CPython computes it, for ints, floats and tuples of them."""
+    if isinstance(o, tuple):
+        acc = 2870177450012600261
+        for item in o:
+            acc = (acc + (_hash64(item) & _M64) * 14029467366897019727) & _M64
+            acc = ((acc << 31) | (acc >> 33)) & _M64
+            acc = (acc * 11400714785074694791) & _M64
+        acc = (acc + (len(o) ^ (2870177450012600261 ^ 3527539))) & _M64
+        if acc == _M64:
+            return 1546275796
+        return acc - (1 << 64) if acc >> 63 else acc
+    if isinstance(o, float):
+        if o != o or o in (float("inf"), float("-inf")):
+            raise TypeError("no portable hash for %r" % o)
+        m, n = o.as_integer_ratio()
+    elif isinstance(o, int):
+        m, n = int(o), 1
+    else:
+        raise TypeError("no portable hash for %r" % type(o).__name__)
+    h = (abs(m) % _P61) * pow(n, _P61 - 2, _P61) % _P61
+    if m < 0:
+        h = -h
+    return -2 if h == -1 else h
+
+
+def _insert_clean(table, mask, key, h):
+    perturb = h & _M64
+    i = perturb & mask
+    while True:
+        if table[i] is None:
+            table[i] = (h, key)
+            return
+        if i + 9 <= mask:
+            for j in range(i + 1, i + 10):
+                if table[j] is None:
+                    table[j] = (h, key)
+                    return
+        perturb >>= 5
+        i = (i * 5 + 1 + perturb) & mask
+
+
+def set_order(seq):
+    """list(set(seq)) as 64-bit CPython orders it."""
+    mask, table, used = 7, [None] * 8, 0
+    for key in seq:
+        h = _hash64(key)
+        perturb = h & _M64
+        i = perturb & mask
+        slot = None
+        while slot is None:
+            probes = 9 if i + 9 <= mask else 0
+            j = i
+            while True:
+                e = table[j]
+                if e is None:
+                    slot = j
+                    break
+                if e[0] == h and e[1] == key:
+                    slot = -1
+                    break
+                if probes == 0:
+                    break
+                probes -= 1
+                j += 1
+            if slot is None:
+                perturb >>= 5
+                i = (i * 5 + 1 + perturb) & mask
+        if slot < 0:
+            continue
+        table[slot] = (h, key)
+        used += 1
+        if used * 5 >= mask * 3:
+            size = 8
+            minused = used * 2 if used > 50000 else used * 4
+            while size <= minused:
+                size <<= 1
+            old, table, mask = table, [None] * size, size - 1
+            for e in old:
+                if e is not None:
+                    _insert_clean(table, mask, e[1], e[0])
+    return [e[1] for e in table if e is not None]
+
+
+def commonest(seq):
+    """max(set(seq), key=seq.count) with 64-bit CPython's tie-break, anywhere."""
+    counts = collections.Counter(seq)
+    return max(set_order(seq), key=counts.__getitem__)
+
+
 import voxel_building as vb  # noqa: E402
 import voxel_cells as vc  # noqa: E402
 import voxel_props  # noqa: E402
@@ -164,7 +263,7 @@ def solve(layout):
                  "left": [(0, y) for y in range(H)], "right": [(W - 1, y) for y in range(H)]}[side]
         edge += [cell[y][x] for (x, y) in cells if kind[y][x] == "land"]
     if edge:
-        ref = max(set(edge), key=edge.count)
+        ref = commonest(edge)
         for y in range(H):
             for x in range(W):
                 if cell[y][x] is not None:
@@ -2813,7 +2912,7 @@ def plain_ground(art, layout, content, x, y, side=None, kind=None):
         another colour altogether - a shore's few drops of the sea on a sand)"""
         if m not in _PLAIN:
             px = list(art.cell_image(m).convert("RGB").getdata())
-            c = max(set(px), key=px.count)
+            c = commonest(px)
             foreign = sum(1 for p in px if sum(abs(p[i] - c[i]) for i in range(3)) > 150)
             _PLAIN[m] = (c, px.count(c), foreign)
         return _PLAIN[m]
@@ -2828,7 +2927,7 @@ def plain_ground(art, layout, content, x, y, side=None, kind=None):
         # rock stands on is the ground at the edge the rock is on
         im = art.cell_image(m0).convert("RGB")
         part = [im.getpixel((i, j)) for j in range(16) for i in range(16) if _SIDE_PIXELS[side](i, j)]
-        kind = max(set(part), key=part.count)
+        kind = commonest(part)
     best = None
     for dy in range(-24, 25):
         for dx in range(-24, 25):
@@ -2865,7 +2964,7 @@ def _plain_background(art, m, mask, ground):
     img = art.cell_image(m).convert("RGB").load()
     g = art.cell_image(ground).convert("RGB")
     gp = list(g.getdata())
-    gc = max(set(gp), key=gp.count)
+    gc = commonest(gp)
     bg = [img[i, j] for j in range(16) for i in range(16) if (mask[j] >> i) & 1]
     if len(bg) < 8:
         return False
@@ -2886,7 +2985,7 @@ def _behind(art, layout, x, y, rock, mask=None):
         img = art.cell_image(art.metatile(x, y)).convert("RGB").load()
         bg = [img[i, j] for j in range(16) for i in range(16) if (mask[j] >> i) & 1]
         if len(bg) >= 8:
-            kind = max(set(bg), key=bg.count)
+            kind = commonest(bg)
             for (dx, dy, side) in ((0, -1, "S"), (-1, 0, "E"), (1, 0, "W"), (0, 0, None)):
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < layout.w and 0 <= ny < layout.h and (nx, ny) not in rock or (dx, dy) == (0, 0):
