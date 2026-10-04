@@ -29,8 +29,10 @@ version.
 
 1. **Code and version.** The release is made from `main` with the web-payload
    tooling merged (`builder/emerald3ds_builder/web.py`, `webmanifest.py`,
-   `tools/build_web_payload.py`). Set `__version__` in
-   `builder/emerald3ds_builder/__init__.py` and move `## Unreleased` in
+   `tools/build_web_payload.py`). Set the version in
+   `builder/emerald3ds_builder/__init__.py` (`__version__`),
+   `builder/pyproject.toml` and the placeholder of
+   `.github/ISSUE_TEMPLATE/bug_report.yml`, and move `## Unreleased` in
    `CHANGELOG.md` to `## X.Y.Z — YYYY-MM-DD` (the site links changelog
    headings to releases by that version).
 2. **Build all assets** with `tools/build_release.py` (see *Steps* below).
