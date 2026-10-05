@@ -14,6 +14,7 @@ const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
     {CTR_EXTRAS_ENHANCEMENTS, "EXP FOR CATCHING", "exp_catch", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
+    {CTR_EXTRAS_ENHANCEMENTS, "PARTY EXP SHARE", "exp_share", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {0},
 };
 
