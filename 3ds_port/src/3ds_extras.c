@@ -13,6 +13,7 @@ const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
+    {CTR_EXTRAS_CHEATS, "ALWAYS CATCH", "always_catch", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {0},
 };
 
