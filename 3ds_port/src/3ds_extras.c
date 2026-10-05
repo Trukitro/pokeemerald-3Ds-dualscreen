@@ -10,9 +10,12 @@
 
 const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
 
+static const char *const sEncounterRate[] = {"NORMAL", "OFF", "1/4", "1/2", "2X"};
+
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
+    {CTR_EXTRAS_CHEATS, "WILD ENCOUNTERS", "encounter_rate", 5, 0, sEncounterRate, NULL, NULL, NULL},
     {0},
 };
 
