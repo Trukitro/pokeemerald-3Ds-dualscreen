@@ -10,6 +10,8 @@
 
 const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
 
+static const char *const sVisibleWild[] = {"OFF", "FEW", "SOME", "MANY"};
+
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
@@ -17,6 +19,7 @@ const CtrExtra gCtrExtras[] =
     {CTR_EXTRAS_ENHANCEMENTS, "PARTY EXP SHARE", "exp_share", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_ENHANCEMENTS, "TRADE EVO LV. 40", "trade_evo", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_ENHANCEMENTS, "HMS WITHOUT MOVE", "field_hms", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
+    {CTR_EXTRAS_ENHANCEMENTS, "VISIBLE WILD", "visible_wild", 4, 0, sVisibleWild, NULL, NULL, NULL},
     {0},
 };
 
