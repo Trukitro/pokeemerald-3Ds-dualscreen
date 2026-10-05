@@ -26,6 +26,7 @@ const CtrExtra gCtrExtras[] =
     {CTR_EXTRAS_CHEATS, "SHINY ODDS", "shiny_odds", 6, 0, sShinyOdds, NULL, NULL, NULL},
     {CTR_EXTRAS_CHEATS, "ALWAYS CATCH", "always_catch", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_CHEATS, "INSTANT VICTORY", "instant_victory", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
+    {CTR_EXTRAS_CHEATS, "FAST EGGS", "fast_eggs", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {0},
 };
 
