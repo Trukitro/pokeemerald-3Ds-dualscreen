@@ -10,9 +10,12 @@
 
 const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
 
+static const char *const sShinyOdds[] = {"1/8192", "1/4096", "1/1024", "1/256", "1/64", "ALWAYS"};
+
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
+    {CTR_EXTRAS_CHEATS, "SHINY ODDS", "shiny_odds", 6, 0, sShinyOdds, NULL, NULL, NULL},
     {0},
 };
 
