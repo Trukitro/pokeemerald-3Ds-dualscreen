@@ -12,6 +12,7 @@ const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
 
 static const char *const sVisibleWild[] = {"OFF", "FEW", "SOME", "MANY"};
 static const char *const sEncounterRate[] = {"NORMAL", "OFF", "1/4", "1/2", "2X"};
+static const char *const sShinyOdds[] = {"1/8192", "1/4096", "1/1024", "1/256", "1/64", "ALWAYS"};
 
 const CtrExtra gCtrExtras[] =
 {
@@ -22,6 +23,7 @@ const CtrExtra gCtrExtras[] =
     {CTR_EXTRAS_ENHANCEMENTS, "HMS WITHOUT MOVE", "field_hms", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_ENHANCEMENTS, "VISIBLE WILD", "visible_wild", 4, 0, sVisibleWild, NULL, NULL, NULL},
     {CTR_EXTRAS_CHEATS, "WILD ENCOUNTERS", "encounter_rate", 5, 0, sEncounterRate, NULL, NULL, NULL},
+    {CTR_EXTRAS_CHEATS, "SHINY ODDS", "shiny_odds", 6, 0, sShinyOdds, NULL, NULL, NULL},
     {0},
 };
 
