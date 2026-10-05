@@ -84,6 +84,9 @@ void CtrSettings_SetVoxelBattle(bool on);
 /* The FPS counter on the top screen, off by default. */
 bool CtrSettings_ShowFps(void);
 void CtrSettings_SetShowFps(bool on);
+/* Running without holding B, B then walking (the bottom screen's RUN), off by default. */
+bool CtrSettings_RunAlways(void);
+void CtrSettings_SetRunAlways(bool on);
 
 void CtrGame_Init(void);
 void CtrGame_Frame(void);

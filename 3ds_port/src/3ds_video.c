@@ -9,6 +9,7 @@
 #include "3ds_platform.h"
 #include "3ds_video.h"
 #include "3ds_data.h"
+#include "3ds_bottom.h"
 #include "../compat/port_prof.h"
 
 /* Public queue passed by libctru, never a cast of Citro3D's private context.
@@ -310,6 +311,9 @@ static Tile sTiles[CACHE_COUNT];
 static uint16_t sHash[HASH_COUNT];
 static uint16_t sPalette[512];
 static uint16_t sTexturePalette[512];
+/* Background colours shown transparent, a bit per colour of each BG
+ * palette (KeySectionColours). */
+static uint16_t sKeyed[16];
 static uint8_t sMorton[64];
 static C2D_ImageTint sTint;
 static uint32_t sPaletteVersion[34];
@@ -645,7 +649,8 @@ static void UpdatePalette(void)
                 unsigned p = bank * 16 + index;
                 if (sPalette[p] == source[p]) continue;
                 sPalette[p] = source[p];
-                sTexturePalette[p] = CtrVideo_RGBA5551(sPalette[p]);
+                sTexturePalette[p] = bank < 16 && ((sKeyed[bank] >> index) & 1) ? 0
+                                                                                 : CtrVideo_RGBA5551(sPalette[p]);
                 sPaletteChanges[bank][0] |= 1u << index;
                 unsigned entry = p & 255;
                 sPaletteChanges[group][entry / 32] |= 1u << (entry & 31);
@@ -660,6 +665,47 @@ static void UpdatePalette(void)
         sBgPaletteStamp = sStats.frames + 1;
     }
     if (objChanged) ++sPaletteVersion[33];
+}
+
+/*
+ * The party menu's and the bag's own backgrounds - the party menu's olive and
+ * striped panel (BG1, palette 1, colours 3-5), the bag's stripes (BG2,
+ * palettes 0 and 1, colours 12 and 13) - give way on the bottom screen to its
+ * light green, drawn behind them (DrawSectionBackdrop): while one of those
+ * screens is there, those colours are transparent. Only those layers use
+ * those palettes; their panels, slots and buttons keep every other colour.
+ */
+static void KeySectionColours(void)
+{
+    uint16_t want[16] = {0};
+
+    if (sCentredScreen == CTR_CENTRED_PARTY || sCentredScreen == CTR_CENTRED_PARTY_WHOLE)
+        want[1] = (1u << 3) | (1u << 4) | (1u << 5);
+    else if (sCentredScreen == CTR_CENTRED_BAG || sCentredScreen == CTR_CENTRED_BAG_WHOLE)
+        want[0] = want[1] = (1u << 12) | (1u << 13);
+    for (unsigned bank = 0; bank < 16; ++bank)
+    {
+        uint16_t changed = want[bank] ^ sKeyed[bank];
+
+        if (!changed)
+            continue;
+        sKeyed[bank] = want[bank];
+        for (unsigned index = 0; index < 16; ++index)
+        {
+            unsigned p = bank * 16 + index;
+
+            if ((changed >> index) & 1)
+                sTexturePalette[p] = ((want[bank] >> index) & 1) ? 0 : CtrVideo_RGBA5551(sPalette[p]);
+        }
+        /* A version on from whatever this frame's palette update made of
+         * it: its tiles are rebuilt, and the layers that hold them walked. */
+        memset(sPaletteChanges[bank], 0, sizeof(sPaletteChanges[bank]));
+        sPaletteChanges[bank][0] = changed;
+        memset(sPaletteChanges[32], 0xff, sizeof(sPaletteChanges[32]));
+        ++sPaletteVersion[bank];
+        ++sPaletteVersion[32];
+        sBgPaletteStamp = sStats.frames + 1;
+    }
 }
 
 static bool TilePaletteChanged(const Tile *tile, unsigned paletteId)
@@ -1685,6 +1731,10 @@ typedef struct
     uint16_t tileEntry;
     uint8_t skyRows, bandRow, bandChars;
     int8_t bandX, bandY;
+    /* Instead of any layer: the bottom screen's light green behind the
+     * whole of it (DrawSectionBackdrop), the screen's own background colours
+     * transparent (KeySectionColours). */
+    bool section;
 } CentredFill;
 
 static const CentredFill sCentredFills[CTR_CENTRED_SCREENS] =
@@ -1702,15 +1752,14 @@ static const CentredFill sCentredFills[CTR_CENTRED_SCREENS] =
     /* The PC's scrolling pattern, which the GBA wraps round its 32x32 map. */
     [CTR_CENTRED_STORAGE] = {.layers = 1u << 3, .wrap = true},
     [CTR_CENTRED_SUMMARY] = {0},
-    /* The bag's stripes, as they are left of its pocket name. */
-    [CTR_CENTRED_BAG] = {.layers = 1u << 2, .tile = true, .tileColumn = 0, .tileRow = 5},
-    [CTR_CENTRED_BAG_WHOLE] = {.layers = 1u << 2, .tile = true, .tileColumn = 0, .tileRow = 5},
+    /* The bag and the party menu on the bottom screen's light green. */
+    [CTR_CENTRED_BAG] = {.section = true},
+    [CTR_CENTRED_BAG_WHOLE] = {.section = true},
     /* The Pokédex: a tile its screen on show names (CentredFillOf), or else
      * whatever is at the back of it. */
     [CTR_CENTRED_POKEDEX] = {.backmost = true},
-    /* The party menu's olive frame colour: tile 2 of its palette 1, on BG1. */
-    [CTR_CENTRED_PARTY] = {.layers = 1u << 1, .tile = true, .entry = true, .tileEntry = 0x1002},
-    [CTR_CENTRED_PARTY_WHOLE] = {.layers = 1u << 1, .tile = true, .entry = true, .tileEntry = 0x1002},
+    [CTR_CENTRED_PARTY] = {.section = true},
+    [CTR_CENTRED_PARTY_WHOLE] = {.section = true},
 };
 
 int CtrPokenavList_Bg(void);
@@ -4120,12 +4169,104 @@ static void StorageComposePart(int left, int right, int top, int bottom, unsigne
     sLayerExclude = 0;
 }
 
+/*
+ * The bottom screen's light green behind the bag or the party menu, over the
+ * whole of its part of the screen: what 3ds_bottom_ui.c draws behind its own
+ * screens (DrawSection), faded as their background layer is. The Poké Ball
+ * is a texture of its own, made once; the rest are rectangles.
+ */
+static C3D_Tex sBallTex;
+static bool sBallTried;
+
+static uint32_t SectionColour(uint16_t bgr, float fade, bool white)
+{
+    uint32_t c = CtrVideo_RGBA8(bgr, true);
+    float to = white ? 255.0f : 0.0f;
+    unsigned r = (unsigned)((c >> 24) * (1.0f - fade) + to * fade + 0.5f);
+    unsigned g = (unsigned)(((c >> 16) & 255) * (1.0f - fade) + to * fade + 0.5f);
+    unsigned b = (unsigned)(((c >> 8) & 255) * (1.0f - fade) + to * fade + 0.5f);
+
+    return C2D_Color32(r, g, b, 255);
+}
+
+static bool BallTexture(void)
+{
+    const uint8_t *mask = CtrBottom_BallMask();
+    const unsigned size = 2 * CTR_SECTION_BALL_RADIUS;
+    uint16_t *data;
+
+    if (sBallTex.data) return true;
+    if (sBallTried || !mask) return false;
+    sBallTried = true;
+    if (!C3D_TexInit(&sBallTex, size, size, GPU_RGBA5551))
+    {
+        memset(&sBallTex, 0, sizeof(sBallTex));
+        CtrLog_Write(CTR_LOG_ERROR, "video: no memory for the section's Poke Ball");
+        return false;
+    }
+    C3D_TexSetFilter(&sBallTex, GPU_NEAREST, GPU_NEAREST);
+    C3D_TexSetWrap(&sBallTex, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    data = sBallTex.data;
+    for (unsigned y = 0; y < size; ++y)
+        for (unsigned x = 0; x < size; ++x)
+        {
+            uint8_t v = mask[y * size + x];
+            data[CtrVideo_Texel(x, y, size)] =
+                v ? CtrVideo_RGBA5551(v == 1 ? CTR_SECTION_BALL : CTR_SECTION_BALL_TOP) : 0;
+        }
+    C3D_TexFlush(&sBallTex);
+    return true;
+}
+
+static void DrawSectionBackdrop(int marginX, unsigned layer)
+{
+    const int w = 240 + 2 * marginX, h = 160 + 2 * CTR_STAGE_Y;
+    const float x0 = -marginX + CTR_VIEW_X + sLayerShift, y0 = -CTR_STAGE_Y + CTR_VIEW_Y;
+    bool white;
+    float fade = LayerBrightness(layer, &white);
+    uint32_t base = SectionColour(CTR_SECTION_BASE, fade, white);
+    uint32_t line = SectionColour(CTR_SECTION_LINE, fade, white);
+    uint32_t light = SectionColour(CTR_SECTION_LIGHT, fade, white);
+
+    ViewBase();
+    Blend(layer, false, false);
+    C2D_DrawRectSolid(x0, y0, 0, w, h, base);
+    C2D_DrawRectSolid(x0 + 1, y0 + 1, 0, w - 2, 1, line);
+    C2D_DrawRectSolid(x0 + 1, y0 + h - 2, 0, w - 2, 1, line);
+    C2D_DrawRectSolid(x0 + 1, y0 + 2, 0, w - 2, 1, light);
+    C2D_DrawRectSolid(x0 + 1, y0 + h - 1, 0, w - 2, 1, light);
+    C2D_DrawRectSolid(x0 + 1, y0 + 1, 0, 1, h - 2, line);
+    C2D_DrawRectSolid(x0 + w - 2, y0 + 1, 0, 1, h - 2, line);
+    C2D_DrawRectSolid(x0 + 2, y0 + 1, 0, 1, h - 2, light);
+    if (BallTexture())
+    {
+        const float size = 2 * CTR_SECTION_BALL_RADIUS;
+        const Tex3DS_SubTexture all = {(u16)size, (u16)size, 0, 1, 1, 0};
+        C2D_ImageTint tint;
+
+        C2D_PlainImageTint(&tint, white ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(0, 0, 0, 255), fade);
+        C2D_DrawImageAt((C2D_Image){&sBallTex, &all}, x0 + w / 2 - CTR_SECTION_BALL_RADIUS,
+                        y0 + h / 2 - CTR_SECTION_BALL_RADIUS, 0, &tint, 1, 1);
+    }
+    sStats.tiles += 9;
+}
+
 static void StorageCompose(int marginX)
 {
     unsigned back = CentredLayers(CentredFillOf(sCentredScreen)) ? CentredLayers(CentredFillOf(sCentredScreen))
                                                                    : 1u << 3;
     unsigned marginsOnly = 63u & ~back;
 
+    if (CentredFillOf(sCentredScreen)->section)
+    {
+        bool party = sCentredScreen == CTR_CENTRED_PARTY || sCentredScreen == CTR_CENTRED_PARTY_WHOLE;
+
+        /* Nothing goes on past the picture: the green is the margins. */
+        DrawSectionBackdrop(marginX, party ? 1 : 2);
+        StorageComposePart(0, 240, 0, 160, 0);
+        ClipToView();
+        return;
+    }
     StorageComposePart(-marginX, 240 + marginX, -CTR_STAGE_Y, 160 + CTR_STAGE_Y, marginsOnly);
     StorageComposePart(0, 240, 0, 160, 0);
     ClipToView();
@@ -5715,6 +5856,7 @@ void CtrVideo_Present(void)
     PORT_PROF_BEGIN(palette);
     TrackVram();
     UpdatePalette();
+    KeySectionColours();
     PORT_PROF_END(palette, PORT_PROF_PALETTE);
     if (sStage || sBattle) RecordScroll();
     /* The shown backdrop, faded: sPalette may hold the unfaded one. */

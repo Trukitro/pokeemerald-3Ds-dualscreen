@@ -36,6 +36,9 @@ static bool sVoxelBattle = false;
 /* The FPS counter in the top screen's corner (3ds_video.c): off unless
  * turned on. */
 static bool sShowFps = false;
+/* Running without holding B (the bottom screen's RUN button; B then walks):
+ * off unless turned on. */
+static bool sRunAlways = false;
 
 static int Find(const int *values, int count, int value, int fallback)
 {
@@ -71,11 +74,13 @@ void CtrSettings_Load(void)
             sVoxelBattle = line[13] == '1';
         else if (strncmp(line, "fps=", 4) == 0)
             sShowFps = line[4] == '1';
+        else if (strncmp(line, "run=", 4) == 0)
+            sRunAlways = line[4] == '1';
     }
     fclose(file);
-    CtrLog_Write(CTR_LOG_FS, "settings: voxel=%d pitch=%d zoom=%d blur=%d battle=%d fps=%d",
+    CtrLog_Write(CTR_LOG_FS, "settings: voxel=%d pitch=%d zoom=%d blur=%d battle=%d fps=%d run=%d",
                  sVoxel ? 1 : 0, sPitches[sPitch], sZooms[sZoom], sVoxelBlur ? 1 : 0,
-                 sVoxelBattle ? 1 : 0, sShowFps ? 1 : 0);
+                 sVoxelBattle ? 1 : 0, sShowFps ? 1 : 0, sRunAlways ? 1 : 0);
 }
 
 /*
@@ -139,9 +144,9 @@ static void Save(void)
         return;
 
     snprintf(text, sizeof(text),
-             "voxel=%d\nvoxel_pitch=%d\nvoxel_zoom=%d\nvoxel_blur=%d\nvoxel_battle=%d\nfps=%d\n",
+             "voxel=%d\nvoxel_pitch=%d\nvoxel_zoom=%d\nvoxel_blur=%d\nvoxel_battle=%d\nfps=%d\nrun=%d\n",
              sVoxel ? 1 : 0, sPitches[sPitch], sZooms[sZoom], sVoxelBlur ? 1 : 0, sVoxelBattle ? 1 : 0,
-             sShowFps ? 1 : 0);
+             sShowFps ? 1 : 0, sRunAlways ? 1 : 0);
     if (sSaver == NULL)
     {
         s32 priority = 0x30;
@@ -253,5 +258,18 @@ void CtrSettings_SetShowFps(bool on)
     if (sShowFps == on)
         return;
     sShowFps = on;
+    Save();
+}
+
+bool CtrSettings_RunAlways(void)
+{
+    return sRunAlways;
+}
+
+void CtrSettings_SetRunAlways(bool on)
+{
+    if (sRunAlways == on)
+        return;
+    sRunAlways = on;
     Save();
 }

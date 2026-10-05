@@ -22,12 +22,16 @@
  * submenu entries, messages, yes/no questions) is mirrored here as buttons.
  * The player never sees a cursor move; the game still decides everything.
  *
- * Nothing here is new artwork. Every panel is built from the game's own
- * graphics, decoded from the same RomFS files the game loads: the party menu
- * background and slot tilemaps, the battle text box frames, the Hoenn region
- * map, the trainer card, mon/item/type/status icons, front pictures, the bag
- * sprite, the window frames and the game's fonts. Texts are the game's
- * strings where it has them.
+ * The column is the port's own design (an emerald rail, plates, a focus
+ * ring; see "The column's look"), with the game's item icons on it and two
+ * new pictures, the RUN shoe and the Y badge (3ds_bottom_art.h, from
+ * assets/artwork/bottom). Everything else is the game's own graphics,
+ * decoded from the same RomFS files the game loads: the party menu
+ * background, the battle text box frames, the Hoenn region map, the trainer
+ * card, mon/item/type/status icons, front pictures, the bag sprite, the
+ * window frames and the game's fonts. Texts are the game's strings where it
+ * has them. X walks the column with the buttons (ProcessKeys); the 3DS's Y
+ * is SELECT (3ds_game_bridge.c).
  *
  * Cost model, chosen for an Old 3DS whose frame the top screen already fills:
  *   - every frame: a snapshot of the few values on screen (a memcmp of a few
@@ -56,6 +60,7 @@
 #include "contest_util.h"
 #include "data.h"
 #include "event_data.h"
+#include "field_player_avatar.h"
 #include "fieldmap.h"
 #include "fonts.h"
 #include "graphics.h"
@@ -87,12 +92,14 @@
 #include "constants/map_types.h"
 #include "constants/party_menu.h"
 #include "constants/region_map_sections.h"
+#include "constants/rgb.h"
 #include "constants/songs.h"
 #include "constants/trainers.h"
 #include "port_platform.h"
 
 #include "3ds_data.h"
 #include "3ds_bottom.h"
+#include "3ds_bottom_art.h"
 #include "3ds_input.h"
 #include "3ds_log.h"
 #include "3ds_platform.h"
@@ -406,6 +413,8 @@ static void PalSymbol(const void *src, Pal *dst, int count)
 
 /* The screens of the button column, top to bottom. */
 enum { SCR_MAP, SCR_POKEMON, SCR_BAG, SCR_CARD, SCR_POKEDEX, SCR_POKENAV, SCR_SAVE, SCR_OPTION, SCR_COUNT };
+/* Below the screens' buttons: the registered item (Y) and RUN. */
+enum { COL_Y = SCR_COUNT, COL_RUN, COL_ITEMS };
 
 /*
  * The game's six options, then the port's own, off by default and kept in
@@ -521,6 +530,9 @@ static void LoadGenderResources(void)
     }
 }
 
+static void InitLook(void);
+static void BuildBall(void);
+
 static void LoadResources(void)
 {
     static const char *const cardPals[5] = {
@@ -530,6 +542,8 @@ static void LoadResources(void)
     u32 size;
 
     PalSymbol(GetOverworldTextboxPalettePtr(), &sRes.text, 1);
+    InitLook();
+    BuildBall();
 
     sRes.partyTiles = UnlzFile("party_menu/bg.4bpp.lz", &size);
     sRes.partyTileCount = size / 32;
@@ -877,6 +891,72 @@ static void DrawStrCentered(const Font *font, const u8 *str, int cx, int y, u16 
     DrawStr(font, str, cx - StrWidth(font, str) / 2, y, fg, shadow);
 }
 
+/* Whether a glyph paints (glyph or shadow) the pixel at column px of row. */
+static bool8 GlyphInk(const Font *font, u16 glyph, int px, int row)
+{
+    u16 bits = font->glyphs[glyph * 0x20 + (row >= 8 ? 0x10 : 0) + (px / 8) * 8 + (row & 7)];
+    u8 byte = (px & 7) < 4 ? bits >> 8 : bits & 0xFF;
+    u8 v = (byte >> (6 - 2 * (px & 3))) & 3;
+
+    return v == 1 || v == 2;
+}
+
+/* The columns a one-line string really paints, [*x0, *x1) from its origin;
+ * *x1 <= *x0 when it paints none. */
+static void InkColumns(const Font *font, const u8 *str, int *x0, int *x1)
+{
+    int x = 0;
+
+    *x0 = 0x7FFF;
+    *x1 = 0;
+    for (u16 g; (g = NextGlyph(&str)) != 0xFFFF && g != 0xFFFE;)
+    {
+        int width = font->widths[g] > 16 ? 16 : font->widths[g];
+
+        for (int px = 0; px < width; ++px)
+            for (int row = 0; row < font->height; ++row)
+                if (GlyphInk(font, g, px, row))
+                {
+                    if (x + px < *x0) *x0 = x + px;
+                    if (x + px + 1 > *x1) *x1 = x + px + 1;
+                    break;
+                }
+        x += font->widths[g];
+    }
+}
+
+/* The rows a capital paints, [*top, *bottom): every label is centred on the
+ * same band, so one with an accent (POKéMON) keeps the others' baseline. */
+static void CapRows(const Font *font, int *top, int *bottom)
+{
+    *top = font->height;
+    *bottom = 0;
+    for (int row = 0; row < font->height; ++row)
+        for (int px = 0; px < font->widths[CHAR_H]; ++px)
+            if (GlyphInk(font, CHAR_H, px, row))
+            {
+                if (row < *top) *top = row;
+                if (row + 1 > *bottom) *bottom = row + 1;
+                break;
+            }
+}
+
+/* A one-line string centred in [x0, x1) x [y0, y1): across by the pixels it
+ * paints, down by the capitals' band. */
+static void DrawStrIn(const Font *font, const u8 *str, int x0, int x1, int y0, int y1, u16 fg, u16 shadow)
+{
+    int ix0, ix1, top, bottom;
+
+    if (!font->glyphs || !str)
+        return;
+    InkColumns(font, str, &ix0, &ix1);
+    if (ix1 <= ix0)
+        return;
+    CapRows(font, &top, &bottom);
+    DrawStr(font, str, x0 + ((x1 - x0) - (ix1 - ix0)) / 2 - ix0, y0 + ((y1 - y0) - (bottom - top)) / 2 - top, fg,
+            shadow);
+}
+
 /* Latin labels for the few words the game has no standalone string for. */
 static const u8 *Ascii(const char *text)
 {
@@ -1012,12 +1092,266 @@ static void DrawPartyBackground(int cols, int rows)
     }
 }
 
-/* The column's background: the party menu's olive frame colour. */
+/* ------------------------------------------------------------------------ */
+/* The column's look, and the sections' light green                         */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * The column is the port's own: an emerald rail with a diamond facet, the
+ * buttons on it as plates (outline with clipped corners, a highlight row,
+ * two shade rows, a tinted socket for the game's icon), a keyboard focus
+ * ring, and below a groove the Y and RUN buttons. Native screens on the left
+ * (map, save, options) and the party menu's and bag's backgrounds sit on one
+ * light green with a thin frame line and a faint Poké Ball. The only new
+ * pictures, the RUN shoe and the Y badge, are in 3ds_bottom_art.h.
+ */
+
+/* A plate's colours: outline, highlight row, body, shade rows, the icon's
+ * socket and the socket's shade. */
+typedef struct { u16 o, h, f, s, t, u; } PlateLook;
+
+enum { RAIL_DEEP, RAIL_SHADE, RAIL_BODY, RAIL_FACET, RAIL_LIGHT, RAIL_COUNT };
+enum { SECTION_BASE, SECTION_LINE, SECTION_LIGHT, SECTION_BALL, SECTION_BALL_TOP, SECTION_COUNT };
+enum { LED_EDGE, LED_OFF, LED_OFF_LIGHT, LED_ON, LED_ON_LIGHT, LED_COUNT };
+
+static struct
+{
+    u16 rail[RAIL_COUNT];
+    u16 section[SECTION_COUNT];
+    /* Normal, chosen or pressed, not available, and RUN turned on. */
+    PlateLook plate, chosen, off, run;
+    /* The focus ring's two blink frames: outer ring, inner line. */
+    u16 ring[2], ringIn[2];
+    u16 chosenShadow, offText, offShadow;
+    u16 led[LED_COUNT];
+    Pal art;
+} sLook;
+
+#define LOOK(r, g, b) Rgb565(RGB(r, g, b))
+
+static void InitLook(void)
+{
+    static const u16 section[SECTION_COUNT] = {
+        CTR_SECTION_BASE, CTR_SECTION_LINE, CTR_SECTION_LIGHT, CTR_SECTION_BALL, CTR_SECTION_BALL_TOP,
+    };
+
+    sLook.rail[RAIL_DEEP] = LOOK(3, 9, 7);
+    sLook.rail[RAIL_SHADE] = LOOK(5, 14, 10);
+    sLook.rail[RAIL_BODY] = LOOK(6, 17, 12);
+    sLook.rail[RAIL_FACET] = LOOK(9, 21, 15);
+    sLook.rail[RAIL_LIGHT] = LOOK(20, 28, 23);
+    for (int i = 0; i < SECTION_COUNT; ++i)
+        sLook.section[i] = Rgb565(section[i]);
+    sLook.plate = (PlateLook){LOOK(7, 9, 13), LOOK(31, 31, 31), LOOK(30, 30, 31), LOOK(25, 26, 28), LOOK(26, 30, 27),
+                              LOOK(20, 26, 22)};
+    sLook.chosen = (PlateLook){LOOK(3, 11, 7), LOOK(21, 30, 23), LOOK(11, 24, 16), LOOK(7, 19, 12), LOOK(8, 21, 13),
+                               LOOK(6, 17, 11)};
+    sLook.off = (PlateLook){LOOK(17, 18, 20), LOOK(29, 29, 29), LOOK(27, 27, 27), LOOK(24, 24, 25), LOOK(25, 25, 25),
+                            LOOK(23, 23, 23)};
+    sLook.run = sLook.plate;
+    sLook.run.h = LOOK(29, 31, 29);
+    sLook.run.f = sLook.plate.t;
+    sLook.run.s = sLook.plate.u;
+    sLook.ring[0] = LOOK(31, 13, 6);
+    sLook.ring[1] = LOOK(31, 25, 9);
+    sLook.ringIn[0] = LOOK(31, 22, 15);
+    sLook.ringIn[1] = LOOK(31, 30, 20);
+    sLook.chosenShadow = LOOK(4, 14, 9);
+    sLook.offText = LOOK(18, 18, 19);
+    sLook.offShadow = LOOK(29, 29, 29);
+    sLook.led[LED_EDGE] = LOOK(2, 6, 5);
+    sLook.led[LED_OFF] = LOOK(12, 14, 13);
+    sLook.led[LED_OFF_LIGHT] = LOOK(19, 21, 20);
+    sLook.led[LED_ON] = LOOK(8, 29, 12);
+    sLook.led[LED_ON_LIGHT] = LOOK(26, 31, 26);
+    ToPals(&sLook.art, sArtPalette, 1);
+}
+
+/*
+ * A plate: 1px outline with its corners cut and its inner corners filled, a
+ * highlight row, two shade rows, and the first `socket` columns tinted for an
+ * icon (0: none). Pressed, the highlight goes and the shade starts a row
+ * lower, so the face looks pushed in.
+ */
+static void DrawPlate(int x, int y, int w, int h, const PlateLook *p, int socket, bool8 pressed)
+{
+    int shade = h - 3 + (pressed ? 1 : 0);
+
+    FillRect(x + 1, y, w - 2, 1, p->o);
+    FillRect(x + 1, y + h - 1, w - 2, 1, p->o);
+    for (int j = 1; j < h - 1; ++j)
+    {
+        bool8 top = j == 1 && !pressed, low = j >= shade;
+        u16 body = top ? p->h : low ? p->s : p->f;
+
+        Put(x, y + j, p->o);
+        Put(x + w - 1, y + j, p->o);
+        if (socket > 0)
+        {
+            FillRect(x + 1, y + j, socket - 2, 1, top ? p->h : low ? p->u : p->t);
+            Put(x + socket - 1, y + j, p->u);
+            FillRect(x + socket, y + j, w - 1 - socket, 1, body);
+        }
+        else
+        {
+            FillRect(x + 1, y + j, w - 2, 1, body);
+        }
+    }
+    Put(x + 1, y + 1, p->o);
+    Put(x + w - 2, y + 1, p->o);
+    Put(x + 1, y + h - 2, p->o);
+    Put(x + w - 2, y + h - 2, p->o);
+}
+
+/* The keyboard focus: the plate's edge turns warm and a ring stands 1px
+ * outside it, in the gap between plates. */
+static void DrawRing(int x, int y, int w, int h, u8 frame)
+{
+    u16 a = sLook.ring[frame & 1], b = sLook.ringIn[frame & 1];
+
+    FillRect(x + 1, y - 1, w - 2, 1, a);
+    FillRect(x + 1, y + h, w - 2, 1, a);
+    FillRect(x - 1, y + 1, 1, h - 2, a);
+    FillRect(x + w, y + 1, 1, h - 2, a);
+    FillRect(x + 1, y, w - 2, 1, b);
+    FillRect(x + 1, y + h - 1, w - 2, 1, b);
+    FillRect(x, y + 1, 1, h - 2, b);
+    FillRect(x + w - 1, y + 1, 1, h - 2, b);
+    Put(x, y, a);
+    Put(x + w - 1, y, a);
+    Put(x, y + h - 1, a);
+    Put(x + w - 1, y + h - 1, a);
+}
+
+/* The column's geometry: eight plates, then a groove and the Y and RUN
+ * buttons. A plate's hit is its whole 24px row of the column. */
+#define PLATE_X (COL_X + 4)
+#define PLATE_W 74
+#define PLATE_H 22
+#define PLATE_Y(i) (3 + (i) * 24)
+#define PLATE_SOCKET 25
+#define GROOVE_Y 196
+#define SQUARE_Y 201
+#define SQUARE_SIZE 36
+#define SQUARE_X(k) (COL_X + 4 + (k) * 38)
+
+/* The rail: the diamond facet over the whole column, the seam that cuts it
+ * from whatever the section draws, and the groove above Y and RUN. */
 static void DrawColumnBackground(void)
 {
-    for (int ty = 0; ty < H / 8; ++ty)
-        for (int tx = COL_X / 8; tx < W / 8; ++tx)
-            DrawMapEntry(sRes.partyTiles, sRes.partyTileCount, 0x1002, tx * 8, ty * 8, sRes.partyPal);
+    for (int x = COL_X; x < W; ++x)
+        for (int y = 0; y < H; ++y)
+        {
+            int d = abs(2 * (x & 7) - 7) + abs(2 * (y & 7) - 7);
+            Put(x, y, sLook.rail[d == 8 ? RAIL_FACET : RAIL_BODY]);
+        }
+    FillRect(COL_X, 0, 1, H, sLook.rail[RAIL_DEEP]);
+    FillRect(COL_X + 1, 0, 1, H, sLook.rail[RAIL_LIGHT]);
+    FillRect(COL_X + 2, 0, 1, H, sLook.rail[RAIL_SHADE]);
+    FillRect(COL_X + 3, GROOVE_Y, W - COL_X - 3, 1, sLook.rail[RAIL_DEEP]);
+    FillRect(COL_X + 3, GROOVE_Y + 1, W - COL_X - 3, 1, sLook.rail[RAIL_LIGHT]);
+}
+
+/*
+ * The faint Poké Ball in the middle of the light green: 2px rim, 2px band,
+ * the button's ring with nothing inside, the top half half a step lighter.
+ * Symmetric about the pixel grid: distances from pixel centres, doubled so
+ * they stay integers. 0 nothing, 1 the line colour, 2 the top half.
+ */
+#define BALL_R CTR_SECTION_BALL_RADIUS
+static u8 sBall[2 * BALL_R * 2 * BALL_R];
+
+static void BuildBall(void)
+{
+    for (int y = 0; y < 2 * BALL_R; ++y)
+        for (int x = 0; x < 2 * BALL_R; ++x)
+        {
+            int dx = 2 * x + 1 - 2 * BALL_R, dy = 2 * y + 1 - 2 * BALL_R, d2 = dx * dx + dy * dy;
+            u8 v = 0;
+
+            if (d2 >= 4 * BALL_R * BALL_R)
+                v = 0;
+            else if (d2 >= 4 * (BALL_R - 2) * (BALL_R - 2))
+                v = 1;
+            else if (d2 < 4 * 15 * 15)
+                v = (d2 >= 4 * 13 * 13 || (d2 >= 4 * 7 * 7 && d2 < 4 * 9 * 9)) ? 1 : 0;
+            else if (dy > -4 && dy < 4)
+                v = 1;
+            else if (dy < 0)
+                v = 2;
+            sBall[y * 2 * BALL_R + x] = v;
+        }
+}
+
+const uint8_t *CtrBottom_BallMask(void)
+{
+    return sBall;
+}
+
+/* The light green of a section over [x0, x1) x [y0, y1): flat, a frame line
+ * one pixel in (and its light line), the Poké Ball in the middle. */
+static void DrawSection(int x0, int y0, int x1, int y1)
+{
+    int w = x1 - x0, h = y1 - y0, bx = (x0 + x1) / 2 - BALL_R, by = (y0 + y1) / 2 - BALL_R;
+
+    FillRect(x0, y0, w, h, sLook.section[SECTION_BASE]);
+    FillRect(x0 + 1, y0 + 1, w - 2, 1, sLook.section[SECTION_LINE]);
+    FillRect(x0 + 1, y1 - 2, w - 2, 1, sLook.section[SECTION_LINE]);
+    FillRect(x0 + 1, y0 + 2, w - 2, 1, sLook.section[SECTION_LIGHT]);
+    FillRect(x0 + 1, y1 - 1, w - 2, 1, sLook.section[SECTION_LIGHT]);
+    FillRect(x0 + 1, y0 + 1, 1, h - 2, sLook.section[SECTION_LINE]);
+    FillRect(x1 - 2, y0 + 1, 1, h - 2, sLook.section[SECTION_LINE]);
+    FillRect(x0 + 2, y0 + 1, 1, h - 2, sLook.section[SECTION_LIGHT]);
+    for (int y = 0; y < 2 * BALL_R; ++y)
+        for (int x = 0; x < 2 * BALL_R; ++x)
+        {
+            u8 v = sBall[y * 2 * BALL_R + x];
+
+            if (v)
+                Put(bx + x, by + y, sLook.section[v == 1 ? SECTION_BALL : SECTION_BALL_TOP]);
+        }
+}
+
+/* n / 2 rounded half to even, as the mockups' layout rounds. */
+static int Half(int n)
+{
+    int q = n >= 0 ? n / 2 : -((1 - n) / 2);
+
+    if ((n & 1) && (q & 1))
+        ++q;
+    return q;
+}
+
+/* The box of a sprite's visible pixels, [x0, x1) x [y0, y1). */
+static void SpriteBox(const u8 *tiles, int wt, int ht, int *x0, int *y0, int *x1, int *y1)
+{
+    *x0 = wt * 8;
+    *y0 = ht * 8;
+    *x1 = *y1 = 0;
+    for (int y = 0; y < ht * 8; ++y)
+        for (int x = 0; x < wt * 8; ++x)
+        {
+            const u8 *tile = tiles + ((y / 8) * wt + x / 8) * 32;
+            int px = x & 7, py = y & 7;
+
+            if (!((tile[py * 4 + px / 2] >> ((px & 1) * 4)) & 15))
+                continue;
+            if (x < *x0) *x0 = x;
+            if (y < *y0) *y0 = y;
+            if (x + 1 > *x1) *x1 = x + 1;
+            if (y + 1 > *y1) *y1 = y + 1;
+        }
+}
+
+/* A sprite with its visible pixels centred on the point whose doubled
+ * coordinates are (cx2, cy2). */
+static void DrawSpriteCentred(const u8 *tiles, int wt, int ht, int cx2, int cy2, const u16 *pal)
+{
+    int x0, y0, x1, y1;
+
+    SpriteBox(tiles, wt, ht, &x0, &y0, &x1, &y1);
+    if (x1 > x0)
+        DrawSprite(tiles, wt, ht, Half(cx2 - x0 - x1), Half(cy2 - y0 - y1), pal);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1101,7 +1435,13 @@ typedef struct
     /* Save and options. */
     u8 saveStep, canSave;
     u8 options[OPTION_ROWS];
-    u8 optionScroll;                  /* pixels the options list is scrolled by */
+    /* The column's Y and RUN: the registered item; bit 0 running is the
+     * default, bit 1 the player has the shoes. */
+    u16 registered;
+    u8 run;
+    /* The keyboard focus (X): the column item, or FOCUS_NONE; inside the
+     * options, the option; the ring's blink frame. */
+    u8 focus, optFocus, blink;
     /* Battle. */
     u8 isDouble, safari, cursor, battler;
     BattlerView battlers[MAX_BATTLERS_COUNT];
@@ -1127,44 +1467,42 @@ static ViewState sState, sShown;
 static bool8 sForceRedraw = TRUE;
 static bool8 sInGame;
 static u8 sScreen = SCR_MAP;
-/* The options list's scroll, in pixels, dragged by the stylus (OptionsDrag). */
-static int sOptionScroll, sOptionScrollStart;
+/*
+ * The options in two columns of six: the game's own on the left in its order,
+ * the port's on the right. A build without the FPS counter or the voxel
+ * renderer has no cell for them; with the voxel overworld off its camera,
+ * blur and battle cells stay where they are, greyed.
+ */
+#define OPT_CELL_W 112
+#define OPT_CELL_H 32
 
-/* Options rows are this far apart; with the port's rows there are more than fit. */
-#define OPTION_PITCH (OPTION_SHOWN > 6 ? 26 : 30)
-/* The frame's preview below the rows: its top, past the last row, and the
- * space it takes. */
-#define OPTION_PREVIEW_GAP 10
-#define OPTION_PREVIEW_H 36
-
-/* The 3D camera, blur and battle rows only with the voxel overworld on. */
-static bool8 OptionRowShown(int row, bool8 voxel)
+static bool8 OptionExists(int row)
 {
-    if (row >= OPTION_SHOWN || (row == OPT_FPS && !CTR_SHOW_FPS))
-        return FALSE;
-    return voxel || (row != OPT_VOXEL_PITCH && row != OPT_VOXEL_ZOOM && row != OPT_VOXEL_BLUR
-                     && row != OPT_VOXEL_BATTLE);
+    return row < OPTION_SHOWN && !(row == OPT_FPS && !CTR_SHOW_FPS);
 }
 
-static int OptionRowsShown(bool8 voxel)
+static bool8 OptionLive(int row, bool8 voxel)
 {
-    int rows = 0;
-
-    for (int i = 0; i < OPTION_ROWS; ++i)
-        rows += OptionRowShown(i, voxel);
-    return rows;
+    return OptionExists(row) && (voxel || row < OPT_VOXEL_PITCH);
 }
 
-/* How far the options list can scroll: 0 when every row fits, and the
- * frame's preview with them when it is shown (not with the 3D rows). */
-static int OptionsMaxScroll(bool8 voxel)
+static void OptionCell(int row, int *x, int *y)
 {
-    int height = 4 + OptionRowsShown(voxel) * OPTION_PITCH;
+    bool8 right = row >= OPT_FPS;
 
-    if (!voxel)
-        height += OPTION_PREVIEW_GAP + OPTION_PREVIEW_H;
-    return height > H ? height - H : 0;
+    *x = right ? 124 : 4;
+    *y = 4 + (right ? row - OPT_FPS : row) * 40;
 }
+
+/* The column's keyboard focus (X), and where it is inside a screen. */
+#define FOCUS_NONE 0xFF
+enum { INSIDE_NONE, INSIDE_OPTIONS, INSIDE_SAVE };
+static u8 sFocus = FOCUS_NONE, sInside, sOptFocus;
+/* Leaving the focus, the buttons stay the column's until they are let go:
+ * the B or A that left it must not reach the game. */
+static bool8 sSwallow;
+static u32 sFrames;
+
 static u8 sAnimFrame;
 
 /* Per screen state, kept while another screen is shown. */
@@ -1901,6 +2239,13 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
     else if (mode == MODE_STORAGE)
         s->screen = SCR_COUNT;   /* the boxes cover the column */
     StringCopy(s->name, gSaveBlock2Ptr->playerName);
+    /* The column's Y and RUN, and the focus ring on it or in the options. */
+    s->registered = gSaveBlock1Ptr->registeredItem;
+    s->run = (CtrSettings_RunAlways() ? 1 : 0) | (FlagGet(FLAG_SYS_B_DASH) ? 2 : 0);
+    s->focus = sFocus;
+    s->optFocus = FOCUS_NONE;
+    if (sFocus != FOCUS_NONE || sInside == INSIDE_OPTIONS)
+        s->blink = (sFrames >> 4) & 1;
 
     switch (s->mode)
     {
@@ -1939,9 +2284,8 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
             s->options[OPT_VOXEL_ZOOM] = CtrSettings_VoxelZoom();
             s->options[OPT_VOXEL_BLUR] = CtrSettings_VoxelBlur();
             s->options[OPT_VOXEL_BATTLE] = CtrSettings_VoxelBattle();
-            if (sOptionScroll > OptionsMaxScroll(s->options[OPT_VOXEL]))
-                sOptionScroll = OptionsMaxScroll(s->options[OPT_VOXEL]);
-            s->optionScroll = (u8)sOptionScroll;
+            if (sInside == INSIDE_OPTIONS)
+                s->optFocus = sOptFocus;
             break;
         }
         break;
@@ -1986,6 +2330,8 @@ static bool8 Prefetch(const ViewState *s)
             MonIcon(s->battlers[i].iconSpecies, s->battlers[i].deoxys);
     if (sIconBudget && s->summary >= 0 && s->heldItem)
         ItemIcon(s->heldItem);
+    if (sIconBudget && s->registered != ITEM_NONE && s->mode < MODE_BATTLE_INFO)
+        ItemIcon(s->registered);
     if (sIconBudget && s->mode == MODE_BATTLE_ACTION)
         ItemIcon(ITEM_ESCAPE_ROPE);
     if (sIconBudget)
@@ -2000,27 +2346,89 @@ static bool8 Prefetch(const ViewState *s)
 /* Drawing: the button column                                               */
 /* ------------------------------------------------------------------------ */
 
-static void DrawColumnButton(const ViewState *s, int i, bool8 on, bool8 enabled)
+enum { PLATE_NORMAL, PLATE_CHOSEN, PLATE_PRESSED, PLATE_OFF };
+
+static void DrawColumnButton(const ViewState *s, int i, u8 state)
 {
     const u8 *labels[SCR_COUNT] = {
         Ascii("MAP"), gText_MenuPokemon, gText_MenuBag, s->name, gText_MenuPokedex, gText_MenuPokenav,
         gText_MenuSave, gText_MenuOption,
     };
     const Icon *icon = &sRes.column[i];
-    int y = 3 + i * 30;
+    int y = PLATE_Y(i), dy = state == PLATE_PRESSED;
+    bool8 on = state == PLATE_CHOSEN || state == PLATE_PRESSED;
+    const PlateLook *look = state == PLATE_OFF ? &sLook.off : on ? &sLook.chosen : &sLook.plate;
 
-    DrawBoxEx(BOX_MENU, COL_X + 4, y, 9, 3, on);
-    if (icon->tiles && enabled)
-        DrawSprite(icon->tiles, icon->size, icon->size, COL_X + 2, y - (icon->size == 4 ? 4 : 0), icon->pal.c);
-    DrawStr(&sSmall, labels[i], COL_X + 30, y + 6, enabled ? LABEL_FG(on) : TXT_LIGHT,
-            enabled ? LABEL_SH(on) : TXT_WHITE);
+    DrawPlate(PLATE_X, y, PLATE_W, PLATE_H, look, PLATE_SOCKET, dy);
+    /* The icon's visible pixels centred on the socket; none on a button not
+     * available yet. */
+    if (icon->tiles && state != PLATE_OFF)
+        DrawSpriteCentred(icon->tiles, icon->size, icon->size, 2 * PLATE_X + PLATE_SOCKET, 2 * (y + dy) + 21,
+                          icon->pal.c);
+    DrawStrIn(&sSmall, labels[i], PLATE_X + PLATE_SOCKET, PLATE_X + PLATE_W - 1, y + 1 + dy, y + PLATE_H - 2 + dy,
+              state == PLATE_OFF ? sLook.offText : on ? TXT_WHITE : TXT_DARK,
+              state == PLATE_OFF ? sLook.offShadow : on ? sLook.chosenShadow : TXT_LIGHT);
+}
+
+/* The RUN button's lamp: lit while running is the default. */
+static void DrawLed(int x, int y, bool8 on)
+{
+    FillRect(x + 1, y, 2, 1, sLook.led[LED_EDGE]);
+    FillRect(x + 1, y + 3, 2, 1, sLook.led[LED_EDGE]);
+    FillRect(x, y + 1, 1, 2, sLook.led[LED_EDGE]);
+    FillRect(x + 3, y + 1, 1, 2, sLook.led[LED_EDGE]);
+    FillRect(x + 1, y + 1, 2, 2, sLook.led[on ? LED_ON : LED_OFF]);
+    Put(x + 2, y + 1, sLook.led[on ? LED_ON_LIGHT : LED_OFF_LIGHT]);
+}
+
+/*
+ * Y, the registered item (the 3DS's Y is SELECT): the item's own icon under
+ * a red badge like the bag's SEL, grey with nothing registered. RUN: the
+ * shoe and its lamp; on, the face takes the socket's green and the shoe its
+ * speed lines. Neither is cached: they follow the save and the settings.
+ */
+static void DrawSquares(const ViewState *s)
+{
+    for (int k = 0; k < 2; ++k)
+    {
+        int x = SQUARE_X(k), id = HIT_COLUMN + COL_Y + k;
+        bool8 pressed = s->pressed == id;
+        bool8 available = k == 0 ? s->registered != ITEM_NONE : (s->run & 2) != 0;
+        bool8 on = k == 1 && (s->run & 1);
+        int dy = pressed;
+        const PlateLook *look = !available ? &sLook.off : pressed ? &sLook.chosen : on ? &sLook.run : &sLook.plate;
+
+        DrawPlate(x, SQUARE_Y, SQUARE_SIZE, SQUARE_SIZE, look, 0, pressed);
+        if (k == 0 && available)
+        {
+            int slot = ItemIcon(s->registered);
+
+            if (slot >= 0)
+                DrawSpriteCentred(sItemIcons[slot].tiles, 3, 3, 2 * x + SQUARE_SIZE, 2 * (SQUARE_Y + 23 + dy),
+                                  sItemIcons[slot].pal.c);
+        }
+        if (k == 0)
+            DrawSprite(sArtBadgeY, 2, 2, x + 2, SQUARE_Y + 2 + dy, sLook.art.c);
+        if (k == 1 && available)
+        {
+            DrawSpriteCentred(on ? sArtShoeOn : sArtShoeOff, 3, 3, 2 * x + SQUARE_SIZE, 2 * (SQUARE_Y + 23 + dy),
+                              sLook.art.c);
+            DrawLed(x + SQUARE_SIZE - 7, SQUARE_Y + 3 + dy, on);
+        }
+        if (s->focus == COL_Y + k)
+            DrawRing(x, SQUARE_Y, SQUARE_SIZE, SQUARE_SIZE, s->blink);
+        /* The two halves of the column below the groove. */
+        if (available)
+            AddHit(k == 0 ? COL_X : SQUARE_X(1) - 1, GROOVE_Y + 2,
+                   k == 0 ? SQUARE_X(1) - 1 - COL_X : W - SQUARE_X(1) + 1, H - GROOVE_Y - 2, id);
+    }
 }
 
 /*
  * The column changes far less often than what is beside it: it is kept,
- * unpressed, in every background cache, and a redraw only paints the chosen
- * and pressed buttons over it. The caches are repainted when which entries
- * exist changes, or the player's name does.
+ * unpressed, in every background cache, and a redraw only paints the chosen,
+ * pressed and focused buttons over it. The caches are repainted when which
+ * entries exist changes, or the player's name does.
  */
 static void DrawColumn(const ViewState *s)
 {
@@ -2030,31 +2438,44 @@ static void DrawColumn(const ViewState *s)
     if (cachedMask != s->enabled || memcmp(cachedName, s->name, sizeof(cachedName)) != 0)
     {
         u16 *canvas = sDst;
+        int clip[4] = {sClipX0, sClipY0, sClipX1, sClipY1};
+
         cachedMask = s->enabled;
         memcpy(cachedName, s->name, sizeof(cachedName));
+        /* The caches are whole pictures, whatever part this redraw is of. */
+        sClipX0 = sClipY0 = 0;
+        sClipX1 = W;
+        sClipY1 = H;
         for (int c = 0; c < CACHE_COUNT; ++c)
         {
             if (!sCache[c] || c == CACHE_WIDE)
                 continue;
             sDst = sCache[c];
             for (int i = 0; i < SCR_COUNT; ++i)
-                DrawColumnButton(s, i, FALSE, (s->enabled >> i) & 1);
+                DrawColumnButton(s, i, (s->enabled >> i) & 1 ? PLATE_NORMAL : PLATE_OFF);
         }
+        sClipX0 = clip[0];
+        sClipY0 = clip[1];
+        sClipX1 = clip[2];
+        sClipY1 = clip[3];
         sDst = canvas;
         /* The canvas started from the stale column: paint all of it. */
         for (int i = 0; i < SCR_COUNT; ++i)
-            DrawColumnButton(s, i, FALSE, (s->enabled >> i) & 1);
+            DrawColumnButton(s, i, (s->enabled >> i) & 1 ? PLATE_NORMAL : PLATE_OFF);
     }
     for (int i = 0; i < SCR_COUNT; ++i)
     {
-        bool8 enabled = (s->enabled >> i) & 1;
-        bool8 on = s->screen == i || s->pressed == HIT_COLUMN + i;
+        bool8 pressed = s->pressed == HIT_COLUMN + i, chosen = s->screen == i;
 
-        if (on)
-            DrawColumnButton(s, i, TRUE, enabled);
-        if (enabled)
-            AddHit(COL_X, 3 + i * 30 - 3, W - COL_X, 30, HIT_COLUMN + i);
+        if (!((s->enabled >> i) & 1))
+            continue;
+        if (pressed || chosen)
+            DrawColumnButton(s, i, pressed ? PLATE_PRESSED : PLATE_CHOSEN);
+        if (s->focus == i)
+            DrawRing(PLATE_X, PLATE_Y(i), PLATE_W, PLATE_H, s->blink);
+        AddHit(COL_X, PLATE_Y(i) - 1, W - COL_X, 24, HIT_COLUMN + i);
     }
+    DrawSquares(s);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -2342,8 +2763,23 @@ static void DrawSummary(const ViewState *s)
 /* Drawing: region map                                                    */
 /* ------------------------------------------------------------------------ */
 
+/*
+ * The map sits in a recessed window on the section's green: a 3px frame
+ * (the plates' outline, a white line, a shade line on its top and left).
+ * The map keeps its x; the frame hides its first and last columns, the 248px
+ * picture's overflow the GBA's own frame hides too. Hoenn's 150 rows are
+ * centred in the window. The area's name is on a plate below it.
+ */
 #define MAP_ORIGIN_X 0
-#define MAP_ORIGIN_Y 8
+#define MAP_ORIGIN_Y 26
+#define MAP_WIN_X0 8
+#define MAP_WIN_Y0 8
+#define MAP_WIN_X1 232
+#define MAP_WIN_Y1 195
+#define NAME_X 5
+#define NAME_Y 203
+#define NAME_W 230
+#define NAME_H 32
 
 static void DrawMapTile8(u8 tile, int x, int y)
 {
@@ -2357,26 +2793,76 @@ static void DrawMapTile8(u8 tile, int x, int y)
         {
             /* The map's colours are loaded at palette 7: indices 112 up. */
             u8 v = src[py * 8 + px];
-            if (v >= 112 && v < 144 && x + px < CW)
+            if (v >= 112 && v < 144)
                 Put(x + px, y + py, sRes.mapPal[v - 112]);
         }
+}
+
+/* Draws only inside the map's window, and inside the redraw's own clip. */
+static void ClipToMapWindow(int saved[4])
+{
+    saved[0] = sClipX0;
+    saved[1] = sClipY0;
+    saved[2] = sClipX1;
+    saved[3] = sClipY1;
+    if (sClipX0 < MAP_WIN_X0) sClipX0 = MAP_WIN_X0;
+    if (sClipY0 < MAP_WIN_Y0) sClipY0 = MAP_WIN_Y0;
+    if (sClipX1 > MAP_WIN_X1) sClipX1 = MAP_WIN_X1;
+    if (sClipY1 > MAP_WIN_Y1) sClipY1 = MAP_WIN_Y1;
+}
+
+static void RestoreClip(const int saved[4])
+{
+    sClipX0 = saved[0];
+    sClipY0 = saved[1];
+    sClipX1 = saved[2];
+    sClipY1 = saved[3];
+}
+
+/* The window's frame round [x0, x1) x [y0, y1), its outer edge. */
+static void DrawMapFrame(int x0, int y0, int x1, int y1)
+{
+    int w = x1 - x0, h = y1 - y0;
+    const PlateLook *p = &sLook.plate;
+
+    FillRect(x0 + 1, y0, w - 2, 1, p->o);
+    FillRect(x0 + 1, y1 - 1, w - 2, 1, p->o);
+    FillRect(x0, y0 + 1, 1, h - 2, p->o);
+    FillRect(x1 - 1, y0 + 1, 1, h - 2, p->o);
+    FillRect(x0 + 1, y0 + 1, w - 2, 1, p->h);
+    FillRect(x0 + 1, y1 - 2, w - 2, 1, p->h);
+    FillRect(x0 + 1, y0 + 1, 1, h - 2, p->h);
+    FillRect(x1 - 2, y0 + 1, 1, h - 2, p->h);
+    FillRect(x0 + 2, y1 - 3, w - 4, 1, p->h);
+    FillRect(x1 - 3, y0 + 3, 1, h - 5, p->h);
+    FillRect(x0 + 2, y0 + 2, w - 4, 1, p->s);
+    FillRect(x0 + 2, y0 + 2, 1, h - 4, p->s);
+    Put(x0 + 1, y0 + 1, p->o);
+    Put(x1 - 2, y0 + 1, p->o);
+    Put(x0 + 1, y1 - 2, p->o);
+    Put(x1 - 2, y1 - 2, p->o);
 }
 
 /* The map picture itself, once, into its cache. */
 static void BuildMapCache(void)
 {
+    int saved[4];
+
     if (!sCache[CACHE_MAP])
         return;
     memcpy(sCache[CACHE_MAP], sCache[CACHE_MENU], sizeof(sCanvas));
     sDst = sCache[CACHE_MAP];
+    ClipToMapWindow(saved);
     FillRect(0, 0, CW, H, sRes.mapPal[0]);
     /* The map is a 64x64 affine map; the ocean around Hoenn is tile 0. */
-    for (int ty = -1; ty < H / 8; ++ty)
+    for (int ty = (MAP_WIN_Y0 - MAP_ORIGIN_Y) / 8 - 1; ty * 8 + MAP_ORIGIN_Y < MAP_WIN_Y1; ++ty)
         for (int tx = 0; tx < CW / 8; ++tx)
         {
             u8 tile = (sRes.mapMap && ty >= 0 && ty < 64) ? sRes.mapMap[ty * 64 + tx] : 0;
             DrawMapTile8(tile, MAP_ORIGIN_X + tx * 8, MAP_ORIGIN_Y + ty * 8);
         }
+    RestoreClip(saved);
+    DrawMapFrame(MAP_WIN_X0 - 3, MAP_WIN_Y0 - 3, MAP_WIN_X1 + 3, MAP_WIN_Y1 + 3);
     sDst = sCanvas;
 }
 
@@ -2389,22 +2875,30 @@ static void DrawRegionName(const ViewState *s)
     if (mapsec == MAPSEC_NONE)
         return;
     GetMapName(name, mapsec, 0);
-    DrawBoxEx(BOX_MENU, 8, 188, 28, 5, picked);
-    DrawStrCentered(&sNormal, name, CW / 2, 200, LABEL_FG(picked), LABEL_SH(picked));
+    DrawPlate(NAME_X, NAME_Y, NAME_W, NAME_H, picked ? &sLook.chosen : &sLook.plate, 0, FALSE);
+    DrawStrIn(&sNormal, name, NAME_X + 1, NAME_X + NAME_W - 1, NAME_Y + 1, NAME_Y + NAME_H - 2,
+              picked ? TXT_WHITE : TXT_DARK, picked ? sLook.chosenShadow : TXT_LIGHT);
+}
+
+/* The player's mark and a picked cell's cursor, inside the window. */
+static void DrawMapMarks(const ViewState *s)
+{
+    int saved[4];
+
+    ClipToMapWindow(saved);
+    if (s->mapsec != MAPSEC_NONE && sRes.playerIcon[s->gender])
+        DrawSprite(sRes.playerIcon[s->gender], 2, 2, MAP_ORIGIN_X + s->cursorX * 8 - 4,
+                   MAP_ORIGIN_Y + s->cursorY * 8 - 4, sRes.playerIconPal[s->gender].c);
+    if (s->pickMapsec != MAPSEC_NONE && sRes.cursorTiles)
+        DrawSprite(sRes.cursorTiles, 2, 2, MAP_ORIGIN_X + s->pickX * 8 - 4, MAP_ORIGIN_Y + s->pickY * 8 - 4,
+                   sRes.cursorPal.c);
+    RestoreClip(saved);
 }
 
 static void DrawRegionMap(const ViewState *s)
 {
-    bool8 picked = s->pickMapsec != MAPSEC_NONE;
-
-    if (s->mapsec != MAPSEC_NONE && sRes.playerIcon[s->gender])
-        DrawSprite(sRes.playerIcon[s->gender], 2, 2, MAP_ORIGIN_X + s->cursorX * 8 - 4,
-                   MAP_ORIGIN_Y + s->cursorY * 8 - 4, sRes.playerIconPal[s->gender].c);
-    if (picked && sRes.cursorTiles)
-        DrawSprite(sRes.cursorTiles, 2, 2, MAP_ORIGIN_X + s->pickX * 8 - 4, MAP_ORIGIN_Y + s->pickY * 8 - 4,
-                   sRes.cursorPal.c);
-    AddHit(0, 0, CW, 176, HIT_MAP);
-
+    DrawMapMarks(s);
+    AddHit(MAP_WIN_X0, MAP_WIN_Y0, MAP_WIN_X1 - MAP_WIN_X0, MAP_WIN_Y1 - MAP_WIN_Y0, HIT_MAP);
     DrawRegionName(s);
 }
 
@@ -2564,8 +3058,9 @@ static const u8 *OptionValue(int row, u8 value)
     }
 }
 
-/* A window frame as the game draws its message boxes, from its 3x3 tiles. */
-static void DrawWindowFrame(u8 type, int x, int y, int wt, int ht)
+/* A window frame as the game draws its message boxes, from its 3x3 tiles,
+ * round [x, x + 8 wt) x [y, y + 8 ht) filled with `fill`. */
+static void DrawWindowFrame(u8 type, int x, int y, int wt, int ht, u16 fill)
 {
     const struct TilesPal *frame = GetWindowFrameTilesPal(type);
     const u8 *tiles = frame ? Port_ResolveAssetPointer(frame->tiles) : NULL;
@@ -2575,7 +3070,7 @@ static void DrawWindowFrame(u8 type, int x, int y, int wt, int ht)
     if (!tiles || !raw)
         return;
     ToPals(&pal, raw, 1);
-    FillRect(x, y, wt * 8, ht * 8, TXT_WHITE);
+    FillRect(x, y, wt * 8, ht * 8, fill);
     for (int ty = -1; ty <= ht; ++ty)
         for (int tx = -1; tx <= wt; ++tx)
         {
@@ -2586,66 +3081,79 @@ static void DrawWindowFrame(u8 type, int x, int y, int wt, int ht)
         }
 }
 
-static void DrawOptions(const ViewState *s)
+/*
+ * One option's cell: its name on the first line and its value on the second,
+ * both centred, the value between the arrows; the left half of the cell
+ * steps the value back and the right half on. The frame's cell is drawn with
+ * the chosen frame itself, so it is its own preview: one line inside it, the
+ * name in the left half and the value between its arrows in the right.
+ */
+static void DrawOptionCell(const ViewState *s, int row, const u8 *name, bool8 voxel)
 {
     static const u8 left[] = {CHAR_LEFT_ARROW, EOS}, right[] = {CHAR_RIGHT_ARROW, EOS};
+    const u8 *value = OptionValue(row, s->options[row]);
+    bool8 live = OptionLive(row, voxel);
+    bool8 on = live && (s->pressed == HIT_OPTION + row || s->pressed == HIT_OPTION + HIT_OPTION_BACK + row);
+    u16 nameFg = !live ? sLook.offText : on ? TXT_WHITE : TXT_DARK;
+    u16 nameSh = !live ? sLook.offShadow : on ? sLook.chosenShadow : TXT_LIGHT;
+    u16 valueFg = !live ? sLook.offText : on ? TXT_WHITE : TXT_RED;
+    u16 valueSh = !live ? sLook.offShadow : on ? sLook.chosenShadow : TXT_LRED;
+    int x, y, dy = on, aw = StrWidth(&sSmall, left);
+
+    OptionCell(row, &x, &y);
+    if (row == OPT_FRAME)
+    {
+        int top = y + 8 + dy, bottom = y + 24 + dy, vx0, vx1, group, gx;
+
+        DrawWindowFrame(s->options[OPT_FRAME], x + 8, y + 8, 12, 2, on ? sLook.chosen.f : TXT_WHITE);
+        DrawStrIn(&sSmall, name, x + 8, x + 56, top, bottom, nameFg, nameSh);
+        InkColumns(&sSmall, value, &vx0, &vx1);
+        group = aw + 2 + (vx1 - vx0) + 2 + aw;
+        gx = x + 56 + (48 - group) / 2;
+        DrawStrIn(&sSmall, left, gx, gx + aw, top, bottom, nameFg, nameSh);
+        DrawStrIn(&sSmall, value, gx + aw + 2, gx + aw + 2 + (vx1 - vx0), top, bottom, valueFg, valueSh);
+        DrawStrIn(&sSmall, right, gx + group - aw, gx + group, top, bottom, nameFg, nameSh);
+    }
+    else
+    {
+        int capTop, capBottom, cap, line;
+
+        DrawPlate(x, y, OPT_CELL_W, OPT_CELL_H, !live ? &sLook.off : on ? &sLook.chosen : &sLook.plate, 0, on);
+        /* Two lines of capitals 3px apart, centred between the outline and
+         * the shade rows. */
+        CapRows(&sSmall, &capTop, &capBottom);
+        cap = capBottom - capTop;
+        line = y + 1 + (28 - (2 * cap + 3)) / 2 + dy;
+        DrawStrIn(&sSmall, name, x + 1, x + OPT_CELL_W - 1, line, line + cap, nameFg, nameSh);
+        line += cap + 3;
+        DrawStrIn(&sSmall, value, x + 1, x + OPT_CELL_W - 1, line, line + cap, valueFg, valueSh);
+        DrawStrIn(&sSmall, left, x + 8, x + 8 + aw, line, line + cap, nameFg, nameSh);
+        DrawStrIn(&sSmall, right, x + OPT_CELL_W - 8 - aw, x + OPT_CELL_W - 8, line, line + cap, nameFg, nameSh);
+    }
+    if (live)
+    {
+        AddHit(x, y, OPT_CELL_W / 2, OPT_CELL_H, HIT_OPTION + HIT_OPTION_BACK + row);
+        AddHit(x + OPT_CELL_W / 2, y, OPT_CELL_W / 2, OPT_CELL_H, HIT_OPTION + row);
+    }
+    if (s->optFocus == row)
+        DrawRing(x, y, OPT_CELL_W, OPT_CELL_H, s->blink);
+}
+
+static void DrawOptions(const ViewState *s)
+{
     const u8 *names[OPTION_ROWS] = {gText_TextSpeed, gText_BattleScene, gText_BattleStyle, gText_Sound,
                                     gText_ButtonMode, gText_Frame, Ascii("SHOW FPS"), Ascii("VOXEL 3D"),
                                     Ascii("3D ANGLE"), Ascii("3D ZOOM"), Ascii("3D BLUR"),
                                     Ascii("3D BATTLE")};
-    /* The frame stays last, above its preview. */
-    static const u8 order[OPTION_ROWS] = {OPT_TEXT_SPEED, OPT_BATTLE_SCENE, OPT_BATTLE_STYLE, OPT_SOUND,
-                                          OPT_BUTTON_MODE, OPT_FPS, OPT_VOXEL, OPT_VOXEL_PITCH,
-                                          OPT_VOXEL_ZOOM, OPT_VOXEL_BLUR, OPT_VOXEL_BATTLE, OPT_FRAME};
-    /* The 3D rows only mean something with the voxel overworld on; with them
-     * there is no room left for the frame's preview, nor for every row: the
-     * list then scrolls (OptionsDrag). */
-    bool8 camera = OPTION_SHOWN > OPT_VOXEL && s->options[OPT_VOXEL];
-    const int pitch = OPTION_PITCH;
-    int maxScroll = OptionsMaxScroll(camera);
-    /* A scrolling list gives up a tile at its right for the bar, which then
-     * stands clear of both the rows and the button column. */
-    int tiles = maxScroll > 0 ? 29 : 30, shift = (30 - tiles) * 8;
-    int preview;
+    bool8 voxel = OPTION_SHOWN > OPT_VOXEL && s->options[OPT_VOXEL];
 
-    for (int slot = 0, row = 0; row < OPTION_ROWS; ++row)
-    {
-        int i = order[row], y;
-        if (!OptionRowShown(i, camera))
-            continue;
-        y = 4 + slot++ * pitch - s->optionScroll;
-        if (y + 24 <= 0 || y >= H)
-            continue;
-        bool8 on = s->pressed == HIT_OPTION + i || s->pressed == HIT_OPTION + HIT_OPTION_BACK + i;
-
-        DrawBoxEx(BOX_MENU, 0, y, tiles, 3, on);
-        DrawStr(&sSmall, names[i], 10, y + 6, LABEL_FG(on), LABEL_SH(on));
-        DrawStr(&sSmall, left, 112, y + 6, LABEL_FG(on), LABEL_SH(on));
-        DrawStrCentered(&sSmall, OptionValue(i, s->options[i]), 170 - shift / 2, y + 6,
-                        on ? TXT_WHITE : TXT_RED, on ? TXT_DARK : TXT_LRED);
-        DrawStr(&sSmall, right, 222 - shift, y + 6, LABEL_FG(on), LABEL_SH(on));
-        AddHit(0, y, 136, 24, HIT_OPTION + HIT_OPTION_BACK + i);
-        AddHit(136, y, 104 - shift, 24, HIT_OPTION + i);
-    }
-    /* Where the list is scrolled to, when it does not fit. */
-    if (maxScroll > 0)
-    {
-        int track = H - 8, thumb = track * H / (H + maxScroll);
-
-        FillRect(CW - 5, 4, 2, track, TXT_LIGHT);
-        FillRect(CW - 5, 4 + (track - thumb) * s->optionScroll / maxScroll, 2, thumb, TXT_DARK);
-    }
-    /* What the chosen frame looks like, below the rows: it scrolls with
-     * them when they do not all fit. */
-    if (camera)
-        return;
-    preview = 4 + OptionRowsShown(camera) * pitch + OPTION_PREVIEW_GAP - s->optionScroll;
-    DrawWindowFrame(s->options[5], 24, preview, 24 - (tiles < 30), 3);
-    DrawStrCentered(&sNormal, OptionValue(5, s->options[5]), CW / 2 - shift / 2, preview + 4, TXT_DARK, TXT_LIGHT);
+    for (int row = 0; row < OPTION_ROWS; ++row)
+        if (OptionExists(row))
+            DrawOptionCell(s, row, names[row], voxel);
 }
 
 /* ------------------------------------------------------------------------ */
-/* Drawing: battle                                                          */
+/* Drawing: battle                                                        */
 /* ------------------------------------------------------------------------ */
 
 #define HEADER_H 56
@@ -2846,9 +3354,10 @@ static void DrawBattleInfo(const ViewState *s)
 static void BuildBackgroundCaches(void)
 {
     sOX = 0;
-    /* The 240px view with the column beside it, and the whole screen. */
+    /* The 240px view with the column beside it: the sections' light green
+     * and the rail. The whole screen (battle) keeps the party menu's. */
     sDst = sCache[CACHE_MENU];
-    DrawPartyBackground(CW / 8, H / 8);
+    DrawSection(0, 0, CW, H);
     DrawColumnBackground();
     sDst = sCache[CACHE_WIDE];
     DrawPartyBackground(W / 8, H / 8);
@@ -3030,7 +3539,7 @@ static bool8 DirtyRect(const ViewState *now, const ViewState *shown, Rect *r)
         }
     if (now->mode == MODE_FIELD)
         for (int i = 0; i < OPTION_ROWS; ++i)
-            if (i != OPT_FRAME && i != OPT_VOXEL)
+            if (i != OPT_VOXEL)
                 probe.options[i] = shown->options[i];
     if (memcmp(&probe, shown, sizeof(probe)) != 0)
         return FALSE;
@@ -3066,48 +3575,32 @@ static bool8 DirtyRect(const ViewState *now, const ViewState *shown, Rect *r)
 
 static void RenderPart(const ViewState *s, int x0, int y0, int x1, int y1);
 
-/*
- * The options list dragged: the rows already on the screen move with the
- * finger as pixels, and only what that uncovers is drawn - the strip at the
- * edge, the bars of the party-menu pattern at the top and bottom, which do not
- * scroll, and the scroll bar's column. FALSE when anything else differs.
- */
-static bool8 ScrollOptions(const ViewState *now, const ViewState *shown)
+/* The focus ring moved or blinked, or a button was pressed or let go, and
+ * nothing else changed: the rectangles of the buttons it touches. Beside the
+ * game's own screens (the PokéNav, the bag) only the column's part is ours. */
+static bool8 FocusDirtyRect(const ViewState *now, const ViewState *shown, Rect *r)
 {
     static ViewState probe;
-    int delta;
+    u8 focus[2] = {now->focus, shown->focus}, opt[2] = {now->optFocus, shown->optFocus};
 
-    if (now->mode != MODE_FIELD || shown->mode != MODE_FIELD || now->screen != SCR_OPTION
-     || shown->screen != SCR_OPTION)
-        return FALSE;
     probe = *now;
-    probe.optionScroll = shown->optionScroll;
-    if (memcmp(&probe, shown, sizeof(probe)) != 0)
+    probe.focus = shown->focus;
+    probe.optFocus = shown->optFocus;
+    probe.blink = shown->blink;
+    probe.pressed = shown->pressed;
+    if (now->mode == MODE_OFF || now->mode >= MODE_BATTLE_INFO || memcmp(&probe, shown, sizeof(probe)) != 0)
         return FALSE;
-    delta = (int)now->optionScroll - (int)shown->optionScroll;
-    if (delta == 0 || delta >= H - 32 || delta <= -(H - 32))
-        return FALSE;
-    /* A column runs bottom-to-top: content moving up by delta pixels moves
-     * to higher offsets. */
-    for (int x = 0; x < CW; ++x)
+    RectInit(r);
+    for (int k = 0; k < 2; ++k)
     {
-        u16 *col = sCanvas + x * H;
-
-        if (delta > 0)
-            memmove(col + delta, col, (size_t)(H - delta) * sizeof(u16));
-        else
-            memmove(col, col - delta, (size_t)(H + delta) * sizeof(u16));
+        if (focus[k] != FOCUS_NONE && !RectAddHit(r, HIT_COLUMN + focus[k]))
+            return FALSE;
+        if (opt[k] != FOCUS_NONE && !RectAddHit(r, HIT_OPTION + opt[k]))
+            return FALSE;
     }
-    RenderPart(now, 0, 0, CW, 16);
-    RenderPart(now, 0, H - 16, CW, H);
-    RenderPart(now, CW - 8, 16, CW, H - 16);
-    if (delta > 16)
-        RenderPart(now, 0, H - delta, CW, H - 16);
-    else if (delta < -16)
-        RenderPart(now, 0, 16, CW, -delta);
-    /* The rows that only moved are not in any part: the whole area goes out. */
-    CtrBottom_BlitRect(sCanvas, 0, 0, CW, H);
-    return TRUE;
+    if (now->pressed != shown->pressed && !(RectAddHit(r, now->pressed) && RectAddHit(r, shown->pressed)))
+        return FALSE;
+    return r->x0 < r->x1 && r->y0 < r->y1;
 }
 
 /* Draws one part of the screen. The canvas outside it keeps what is shown. */
@@ -3186,6 +3679,13 @@ static void StartPlan(u8 kind, s16 target)
 {
     sPlan = MakePlan(kind, target);
     sQueued = 0;
+}
+
+/* One press of keys, as the player's own: the column's Y is SELECT. */
+static void PressOnce(u16 keys)
+{
+    StartPlan(PLAN_PRESS, 0);
+    sPlan.keys = keys;
 }
 
 #if 0 /* only the old party menu queued plans or pressed keys */
@@ -3272,8 +3772,9 @@ static void RunPlan(void)
     sInjected = 0;
     if (sPlan.kind == PLAN_NONE)
         return;
-    /* The player's own buttons always win. */
-    if (CtrInput_Get()->held & CTR_KEY_GAME)
+    /* The player's own buttons always win; not those the column holds back
+     * (CtrBottom_FilterKeys), as the A that chose BAG while it opens. */
+    if (CtrBottom_FilterKeys(CtrInput_Get()->held) & CTR_KEY_GAME)
     {
         CancelPlan();
         return;
@@ -3691,18 +4192,6 @@ static void NavSwipe(int dy)
 /* What a tap does                                                          */
 /* ------------------------------------------------------------------------ */
 
-/* A drag up or down the options list scrolls it, within its length. */
-static void OptionsDrag(int dy)
-{
-    int max = OptionsMaxScroll(CtrSettings_Voxel());
-
-    sOptionScroll = sOptionScrollStart - dy;
-    if (sOptionScroll < 0)
-        sOptionScroll = 0;
-    if (sOptionScroll > max)
-        sOptionScroll = max;
-}
-
 static struct
 {
     bool8 active, dragged;
@@ -3830,7 +4319,7 @@ static void ActivateOption(u8 id)
     static const u8 counts[OPTION_ROWS] = {3, 2, 2, 2, 3, WINDOW_FRAMES_COUNT, 2, 2, 0, 0, 2, 2};
     u8 value, step = back ? counts[row] - 1 : 1;
 
-    if (!OptionRowShown(row, TRUE))
+    if (!OptionLive(row, CtrSettings_Voxel()))
         return;
     if (row == OPT_FPS)
     {
@@ -3948,6 +4437,22 @@ static void Activate(u8 id, u8 mode)
         return;
     }
 
+    /* Y: SELECT in the field, the registered item. RUN: running by default. */
+    if (id == HIT_COLUMN + COL_Y)
+    {
+        if (mode == MODE_FIELD && FieldIdle() && gSaveBlock1Ptr->registeredItem != ITEM_NONE)
+            PressOnce(SELECT_BUTTON);
+        return;
+    }
+    if (id == HIT_COLUMN + COL_RUN)
+    {
+        if (FlagGet(FLAG_SYS_B_DASH))
+        {
+            CtrSettings_SetRunAlways(!CtrSettings_RunAlways());
+            PlaySE(SE_SELECT);
+        }
+        return;
+    }
     if (id >= HIT_COLUMN && id < HIT_COLUMN + SCR_COUNT)
     {
         u8 screen = id - HIT_COLUMN;
@@ -4115,7 +4620,6 @@ static u8 ProcessTouch(u8 mode)
         sTouch.startX = sTouch.lastX = in->touchX;
         sTouch.startY = sTouch.lastY = in->touchY;
         sTouch.pressed = HitTest(in->touchX, in->touchY);
-        sOptionScrollStart = sOptionScroll;
     }
     else if (in->touchActive && sTouch.active)
     {
@@ -4125,8 +4629,6 @@ static u8 ProcessTouch(u8 mode)
         sTouch.lastY = in->touchY;
         if (!sTouch.dragged && (dy > 8 || dy < -8 || dx > 8 || dx < -8))
             sTouch.dragged = TRUE;
-        if (sTouch.dragged && sScreen == SCR_OPTION && sTouch.startX < CW)
-            OptionsDrag(dy);
     }
     else if (in->touchUp && sTouch.active)
     {
@@ -4174,8 +4676,250 @@ static u8 ProcessTouch(u8 mode)
 }
 
 /* ------------------------------------------------------------------------ */
+/* The column by the buttons (X)                                            */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * X gives the column a focus ring: the D-pad walks it over the buttons (down
+ * from OPTION to Y, left and right between Y and RUN), A does what a tap
+ * would, B or X again gives the buttons back to the game. While the column
+ * has them the game sees none, so the player stands still. Opened with A,
+ * the options take the focus into their grid (up and down through the
+ * options, left and right or A to change one, B back to the column) and the
+ * save screen takes A for YES and B for NO; the game's own screens (party,
+ * bag, Pokédex, PokéNav) take the buttons themselves, and X inside them
+ * brings the ring back to the column to go somewhere else.
+ */
+uint16_t CtrBottom_FilterKeys(uint16_t held)
+{
+    return sFocus != FOCUS_NONE || sInside != INSIDE_NONE || sSwallow ? 0 : held;
+}
+
+/* Whether the column is on screen: not in battle, not under the boxes or
+ * the bag or party menu that a battle, a shop or the PC opens. */
+static bool8 ColumnShown(u8 mode)
+{
+    if (gMain.inBattle)
+        return FALSE;
+    switch (mode)
+    {
+    case MODE_FIELD:
+    case MODE_POKENAV:
+    case MODE_POKEDEX:
+        return TRUE;
+    case MODE_PARTY_MENU:
+        return gPartyMenu.menuType == PARTY_MENU_TYPE_FIELD;
+    case MODE_BAG_MENU:
+        return gBagPosition.location == ITEMMENULOCATION_FIELD;
+    }
+    return FALSE;
+}
+
+static bool8 ColumnItemAvailable(u8 item)
+{
+    if (item < SCR_COUNT)
+        return (EnabledScreens() >> item) & 1;
+    if (item == COL_Y)
+        return gSaveBlock1Ptr->registeredItem != ITEM_NONE;
+    return FlagGet(FLAG_SYS_B_DASH);
+}
+
+/* The next available item up (dir < 0) or down the column, or `from`. */
+static u8 ColumnStep(u8 from, int dir)
+{
+    if (from >= COL_Y)
+    {
+        if (dir > 0)
+            return from;
+        for (int i = SCR_COUNT - 1; i >= 0; --i)
+            if (ColumnItemAvailable(i))
+                return i;
+        return from;
+    }
+    for (int i = from + dir; i >= 0 && i < SCR_COUNT; i += dir)
+        if (ColumnItemAvailable(i))
+            return i;
+    if (dir > 0)
+    {
+        if (ColumnItemAvailable(COL_Y))
+            return COL_Y;
+        if (ColumnItemAvailable(COL_RUN))
+            return COL_RUN;
+    }
+    return from;
+}
+
+/* The next option up or down the grid's reading order (the left column,
+ * then the right), or `from`. */
+static u8 OptionStep(u8 from, int dir)
+{
+    bool8 voxel = CtrSettings_Voxel();
+
+    for (int i = from + dir; i >= 0 && i < OPTION_ROWS; i += dir)
+        if (OptionLive(i, voxel))
+            return i;
+    return from;
+}
+
+static void MoveFocus(u8 *focus, u8 to)
+{
+    if (to != *focus)
+    {
+        *focus = to;
+        PlaySE(SE_SELECT);
+    }
+}
+
+/* Gives the buttons back to the game once they are let go. */
+static void LeaveFocus(void)
+{
+    sFocus = FOCUS_NONE;
+    sInside = INSIDE_NONE;
+    sSwallow = TRUE;
+}
+
+/* A on a column item: what a tap on it does, and where the focus goes. */
+static void ChooseColumnItem(u8 mode, u8 item)
+{
+    bool8 gameScreen = item == SCR_POKEMON || item == SCR_BAG || item == SCR_POKEDEX || item == SCR_POKENAV;
+
+    if (item == COL_RUN)
+    {
+        Activate(HIT_COLUMN + COL_RUN, mode);
+        return;
+    }
+    if (item == COL_Y)
+    {
+        LeaveFocus();
+        Activate(HIT_COLUMN + COL_Y, mode);
+        return;
+    }
+    /* The game's screen on show already: back to it. */
+    if (gameScreen && item == sShown.screen && mode != MODE_FIELD)
+    {
+        LeaveFocus();
+        return;
+    }
+    Activate(HIT_COLUMN + item, mode);
+    if (gameScreen)
+        LeaveFocus();
+    else if (item == SCR_OPTION || item == SCR_SAVE)
+    {
+        sFocus = FOCUS_NONE;
+        sInside = item == SCR_OPTION ? INSIDE_OPTIONS : INSIDE_SAVE;
+        if (item == SCR_OPTION && !OptionLive(sOptFocus, CtrSettings_Voxel()))
+            sOptFocus = OPT_TEXT_SPEED;
+    }
+}
+
+static void OptionKeys(u16 down)
+{
+    if (down & B_BUTTON)
+    {
+        sInside = INSIDE_NONE;
+        sFocus = SCR_OPTION;
+        PlaySE(SE_SELECT);
+    }
+    else if (down & DPAD_UP)
+        MoveFocus(&sOptFocus, OptionStep(sOptFocus, -1));
+    else if (down & DPAD_DOWN)
+        MoveFocus(&sOptFocus, OptionStep(sOptFocus, 1));
+    else if (down & DPAD_LEFT)
+        ActivateOption(HIT_OPTION + HIT_OPTION_BACK + sOptFocus);
+    else if (down & (DPAD_RIGHT | A_BUTTON))
+        ActivateOption(HIT_OPTION + sOptFocus);
+}
+
+static void SaveKeys(u8 mode, u16 down)
+{
+    if (down & A_BUTTON)
+        Activate(sSaveStep == SAVE_DONE ? HIT_OK : HIT_YES, mode);
+    else if (down & B_BUTTON)
+        Activate(sSaveStep == SAVE_DONE ? HIT_OK : HIT_NO, mode);
+    /* Done or declined, the screen goes back to the map: so does the focus,
+     * to the column. */
+    if (sScreen != SCR_SAVE)
+    {
+        sInside = INSIDE_NONE;
+        sFocus = sScreen;
+    }
+}
+
+static void ProcessKeys(u8 mode)
+{
+    const CtrInput *in = CtrInput_Get();
+    u16 down = in->down;
+    bool8 x = (in->physicalDown & CTR_KEY_X) != 0;
+
+    if (sSwallow && !(in->held & CTR_KEY_GAME) && !(in->physicalHeld & (CTR_KEY_X | CTR_KEY_Y)))
+        sSwallow = FALSE;
+    if (!ColumnShown(mode))
+    {
+        if (sFocus != FOCUS_NONE || sInside != INSIDE_NONE)
+            LeaveFocus();
+        return;
+    }
+    /* A tap took the screen elsewhere. */
+    if ((sInside == INSIDE_OPTIONS && sScreen != SCR_OPTION) || (sInside == INSIDE_SAVE && sScreen != SCR_SAVE))
+    {
+        sInside = INSIDE_NONE;
+        sFocus = sScreen;
+    }
+    if (sInside != INSIDE_NONE)
+    {
+        if (x)
+        {
+            sInside = INSIDE_NONE;
+            sFocus = sScreen;
+            PlaySE(SE_SELECT);
+        }
+        else if (sInside == INSIDE_OPTIONS)
+            OptionKeys(down);
+        else
+            SaveKeys(mode, down);
+        return;
+    }
+    if (sFocus == FOCUS_NONE)
+    {
+        /* Not in the middle of a script or a field effect. */
+        if (!x || (mode == MODE_FIELD && (gMain.callback2 != CB2_Overworld || ArePlayerFieldControlsLocked()
+                                          || ScriptContext_IsEnabled())))
+            return;
+        sFocus = sShown.screen < SCR_COUNT && ColumnItemAvailable(sShown.screen) ? sShown.screen : SCR_MAP;
+        PlaySE(SE_SELECT);
+        return;
+    }
+    if (!ColumnItemAvailable(sFocus))
+        sFocus = SCR_MAP;
+    if (x || (down & B_BUTTON))
+    {
+        LeaveFocus();
+        PlaySE(SE_SELECT);
+    }
+    else if (down & DPAD_UP)
+        MoveFocus(&sFocus, ColumnStep(sFocus, -1));
+    else if (down & DPAD_DOWN)
+        MoveFocus(&sFocus, ColumnStep(sFocus, 1));
+    else if ((down & (DPAD_LEFT | DPAD_RIGHT)) && sFocus >= COL_Y)
+    {
+        u8 other = sFocus == COL_Y ? COL_RUN : COL_Y;
+
+        if (ColumnItemAvailable(other))
+            MoveFocus(&sFocus, other);
+    }
+    else if (down & A_BUTTON)
+        ChooseColumnItem(mode, sFocus);
+}
+
+/* ------------------------------------------------------------------------ */
 /* Entry points                                                             */
 /* ------------------------------------------------------------------------ */
+
+/* field_player_avatar.c: B walks instead of running while RUN is on. */
+bool8 CtrPlayer_RunAlways(void)
+{
+    return CtrSettings_RunAlways();
+}
 
 void CtrBottom_Init(void)
 {
@@ -4221,17 +4965,19 @@ static bool8 MapCursorOnlyMoved(const ViewState *now, const ViewState *shown)
     return memcmp(&moved, shown, sizeof(moved)) == 0;
 }
 
-/* The mark's 2x2 tiles at a cursor cell, clipped to the screen. */
+/* The mark's 2x2 tiles at a cursor cell, clipped to the map's window. */
 static void MarkRect(u8 cx, u8 cy, int *x0, int *y0, int *x1, int *y1)
 {
     *x0 = MAP_ORIGIN_X + cx * 8 - 4;
     *y0 = MAP_ORIGIN_Y + cy * 8 - 4;
     *x1 = *x0 + 16;
     *y1 = *y0 + 16;
-    if (*x0 < 0) *x0 = 0;
-    if (*y0 < 0) *y0 = 0;
-    if (*x1 > W) *x1 = W;
-    if (*y1 > H) *y1 = H;
+    if (*x0 < MAP_WIN_X0) *x0 = MAP_WIN_X0;
+    if (*y0 < MAP_WIN_Y0) *y0 = MAP_WIN_Y0;
+    if (*x1 > MAP_WIN_X1) *x1 = MAP_WIN_X1;
+    if (*y1 > MAP_WIN_Y1) *y1 = MAP_WIN_Y1;
+    if (*x1 < *x0) *x1 = *x0;
+    if (*y1 < *y0) *y1 = *y0;
 }
 
 static bool8 RectsMeet(int ax0, int ay0, int ax1, int ay1, int bx0, int by0, int bx1, int by1)
@@ -4266,23 +5012,19 @@ static bool8 MoveMapCursor(const ViewState *from, const ViewState *to)
                (size_t)(r[0][3] - r[0][1]) * sizeof(u16));
     sDst = sCanvas;
     sOX = 0;
-    DrawSprite(icon, 2, 2, MAP_ORIGIN_X + to->cursorX * 8 - 4, MAP_ORIGIN_Y + to->cursorY * 8 - 4,
-               sRes.playerIconPal[to->gender].c);
+    /* The mark, and a picked cell's cursor over it, as Render draws them. */
+    DrawMapMarks(to);
     /* Crossing a region changes only the label below the map. Restore and
-     * redraw that rectangle instead of the map and the eight-button column. */
+     * redraw that plate instead of the map and the column. */
     if (to->mapsec != from->mapsec && to->pickMapsec == MAPSEC_NONE)
     {
-        for (int x = 8; x < 232; ++x)
-            memcpy(sCanvas + x * H + (H - 228), sCache[CACHE_MAP] + x * H + (H - 228),
-                   40 * sizeof(u16));
+        for (int x = NAME_X; x < NAME_X + NAME_W; ++x)
+            memcpy(sCanvas + x * H + (H - (NAME_Y + NAME_H)), sCache[CACHE_MAP] + x * H + (H - (NAME_Y + NAME_H)),
+                   NAME_H * sizeof(u16));
         ResolveFonts();
         DrawRegionName(to);
-        CtrBottom_BlitRect(sCanvas, 8, 188, 232, 228);
+        CtrBottom_BlitRect(sCanvas, NAME_X, NAME_Y, NAME_X + NAME_W, NAME_Y + NAME_H);
     }
-    /* A picked cell's cursor is drawn over the mark, as Render does. */
-    if (to->pickMapsec != MAPSEC_NONE && sRes.cursorTiles)
-        DrawSprite(sRes.cursorTiles, 2, 2, MAP_ORIGIN_X + to->pickX * 8 - 4,
-                   MAP_ORIGIN_Y + to->pickY * 8 - 4, sRes.cursorPal.c);
     for (int k = 0; k < 2; ++k)
         CtrBottom_BlitRect(sCanvas, r[k][0], r[k][1], r[k][2], r[k][3]);
     return TRUE;
@@ -4297,7 +5039,7 @@ static bool8 PartialRedraw(const ViewState *now)
         RenderPart(now, r.x0, r.y0, r.x1, r.y1);
         return TRUE;
     }
-    return ScrollOptions(now, &sShown);
+    return FALSE;
 }
 
 static void BottomProfile(u32 frame, u8 mode, const uint64_t ticks[3], unsigned kind)
@@ -4330,8 +5072,10 @@ void CtrBottom_Frame(void)
     if (sAsked.kind == ASK_NONE)
         sBattleTap = HIT_NONE;
 
+    sFrames = frames;
     mode = CurrentMode();
     pressed = ProcessTouch(mode);
+    ProcessKeys(mode);
     OpenAsked(mode);
     RunPlan();
     RunNav(mode);
@@ -4375,8 +5119,26 @@ void CtrBottom_Frame(void)
         BottomProfile(frames, mode, ticks, 1);
         return;
     }
-    /* A press, a cursor, an HP bar, an option's value, a drag of the options
-     * list: only the part that changes is drawn. */
+    /* The focus ring, or a press on the column: only those buttons. */
+    if (!sForceRedraw && sShown.mode != 0xFF && !CtrVideo_BottomWhole() && memcmp(&sState, &sShown, sizeof(sState)) != 0)
+    {
+        Rect r;
+
+        bool8 dirty = FocusDirtyRect(&sState, &sShown, &r);
+
+        /* The column's hits reach 2px past its edge, the drawing does not. */
+        if (dirty && CtrVideo_BottomInUse() && r.x0 < CW)
+            r.x0 = CW;
+        if (dirty && r.x0 < r.x1)
+        {
+            RenderPart(&sState, r.x0, r.y0, r.x1, r.y1);
+            sShown = sState;
+            BottomProfile(frames, mode, ticks, 3);
+            return;
+        }
+    }
+    /* A press, a cursor, an HP bar, an option's value: only the part that
+     * changes is drawn. */
     if (!sForceRedraw && !CtrVideo_BottomInUse() && !CtrVideo_BottomWhole() && sShown.mode != 0xFF
      && memcmp(&sState, &sShown, sizeof(sState)) != 0 && PartialRedraw(&sState))
     {

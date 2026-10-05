@@ -199,6 +199,20 @@ index ec62e51947fe39e0f7569a212becc317efab950b..a93fb27cd137c95f863b8c7011c73fa7
  void IsDodrioInParty(void);
  void ShowDodrioBerryPickingRecords(void);
  
+diff --git a/include/field_player_avatar.h b/include/field_player_avatar.h
+index 005a48f2d564ab06e292568130397c131b6b56ba..d8d827cbe294b573a4391b13c360ffe82c378775 100644
+--- a/include/field_player_avatar.h
++++ b/include/field_player_avatar.h
+@@ -65,4 +65,9 @@ void SetPlayerInvisibility(bool8 invisible);
+ u8 player_get_pos_including_state_based_drift(s16 *x, s16 *y);
+ void StartFishing(u8 rod);
+ 
++#ifdef PLATFORM_3DS
++// The bottom screen's RUN button: running is the default and B walks.
++bool8 CtrPlayer_RunAlways(void);
++#endif
++
+ #endif // GUARD_FIELD_PLAYER_AVATAR_H
 diff --git a/include/fieldmap.h b/include/fieldmap.h
 index 212dfb65a6868042e59f140df99fba7c8d134729..673224515c3d8c0c5d8522bc46fd6717b03ab9a7 100644
 --- a/include/fieldmap.h
@@ -3789,10 +3803,21 @@ index f59a0429ebbe5744b9ef66e13102553caeed47c6..b797e1d353318d1c3555283598df3b4e
              if (RunTextPrintersAndIsPrinter0Active() != TRUE)
              {
 diff --git a/src/field_player_avatar.c b/src/field_player_avatar.c
-index 90e19e27f39cf84c2e4ac62dfd95c412393c6b18..1a03a6c06d7bc50820692d5fc0b22ac6e60c30b6 100644
+index 90e19e27f39cf84c2e4ac62dfd95c412393c6b18..01a20e63bc6c884b8628da283527906f6583c470 100644
 --- a/src/field_player_avatar.c
 +++ b/src/field_player_avatar.c
-@@ -1187,6 +1187,13 @@ u8 GetPlayerMovementDirection(void)
+@@ -651,6 +651,10 @@ static void PlayerNotOnBikeMoving(u8 direction, u16 heldKeys)
+         return;
+     }
+ 
++#ifdef PLATFORM_3DS
++    if (CtrPlayer_RunAlways())
++        heldKeys ^= B_BUTTON;
++#endif
+     if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)
+      && IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0)
+     {
+@@ -1187,6 +1191,13 @@ u8 GetPlayerMovementDirection(void)
  
  u8 PlayerGetElevation(void)
  {
@@ -3806,7 +3831,7 @@ index 90e19e27f39cf84c2e4ac62dfd95c412393c6b18..1a03a6c06d7bc50820692d5fc0b22ac6
      return gObjectEvents[gPlayerAvatar.objectEventId].previousElevation;
  }
  
-@@ -1379,11 +1386,20 @@ void InitPlayerAvatar(s16 x, s16 y, u8 direction, u8 gender)
+@@ -1379,11 +1390,20 @@ void InitPlayerAvatar(s16 x, s16 y, u8 direction, u8 gender)
      struct ObjectEventTemplate playerObjEventTemplate;
      u8 objectEventId;
      struct ObjectEvent *objectEvent;

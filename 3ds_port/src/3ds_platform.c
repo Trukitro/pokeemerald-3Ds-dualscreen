@@ -155,8 +155,6 @@ bool CtrPlatform_BeginFrame(void)
         }
     }
     else sExitStart = 0;
-    if (input->resetDown)
-        CtrPlatform_RequestReset();
     if (sReset)
     {
         sReset = false;
