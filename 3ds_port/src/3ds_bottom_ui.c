@@ -1449,6 +1449,8 @@ typedef struct
     u8 focus, optFocus, blink;
     /* Battle. */
     u8 isDouble, safari, cursor, battler;
+    u16 quickBall, quickBallCount;    /* the ball R throws, ITEM_NONE if none */
+    u8 quickBallFocus;                /* the D-pad is on the ball button */
     BattlerView battlers[MAX_BATTLERS_COUNT];
     struct ChooseMoveStruct moves4;
     u8 text[96];
@@ -1603,6 +1605,7 @@ enum
     HIT_TARGET_LEFT = 0x80,
     HIT_TARGET_RIGHT,
     HIT_TARGET_OK,
+    HIT_QUICK_BALL,        /* throw the last ball used */
     HIT_MAP = 0x90,
     HIT_MENU = 0xB0,       /* + game menu entry */
     HIT_OPTION = 0xC0,     /* + option row; +HIT_OPTION_BACK for the left arrow */
@@ -1771,6 +1774,8 @@ typedef struct
 static BattleAsk sAsk, sAsked;
 static u8 sBattleTap = 0xFF;   /* a tap for the controller to take */
 static bool8 sMoveCancel;      /* the move menu's cursor is on CANCEL */
+static bool8 sQuickBallTap;    /* the ball button was tapped */
+static bool8 sQuickBallFocus;  /* the D-pad is on the ball button (A throws) */
 
 static u8 CurrentMode(void)
 {
@@ -1894,6 +1899,17 @@ void CtrBattleMenu_Begin(void)
 {
     sBattleTap = HIT_NONE;
     sMoveCancel = FALSE;
+    sQuickBallTap = FALSE;
+    sQuickBallFocus = FALSE;
+}
+
+/* The ball button, once per tap: the action handler throws the ball. */
+bool8 CtrBattleMenu_TakeQuickBall(void)
+{
+    bool8 tapped = sQuickBallTap;
+
+    sQuickBallTap = FALSE;
+    return tapped;
 }
 
 /* "What will X do?", in the message box: the one thing left on top. */
@@ -1924,8 +1940,35 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
     u8 tap = TakeBattleTap(ASK_ACTION), next = *cursor;
     u16 dpad = gMain.newKeys & DPAD_ANY;
 
-    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. */
+    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. The ball
+     * button, right of FIGHT and over RUN, is reached from both. */
+    bool8 ball = !safari && CtrBattle_QuickBallItem() != ITEM_NONE;
+
     gMain.newKeys &= ~DPAD_ANY;
+    if (!ball)
+        sQuickBallFocus = FALSE;
+    if (sQuickBallFocus)
+    {
+        if (dpad & (DPAD_LEFT | DPAD_DOWN))
+        {
+            sQuickBallFocus = FALSE;
+            next = (dpad & DPAD_LEFT) ? 0 : 3;
+            PlaySE(SE_SELECT);
+            *cursor = next;
+        }
+        else if (gMain.newKeys & A_BUTTON)
+        {
+            gMain.newKeys &= ~A_BUTTON;
+            sQuickBallTap = TRUE;
+        }
+        dpad = 0;
+    }
+    else if (ball && (((dpad & DPAD_RIGHT) && next == 0) || ((dpad & DPAD_UP) && next == 3)))
+    {
+        sQuickBallFocus = TRUE;
+        PlaySE(SE_SELECT);
+        dpad = 0;
+    }
     if (dpad & DPAD_UP)
         next = 0;
     else if ((dpad & DPAD_DOWN) && next == 0)
@@ -1939,8 +1982,11 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
         PlaySE(SE_SELECT);
         *cursor = next;
     }
+    if (tap == HIT_QUICK_BALL && !safari)
+        sQuickBallTap = TRUE;
     if (tap >= HIT_ACTION && tap < HIT_ACTION + 4)
     {
+        sQuickBallFocus = FALSE;
         *cursor = tap - HIT_ACTION;
         gMain.newKeys |= A_BUTTON;
     }
@@ -2364,10 +2410,14 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
         SnapshotBattle(s);
         SnapshotParty(s);
         s->battler = b;
-        s->cursor = gActionSelectionCursor[b];
+        s->cursor = sQuickBallFocus ? 4 : gActionSelectionCursor[b];   /* 4: none lit */
+        s->quickBallFocus = sQuickBallFocus;
         /* The FIGHT button previews the four move types. */
         for (int i = 0; i < MAX_MON_MOVES; ++i)
             s->moves4.moves[i] = gBattleMons[b].moves[i];
+        s->quickBall = CtrBattle_QuickBallItem();
+        if (s->quickBall != ITEM_NONE)
+            s->quickBallCount = CountTotalItemQuantityInBag(s->quickBall);
         break;
     }
     case MODE_BATTLE_MOVE:
@@ -2403,6 +2453,8 @@ static bool8 Prefetch(const ViewState *s)
         ItemIcon(s->registered);
     if (sIconBudget && s->mode == MODE_BATTLE_ACTION)
         ItemIcon(ITEM_ESCAPE_ROPE);
+    if (sIconBudget && s->mode == MODE_BATTLE_ACTION && s->quickBall != ITEM_NONE)
+        ItemIcon(s->quickBall);
     if (sIconBudget)
     {
         sIconBudget = FALSE;
@@ -3382,8 +3434,24 @@ static void DrawBattleActions(const ViewState *s)
     for (int i = 0; i < 4; ++i)
         on[i] = s->cursor == i || s->pressed == HIT_ACTION + i;
 
-    /* FIGHT: the move types it leads to. */
-    DrawButton(16, 60, 36, 10, on[0], HIT_ACTION + 0);
+    /* FIGHT: the move types it leads to. With a ball to throw, it makes
+     * room for the ball button on its right. */
+    bool8 ball = !s->safari && s->quickBall != ITEM_NONE;
+    int fightX = ball ? 120 : 160;
+
+    DrawButton(16, 60, ball ? 26 : 36, 10, on[0], HIT_ACTION + 0);
+    if (ball)
+    {
+        bool8 hot = s->pressed == HIT_QUICK_BALL || s->quickBallFocus;
+        u8 text[8];
+
+        DrawButton(232, 60, 9, 10, hot, HIT_QUICK_BALL);
+        DrawStrCentered(&sSmall, GetItemName(s->quickBall), 268, 66, LABEL_FG(hot), LABEL_SH(hot));
+        DrawItemIcon(s->quickBall, 256, 84);
+        StringCopy(text, Ascii("x"));
+        StringAppend(text, Number(s->quickBallCount, 3, STR_CONV_MODE_LEFT_ALIGN));
+        DrawStrCentered(&sSmall, text, 268, 116, LABEL_FG(hot), LABEL_SH(hot));
+    }
     if (s->safari)
     {
         DrawStrCentered(&sNormal, Ascii(safari[0]), 160, 90, LABEL_FG(on[0]), LABEL_SH(on[0]));
@@ -3391,11 +3459,11 @@ static void DrawBattleActions(const ViewState *s)
     else
     {
         int count = 0;
-        DrawStrCentered(&sNormal, Ascii("FIGHT"), 160, 76, LABEL_FG(on[0]), LABEL_SH(on[0]));
+        DrawStrCentered(&sNormal, Ascii("FIGHT"), fightX, 76, LABEL_FG(on[0]), LABEL_SH(on[0]));
         for (int i = 0; i < MAX_MON_MOVES; ++i)
             if (s->moves4.moves[i] != MOVE_NONE)
                 ++count;
-        for (int i = 0, x = 160 - (count * 40 - 8) / 2; i < MAX_MON_MOVES; ++i)
+        for (int i = 0, x = fightX - (count * 40 - 8) / 2; i < MAX_MON_MOVES; ++i)
             if (s->moves4.moves[i] != MOVE_NONE)
             {
                 DrawTypeIcon(gBattleMoves[s->moves4.moves[i]].type, x, 104);
