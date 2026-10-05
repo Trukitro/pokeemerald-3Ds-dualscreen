@@ -39,6 +39,10 @@ static bool sShowFps = false;
 /* Running without holding B (the bottom screen's RUN button; B then walks):
  * off unless turned on. */
 static bool sRunAlways = false;
+/* Fast-forward: game frames per shown frame (3ds_platform.c, FrameShown);
+ * 1 is normal speed. */
+static const int sSpeeds[] = {1, 2, 3, 4};
+static int sSpeed = 0;
 
 /*
  * Settings without a variable of their own (the ENHANCEMENTS and CHEATS pages,
@@ -97,6 +101,8 @@ void CtrSettings_Load(void)
             sShowFps = line[4] == '1';
         else if (strncmp(line, "run=", 4) == 0)
             sRunAlways = line[4] == '1';
+        else if (sscanf(line, "speed=%d", &value) == 1)
+            sSpeed = Find(sSpeeds, COUNT(sSpeeds), value, sSpeed);
         else
         {
             char key[sizeof(sExtra[0].key)];
@@ -107,9 +113,9 @@ void CtrSettings_Load(void)
         }
     }
     fclose(file);
-    CtrLog_Write(CTR_LOG_FS, "settings: voxel=%d pitch=%d zoom=%d blur=%d battle=%d fps=%d run=%d",
+    CtrLog_Write(CTR_LOG_FS, "settings: voxel=%d pitch=%d zoom=%d blur=%d battle=%d fps=%d run=%d speed=%d",
                  sVoxel ? 1 : 0, sPitches[sPitch], sZooms[sZoom], sVoxelBlur ? 1 : 0,
-                 sVoxelBattle ? 1 : 0, sShowFps ? 1 : 0, sRunAlways ? 1 : 0);
+                 sVoxelBattle ? 1 : 0, sShowFps ? 1 : 0, sRunAlways ? 1 : 0, sSpeeds[sSpeed]);
 }
 
 /*
@@ -173,9 +179,10 @@ static void Save(void)
         return;
 
     snprintf(text, sizeof(text),
-             "voxel=%d\nvoxel_pitch=%d\nvoxel_zoom=%d\nvoxel_blur=%d\nvoxel_battle=%d\nfps=%d\nrun=%d\n",
+             "voxel=%d\nvoxel_pitch=%d\nvoxel_zoom=%d\nvoxel_blur=%d\nvoxel_battle=%d\nfps=%d\nrun=%d\n"
+             "speed=%d\n",
              sVoxel ? 1 : 0, sPitches[sPitch], sZooms[sZoom], sVoxelBlur ? 1 : 0, sVoxelBattle ? 1 : 0,
-             sShowFps ? 1 : 0, sRunAlways ? 1 : 0);
+             sShowFps ? 1 : 0, sRunAlways ? 1 : 0, sSpeeds[sSpeed]);
     for (int i = 0; i < sExtraCount; ++i)
     {
         size_t used = strlen(text);
@@ -273,6 +280,22 @@ void CtrSettings_StepVoxelPitch(int direction)
 void CtrSettings_StepVoxelZoom(int direction)
 {
     Step(&sZoom, COUNT(sZooms), direction);
+}
+
+int CtrSettings_Speed(void)
+{
+    return sSpeeds[sSpeed];
+}
+
+/* The OPTIONS cell wraps round like the others; ZR and ZL stop at the ends. */
+void CtrSettings_StepSpeed(int direction, bool wrap)
+{
+    int next = sSpeed + (direction < 0 ? -1 : 1);
+
+    if (!wrap && (next < 0 || next >= COUNT(sSpeeds)))
+        return;
+    Step(&sSpeed, COUNT(sSpeeds), direction);
+    CtrLog_Write(CTR_LOG_FS, "settings: speed=%d", sSpeeds[sSpeed]);
 }
 
 bool CtrSettings_VoxelBlur(void)

@@ -155,9 +155,30 @@ static void GiveBack(void)
     CtrExtras_ShowScreen(CTR_EXTRAS_CHEATS, 0);
 }
 
+/*
+ * Fast-forward's SPEED (1x to 4x; settings.txt speed=, ZR/ZL on a New 3DS):
+ * with the tabs, a cell of ENHANCEMENTS rather than a seventh row of
+ * SETTINGS.
+ */
+static void SpeedStep(int direction)
+{
+    CtrSettings_StepSpeed(direction, true);
+}
+
+static const u8 *SpeedText(void)
+{
+    static u8 text[4];
+
+    text[0] = CHAR_0 + CtrSettings_Speed();
+    text[1] = CHAR_x;
+    text[2] = EOS;
+    return text;
+}
+
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
+    {CTR_EXTRAS_ENHANCEMENTS, "SPEED", "speed", 0, 0, NULL, NULL, SpeedStep, SpeedText},
     {CTR_EXTRAS_ENHANCEMENTS, "EXP FOR CATCHING", "exp_catch", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_ENHANCEMENTS, "PARTY EXP SHARE", "exp_share", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},
     {CTR_EXTRAS_ENHANCEMENTS, "TRADE EVO LV. 40", "trade_evo", 2, 0, gCtrExtrasOffOn, NULL, NULL, NULL},

@@ -17,6 +17,7 @@
 #include "gba/m4a_internal.h"
 #include "port_prof.h"
 #include "3ds_audio.h"
+#include "3ds_platform.h"
 
 static bool sThreaded, sTried;
 
@@ -29,14 +30,18 @@ static void MixFrame(void)
     __real_m4aSoundMain();
 }
 
+/* A fast-forwarded frame that is not shown leaves the engine alone: one tick
+ * per frame on the display keeps music and effects at their speed. */
 void __wrap_m4aSoundVSync(void)
 {
-    if (!sThreaded)
+    if (!sThreaded && CtrPlatform_SoundTick())
         __real_m4aSoundVSync();
 }
 
 void __wrap_m4aSoundMain(void)
 {
+    if (!CtrPlatform_SoundTick())
+        return;
     PORT_PROF_BEGIN(mix);
     if (!sTried)
     {
