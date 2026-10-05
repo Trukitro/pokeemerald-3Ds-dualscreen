@@ -40,6 +40,27 @@ static bool sShowFps = false;
  * off unless turned on. */
 static bool sRunAlways = false;
 
+/*
+ * Settings without a variable of their own (the ENHANCEMENTS and CHEATS pages,
+ * 3ds_extras.c): "key=number" lines kept as read and written back with the
+ * rest. A key no build knows yet survives in the file too.
+ */
+#define EXTRA_KEYS 48
+static struct { char key[24]; int value; } sExtra[EXTRA_KEYS];
+static int sExtraCount;
+
+static int ExtraIndex(const char *key, bool add)
+{
+    for (int i = 0; i < sExtraCount; ++i)
+        if (strcmp(sExtra[i].key, key) == 0)
+            return i;
+    if (!add || sExtraCount == EXTRA_KEYS || strlen(key) >= sizeof(sExtra[0].key))
+        return -1;
+    strcpy(sExtra[sExtraCount].key, key);
+    sExtra[sExtraCount].value = 0;
+    return sExtraCount++;
+}
+
 static int Find(const int *values, int count, int value, int fallback)
 {
     for (int i = 0; i < count; ++i)
@@ -76,6 +97,14 @@ void CtrSettings_Load(void)
             sShowFps = line[4] == '1';
         else if (strncmp(line, "run=", 4) == 0)
             sRunAlways = line[4] == '1';
+        else
+        {
+            char key[sizeof(sExtra[0].key)];
+            int index;
+
+            if (sscanf(line, "%23[a-z0-9_]=%d", key, &value) == 2 && (index = ExtraIndex(key, true)) >= 0)
+                sExtra[index].value = value;
+        }
     }
     fclose(file);
     CtrLog_Write(CTR_LOG_FS, "settings: voxel=%d pitch=%d zoom=%d blur=%d battle=%d fps=%d run=%d",
@@ -93,7 +122,7 @@ void CtrSettings_Load(void)
 static Thread sSaver;
 static LightEvent sSaveWake;
 static LightLock sSaveLock = 1;
-static char sSaveText[160];
+static char sSaveText[160 + EXTRA_KEYS * 32];
 static bool sSavePending, sSaveQuit;
 
 static void WriteText(const char *text)
@@ -147,6 +176,12 @@ static void Save(void)
              "voxel=%d\nvoxel_pitch=%d\nvoxel_zoom=%d\nvoxel_blur=%d\nvoxel_battle=%d\nfps=%d\nrun=%d\n",
              sVoxel ? 1 : 0, sPitches[sPitch], sZooms[sZoom], sVoxelBlur ? 1 : 0, sVoxelBattle ? 1 : 0,
              sShowFps ? 1 : 0, sRunAlways ? 1 : 0);
+    for (int i = 0; i < sExtraCount; ++i)
+    {
+        size_t used = strlen(text);
+
+        snprintf(text + used, sizeof(text) - used, "%s=%d\n", sExtra[i].key, sExtra[i].value);
+    }
     if (sSaver == NULL)
     {
         s32 priority = 0x30;
@@ -184,6 +219,24 @@ void CtrSettings_Shutdown(void)
 bool CtrSettings_Voxel(void)
 {
     return sVoxel;
+}
+
+int CtrSettings_GetInt(const char *key, int fallback)
+{
+    int index = ExtraIndex(key, false);
+
+    return index >= 0 ? sExtra[index].value : fallback;
+}
+
+void CtrSettings_SetInt(const char *key, int value)
+{
+    int index = ExtraIndex(key, true);
+
+    if (index < 0 || sExtra[index].value == value)
+        return;
+    sExtra[index].value = value;
+    Save();
+    CtrLog_Write(CTR_LOG_FS, "settings: %s=%d", key, value);
 }
 
 void CtrSettings_SetVoxel(bool on)
