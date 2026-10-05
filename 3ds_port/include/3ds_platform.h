@@ -87,6 +87,15 @@ void CtrSettings_SetShowFps(bool on);
 /* Running without holding B, B then walking (the bottom screen's RUN), off by default. */
 bool CtrSettings_RunAlways(void);
 void CtrSettings_SetRunAlways(bool on);
+/* Settings kept by key (the OPTIONS pages of 3ds_extras.c). */
+int CtrSettings_GetInt(const char *key, int fallback);
+void CtrSettings_SetInt(const char *key, int value);
+/* Fast-forward: game frames per shown frame, 1 to 4 (OPTIONS, ZR/ZL). */
+int CtrSettings_Speed(void);
+void CtrSettings_StepSpeed(int direction, bool wrap);
+/* False on a fast-forwarded frame that is not shown: the sound engine skips
+ * it, so music and effects keep their own speed (3ds_sound.c). */
+bool CtrPlatform_SoundTick(void);
 
 void CtrGame_Init(void);
 void CtrGame_Frame(void);

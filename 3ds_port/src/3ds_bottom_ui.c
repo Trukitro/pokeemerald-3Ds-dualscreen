@@ -99,6 +99,7 @@
 
 #include "3ds_data.h"
 #include "3ds_bottom.h"
+#include "3ds_extras.h"
 #include "3ds_bottom_art.h"
 #include "3ds_input.h"
 #include "3ds_log.h"
@@ -1435,6 +1436,10 @@ typedef struct
     /* Save and options. */
     u8 saveStep, canSave;
     u8 options[OPTION_ROWS];
+    /* The OPTIONS page on show (CTR_EXTRAS_*) and the values of its extras,
+     * in table order. */
+    u8 optPage, optSub;
+    u16 extras[24];
     /* The column's Y and RUN: the registered item; bit 0 running is the
      * default, bit 1 the player has the shoes. */
     u16 registered;
@@ -1444,6 +1449,8 @@ typedef struct
     u8 focus, optFocus, blink;
     /* Battle. */
     u8 isDouble, safari, cursor, battler;
+    u16 quickBall, quickBallCount;    /* the ball R throws, ITEM_NONE if none */
+    u8 quickBallFocus;                /* the D-pad is on the ball button */
     BattlerView battlers[MAX_BATTLERS_COUNT];
     struct ChooseMoveStruct moves4;
     u8 text[96];
@@ -1486,12 +1493,66 @@ static bool8 OptionLive(int row, bool8 voxel)
     return OptionExists(row) && (voxel || row < OPT_VOXEL_PITCH);
 }
 
+/* OPTIONS has pages (3ds_extras.h) once any extra exists: a tab strip at the
+ * top and the cells under it, rows a little closer. */
+static u8 sOptPage;
+/* The screen of the tab on show (CTR_EXTRAS_SCREEN). */
+static u8 sOptSub;
+#define CELLS_PER_PAGE 12
+
+static bool8 OptionPages(void)
+{
+    return gCtrExtraCount > 0;
+}
+
+#define TAB_Y 2
+#define TAB_H 20
+
 static void OptionCell(int row, int *x, int *y)
 {
     bool8 right = row >= OPT_FPS;
 
     *x = right ? 124 : 4;
-    *y = 4 + (right ? row - OPT_FPS : row) * 40;
+    *y = OptionPages() ? TAB_Y + TAB_H + 4 + (right ? row - OPT_FPS : row) * 36
+                       : 4 + (right ? row - OPT_FPS : row) * 40;
+}
+
+/* The extra on a page's cell `row` (filled column by column, six to a
+ * column, as the options are), or NULL. */
+/* How many screens a tab's extras take. */
+static unsigned PageSubs(unsigned page)
+{
+    unsigned screens = 1;
+
+    for (unsigned i = 0; i < gCtrExtraCount; ++i)
+        if (CTR_EXTRAS_TAB(gCtrExtras[i].page) == page && (gCtrExtras[i].page >> 4) + 1u > screens)
+            screens = (gCtrExtras[i].page >> 4) + 1;
+    return screens;
+}
+
+static const CtrExtra *PageExtra(unsigned page, unsigned row)
+{
+    unsigned screen = CTR_EXTRAS_SCREEN(page, page == sOptPage ? sOptSub : 0);
+
+    if (row >= CELLS_PER_PAGE)
+        return NULL;
+    for (unsigned i = 0, n = 0; i < gCtrExtraCount; ++i)
+        if (gCtrExtras[i].page == screen && n++ == row)
+            return &gCtrExtras[i];
+    return NULL;
+}
+
+/* What a cell shows, for the redraw to notice a change: its value, or for
+ * one with its own text, a sum of that text. */
+static u16 ExtraShownValue(const CtrExtra *extra)
+{
+    u16 sum = 0;
+
+    if (!extra->text)
+        return extra->step ? CtrSettings_GetInt(extra->key, extra->fallback) : CtrExtras_Value(extra);
+    for (const u8 *c = extra->text(); *c != EOS; ++c)
+        sum = sum * 31 + *c;
+    return sum;
 }
 
 /* The column's keyboard focus (X), and where it is inside a screen. */
@@ -1544,9 +1605,11 @@ enum
     HIT_TARGET_LEFT = 0x80,
     HIT_TARGET_RIGHT,
     HIT_TARGET_OK,
+    HIT_QUICK_BALL,        /* throw the last ball used */
     HIT_MAP = 0x90,
     HIT_MENU = 0xB0,       /* + game menu entry */
     HIT_OPTION = 0xC0,     /* + option row; +HIT_OPTION_BACK for the left arrow */
+    HIT_PAGE = 0xE0,       /* + OPTIONS page tab */
 };
 /* More than there are option rows, so a row and a left arrow never share an id. */
 #define HIT_OPTION_BACK 16
@@ -1711,6 +1774,8 @@ typedef struct
 static BattleAsk sAsk, sAsked;
 static u8 sBattleTap = 0xFF;   /* a tap for the controller to take */
 static bool8 sMoveCancel;      /* the move menu's cursor is on CANCEL */
+static bool8 sQuickBallTap;    /* the ball button was tapped */
+static bool8 sQuickBallFocus;  /* the D-pad is on the ball button (A throws) */
 
 static u8 CurrentMode(void)
 {
@@ -1834,6 +1899,17 @@ void CtrBattleMenu_Begin(void)
 {
     sBattleTap = HIT_NONE;
     sMoveCancel = FALSE;
+    sQuickBallTap = FALSE;
+    sQuickBallFocus = FALSE;
+}
+
+/* The ball button, once per tap: the action handler throws the ball. */
+bool8 CtrBattleMenu_TakeQuickBall(void)
+{
+    bool8 tapped = sQuickBallTap;
+
+    sQuickBallTap = FALSE;
+    return tapped;
 }
 
 /* "What will X do?", in the message box: the one thing left on top. */
@@ -1864,8 +1940,35 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
     u8 tap = TakeBattleTap(ASK_ACTION), next = *cursor;
     u16 dpad = gMain.newKeys & DPAD_ANY;
 
-    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. */
+    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. The ball
+     * button, right of FIGHT and over RUN, is reached from both. */
+    bool8 ball = !safari && CtrBattle_QuickBallItem() != ITEM_NONE;
+
     gMain.newKeys &= ~DPAD_ANY;
+    if (!ball)
+        sQuickBallFocus = FALSE;
+    if (sQuickBallFocus)
+    {
+        if (dpad & (DPAD_LEFT | DPAD_DOWN))
+        {
+            sQuickBallFocus = FALSE;
+            next = (dpad & DPAD_LEFT) ? 0 : 3;
+            PlaySE(SE_SELECT);
+            *cursor = next;
+        }
+        else if (gMain.newKeys & A_BUTTON)
+        {
+            gMain.newKeys &= ~A_BUTTON;
+            sQuickBallTap = TRUE;
+        }
+        dpad = 0;
+    }
+    else if (ball && (((dpad & DPAD_RIGHT) && next == 0) || ((dpad & DPAD_UP) && next == 3)))
+    {
+        sQuickBallFocus = TRUE;
+        PlaySE(SE_SELECT);
+        dpad = 0;
+    }
     if (dpad & DPAD_UP)
         next = 0;
     else if ((dpad & DPAD_DOWN) && next == 0)
@@ -1879,8 +1982,11 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
         PlaySE(SE_SELECT);
         *cursor = next;
     }
+    if (tap == HIT_QUICK_BALL && !safari)
+        sQuickBallTap = TRUE;
     if (tap >= HIT_ACTION && tap < HIT_ACTION + 4)
     {
+        sQuickBallFocus = FALSE;
         *cursor = tap - HIT_ACTION;
         gMain.newKeys |= A_BUTTON;
     }
@@ -2279,6 +2385,15 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
             s->options[4] = gSaveBlock2Ptr->optionsButtonMode;
             s->options[5] = gSaveBlock2Ptr->optionsWindowFrameType;
             s->options[OPT_FPS] = CtrSettings_ShowFps();
+            s->optPage = sOptPage;
+            s->optSub = sOptSub;
+            for (unsigned row = 0; sOptPage != CTR_EXTRAS_OPTIONS && row < ARRAY_COUNT(s->extras); ++row)
+            {
+                const CtrExtra *extra = PageExtra(sOptPage, row);
+
+                if (extra)
+                    s->extras[row] = ExtraShownValue(extra);
+            }
             s->options[OPT_VOXEL] = CtrSettings_Voxel();
             s->options[OPT_VOXEL_PITCH] = CtrSettings_VoxelPitch();
             s->options[OPT_VOXEL_ZOOM] = CtrSettings_VoxelZoom();
@@ -2295,10 +2410,14 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
         SnapshotBattle(s);
         SnapshotParty(s);
         s->battler = b;
-        s->cursor = gActionSelectionCursor[b];
+        s->cursor = sQuickBallFocus ? 4 : gActionSelectionCursor[b];   /* 4: none lit */
+        s->quickBallFocus = sQuickBallFocus;
         /* The FIGHT button previews the four move types. */
         for (int i = 0; i < MAX_MON_MOVES; ++i)
             s->moves4.moves[i] = gBattleMons[b].moves[i];
+        s->quickBall = CtrBattle_QuickBallItem();
+        if (s->quickBall != ITEM_NONE)
+            s->quickBallCount = CountTotalItemQuantityInBag(s->quickBall);
         break;
     }
     case MODE_BATTLE_MOVE:
@@ -2334,6 +2453,8 @@ static bool8 Prefetch(const ViewState *s)
         ItemIcon(s->registered);
     if (sIconBudget && s->mode == MODE_BATTLE_ACTION)
         ItemIcon(ITEM_ESCAPE_ROPE);
+    if (sIconBudget && s->mode == MODE_BATTLE_ACTION && s->quickBall != ITEM_NONE)
+        ItemIcon(s->quickBall);
     if (sIconBudget)
     {
         sIconBudget = FALSE;
@@ -3088,6 +3209,34 @@ static void DrawWindowFrame(u8 type, int x, int y, int wt, int ht, u16 fill)
  * the chosen frame itself, so it is its own preview: one line inside it, the
  * name in the left half and the value between its arrows in the right.
  */
+/*
+ * A cell's plate: the name on the first line and the value on the second,
+ * both centred, the value between the arrows when it has them.
+ */
+static void DrawCellPlate(int x, int y, const u8 *name, const u8 *value, bool8 live, bool8 on, bool8 arrows)
+{
+    static const u8 left[] = {CHAR_LEFT_ARROW, EOS}, right[] = {CHAR_RIGHT_ARROW, EOS};
+    u16 nameFg = !live ? sLook.offText : on ? TXT_WHITE : TXT_DARK;
+    u16 nameSh = !live ? sLook.offShadow : on ? sLook.chosenShadow : TXT_LIGHT;
+    u16 valueFg = !live ? sLook.offText : on ? TXT_WHITE : TXT_RED;
+    u16 valueSh = !live ? sLook.offShadow : on ? sLook.chosenShadow : TXT_LRED;
+    int capTop, capBottom, cap, line, dy = on, aw = StrWidth(&sSmall, left);
+
+    DrawPlate(x, y, OPT_CELL_W, OPT_CELL_H, !live ? &sLook.off : on ? &sLook.chosen : &sLook.plate, 0, on);
+    /* Two lines of capitals 3px apart, centred between the outline and
+     * the shade rows. */
+    CapRows(&sSmall, &capTop, &capBottom);
+    cap = capBottom - capTop;
+    line = y + 1 + (28 - (2 * cap + 3)) / 2 + dy;
+    DrawStrIn(&sSmall, name, x + 1, x + OPT_CELL_W - 1, line, line + cap, nameFg, nameSh);
+    line += cap + 3;
+    DrawStrIn(&sSmall, value, x + 1, x + OPT_CELL_W - 1, line, line + cap, valueFg, valueSh);
+    if (!arrows)
+        return;
+    DrawStrIn(&sSmall, left, x + 8, x + 8 + aw, line, line + cap, nameFg, nameSh);
+    DrawStrIn(&sSmall, right, x + OPT_CELL_W - 8 - aw, x + OPT_CELL_W - 8, line, line + cap, nameFg, nameSh);
+}
+
 static void DrawOptionCell(const ViewState *s, int row, const u8 *name, bool8 voxel)
 {
     static const u8 left[] = {CHAR_LEFT_ARROW, EOS}, right[] = {CHAR_RIGHT_ARROW, EOS};
@@ -3115,21 +3264,7 @@ static void DrawOptionCell(const ViewState *s, int row, const u8 *name, bool8 vo
         DrawStrIn(&sSmall, right, gx + group - aw, gx + group, top, bottom, nameFg, nameSh);
     }
     else
-    {
-        int capTop, capBottom, cap, line;
-
-        DrawPlate(x, y, OPT_CELL_W, OPT_CELL_H, !live ? &sLook.off : on ? &sLook.chosen : &sLook.plate, 0, on);
-        /* Two lines of capitals 3px apart, centred between the outline and
-         * the shade rows. */
-        CapRows(&sSmall, &capTop, &capBottom);
-        cap = capBottom - capTop;
-        line = y + 1 + (28 - (2 * cap + 3)) / 2 + dy;
-        DrawStrIn(&sSmall, name, x + 1, x + OPT_CELL_W - 1, line, line + cap, nameFg, nameSh);
-        line += cap + 3;
-        DrawStrIn(&sSmall, value, x + 1, x + OPT_CELL_W - 1, line, line + cap, valueFg, valueSh);
-        DrawStrIn(&sSmall, left, x + 8, x + 8 + aw, line, line + cap, nameFg, nameSh);
-        DrawStrIn(&sSmall, right, x + OPT_CELL_W - 8 - aw, x + OPT_CELL_W - 8, line, line + cap, nameFg, nameSh);
-    }
+        DrawCellPlate(x, y, name, value, live, on, TRUE);
     if (live)
     {
         AddHit(x, y, OPT_CELL_W / 2, OPT_CELL_H, HIT_OPTION + HIT_OPTION_BACK + row);
@@ -3139,14 +3274,81 @@ static void DrawOptionCell(const ViewState *s, int row, const u8 *name, bool8 vo
         DrawRing(x, y, OPT_CELL_W, OPT_CELL_H, s->blink);
 }
 
+/* An extra's cell: its name, and its value between the arrows, or for an
+ * action its one text without them. */
+static void DrawExtraCell(const ViewState *s, int row, const CtrExtra *extra)
+{
+    bool8 on = s->pressed == HIT_OPTION + row || s->pressed == HIT_OPTION + HIT_OPTION_BACK + row;
+    const char *value = extra->values ? extra->values[extra->count ? s->extras[row] : 0] : "";
+    bool8 arrows = extra->count != 0 || extra->step != NULL;
+    int x, y;
+
+    OptionCell(row, &x, &y);
+    DrawCellPlate(x, y, Ascii(extra->name), extra->text ? extra->text() : Ascii(value), TRUE, on, arrows);
+    if (arrows)
+        AddHit(x, y, OPT_CELL_W / 2, OPT_CELL_H, HIT_OPTION + HIT_OPTION_BACK + row);
+    AddHit(x + (arrows ? OPT_CELL_W / 2 : 0), y, arrows ? OPT_CELL_W / 2 : OPT_CELL_W, OPT_CELL_H,
+           HIT_OPTION + row);
+    if (s->optFocus == row)
+        DrawRing(x, y, OPT_CELL_W, OPT_CELL_H, s->blink);
+}
+
+/* The tabs: SETTINGS (the options) and each page that has extras. */
+static void DrawOptionTabs(const ViewState *s)
+{
+    static const char *const names[CTR_EXTRAS_PAGES] = {"SETTINGS", "ENHANCEMENTS", "CHEATS"};
+    u8 pages[CTR_EXTRAS_PAGES], count = 0;
+    int capTop, capBottom, cap;
+
+    for (unsigned page = 0; page < CTR_EXTRAS_PAGES; ++page)
+        if (page == CTR_EXTRAS_OPTIONS || CtrExtras_PageUsed(page))
+            pages[count++] = page;
+    CapRows(&sSmall, &capTop, &capBottom);
+    cap = capBottom - capTop;
+    for (unsigned i = 0; i < count; ++i)
+    {
+        int x0 = 4 + i * 232 / count, x1 = 4 + (i + 1) * 232 / count - 4;
+        bool8 chosen = s->optPage == pages[i], pressed = s->pressed == HIT_PAGE + pages[i];
+        int line = TAB_Y + 1 + (TAB_H - 4 - cap) / 2 + pressed;
+
+        DrawPlate(x0, TAB_Y, x1 - x0, TAB_H, chosen ? &sLook.chosen : &sLook.plate, 0, pressed);
+        char label[24];
+
+        /* "CHEATS 1/2" on a page shown twelve at a time. */
+        if (chosen && PageSubs(pages[i]) > 1)
+            snprintf(label, sizeof(label), "%s %u/%u", names[pages[i]], s->optSub + 1, PageSubs(pages[i]));
+        else
+            snprintf(label, sizeof(label), "%s", names[pages[i]]);
+        DrawStrIn(&sSmall, Ascii(label), x0 + 1, x1 - 1, line, line + cap,
+                  chosen ? TXT_WHITE : TXT_DARK, chosen ? sLook.chosenShadow : TXT_LIGHT);
+        AddHit(x0, TAB_Y, x1 - x0, TAB_H, HIT_PAGE + pages[i]);
+    }
+}
+
 static void DrawOptions(const ViewState *s)
 {
+    /* The tabs first: their labels take turns in Ascii's few buffers, which
+     * the names below then hold until the cells are drawn. */
+    if (OptionPages())
+        DrawOptionTabs(s);
+
     const u8 *names[OPTION_ROWS] = {gText_TextSpeed, gText_BattleScene, gText_BattleStyle, gText_Sound,
                                     gText_ButtonMode, gText_Frame, Ascii("SHOW FPS"), Ascii("VOXEL 3D"),
                                     Ascii("3D ANGLE"), Ascii("3D ZOOM"), Ascii("3D BLUR"),
                                     Ascii("3D BATTLE")};
     bool8 voxel = OPTION_SHOWN > OPT_VOXEL && s->options[OPT_VOXEL];
 
+    if (s->optPage != CTR_EXTRAS_OPTIONS)
+    {
+        for (unsigned row = 0; row < ARRAY_COUNT(s->extras); ++row)
+        {
+            const CtrExtra *extra = PageExtra(s->optPage, row);
+
+            if (extra)
+                DrawExtraCell(s, row, extra);
+        }
+        return;
+    }
     for (int row = 0; row < OPTION_ROWS; ++row)
         if (OptionExists(row))
             DrawOptionCell(s, row, names[row], voxel);
@@ -3232,8 +3434,24 @@ static void DrawBattleActions(const ViewState *s)
     for (int i = 0; i < 4; ++i)
         on[i] = s->cursor == i || s->pressed == HIT_ACTION + i;
 
-    /* FIGHT: the move types it leads to. */
-    DrawButton(16, 60, 36, 10, on[0], HIT_ACTION + 0);
+    /* FIGHT: the move types it leads to. With a ball to throw, it makes
+     * room for the ball button on its right. */
+    bool8 ball = !s->safari && s->quickBall != ITEM_NONE;
+    int fightX = ball ? 120 : 160;
+
+    DrawButton(16, 60, ball ? 26 : 36, 10, on[0], HIT_ACTION + 0);
+    if (ball)
+    {
+        bool8 hot = s->pressed == HIT_QUICK_BALL || s->quickBallFocus;
+        u8 text[8];
+
+        DrawButton(232, 60, 9, 10, hot, HIT_QUICK_BALL);
+        DrawStrCentered(&sSmall, GetItemName(s->quickBall), 268, 66, LABEL_FG(hot), LABEL_SH(hot));
+        DrawItemIcon(s->quickBall, 256, 84);
+        StringCopy(text, Ascii("x"));
+        StringAppend(text, Number(s->quickBallCount, 3, STR_CONV_MODE_LEFT_ALIGN));
+        DrawStrCentered(&sSmall, text, 268, 116, LABEL_FG(hot), LABEL_SH(hot));
+    }
     if (s->safari)
     {
         DrawStrCentered(&sNormal, Ascii(safari[0]), 160, 90, LABEL_FG(on[0]), LABEL_SH(on[0]));
@@ -3241,11 +3459,11 @@ static void DrawBattleActions(const ViewState *s)
     else
     {
         int count = 0;
-        DrawStrCentered(&sNormal, Ascii("FIGHT"), 160, 76, LABEL_FG(on[0]), LABEL_SH(on[0]));
+        DrawStrCentered(&sNormal, Ascii("FIGHT"), fightX, 76, LABEL_FG(on[0]), LABEL_SH(on[0]));
         for (int i = 0; i < MAX_MON_MOVES; ++i)
             if (s->moves4.moves[i] != MOVE_NONE)
                 ++count;
-        for (int i = 0, x = 160 - (count * 40 - 8) / 2; i < MAX_MON_MOVES; ++i)
+        for (int i = 0, x = fightX - (count * 40 - 8) / 2; i < MAX_MON_MOVES; ++i)
             if (s->moves4.moves[i] != MOVE_NONE)
             {
                 DrawTypeIcon(gBattleMoves[s->moves4.moves[i]].type, x, 104);
@@ -4312,10 +4530,54 @@ static void ActivatePokemon(u8 id, u8 mode)
 
 #endif
 
+static void ShowOptionSub(u8 page, u8 sub)
+{
+    if (page == sOptPage && sub == sOptSub)
+        return;
+    sOptPage = page;
+    sOptSub = sub;
+    sOptFocus = sOptPage == CTR_EXTRAS_OPTIONS ? OPT_TEXT_SPEED : 0;
+    PlaySE(SE_SELECT);
+}
+
+void CtrExtras_ShowScreen(unsigned page, unsigned screen)
+{
+    if (page < CTR_EXTRAS_PAGES && screen < PageSubs(page))
+        ShowOptionSub(page, screen);
+}
+
+/* A tab: its page, or on the page on show its next screen. */
+static void ShowOptionPage(u8 page)
+{
+    if (page != CTR_EXTRAS_OPTIONS && !CtrExtras_PageUsed(page))
+        return;
+    if (page == sOptPage)
+        ShowOptionSub(page, (sOptSub + 1) % PageSubs(page));
+    else
+        ShowOptionSub(page, 0);
+}
+
 static void ActivateOption(u8 id)
 {
     bool8 back = id >= HIT_OPTION + HIT_OPTION_BACK;
     u8 row = (id - HIT_OPTION) % HIT_OPTION_BACK;
+
+    if (sOptPage != CTR_EXTRAS_OPTIONS)
+    {
+        const CtrExtra *extra = PageExtra(sOptPage, row);
+
+        if (extra)
+        {
+            if (extra->step)
+                extra->step(back ? -1 : 1);
+            else
+                CtrExtras_Step(extra, back ? -1 : 1);
+            /* An action plays its own sound (done, or not possible). */
+            if (extra->count || extra->step)
+                PlaySE(SE_SELECT);
+        }
+        return;
+    }
     static const u8 counts[OPTION_ROWS] = {3, 2, 2, 2, 3, WINDOW_FRAMES_COUNT, 2, 2, 0, 0, 2, 2};
     u8 value, step = back ? counts[row] - 1 : 1;
 
@@ -4549,7 +4811,9 @@ static void Activate(u8 id, u8 mode)
         }
         break;
     case SCR_OPTION:
-        if (id >= HIT_OPTION && id < HIT_OPTION + 2 * HIT_OPTION_BACK)
+        if (id >= HIT_PAGE && id < HIT_PAGE + CTR_EXTRAS_PAGES)
+            ShowOptionPage(id - HIT_PAGE);
+        else if (id >= HIT_OPTION && id < HIT_OPTION + 2 * HIT_OPTION_BACK)
             ActivateOption(id);
         break;
     }
@@ -4755,6 +5019,13 @@ static u8 OptionStep(u8 from, int dir)
 {
     bool8 voxel = CtrSettings_Voxel();
 
+    if (sOptPage != CTR_EXTRAS_OPTIONS)
+    {
+        int to = from + dir;
+
+        return to >= 0 && PageExtra(sOptPage, to) ? to : from;
+    }
+
     for (int i = from + dir; i >= 0 && i < OPTION_ROWS; i += dir)
         if (OptionLive(i, voxel))
             return i;
@@ -4807,7 +5078,7 @@ static void ChooseColumnItem(u8 mode, u8 item)
     {
         sFocus = FOCUS_NONE;
         sInside = item == SCR_OPTION ? INSIDE_OPTIONS : INSIDE_SAVE;
-        if (item == SCR_OPTION && !OptionLive(sOptFocus, CtrSettings_Voxel()))
+        if (item == SCR_OPTION && sOptPage == CTR_EXTRAS_OPTIONS && !OptionLive(sOptFocus, CtrSettings_Voxel()))
             sOptFocus = OPT_TEXT_SPEED;
     }
 }
@@ -4824,6 +5095,20 @@ static void OptionKeys(u16 down)
         MoveFocus(&sOptFocus, OptionStep(sOptFocus, -1));
     else if (down & DPAD_DOWN)
         MoveFocus(&sOptFocus, OptionStep(sOptFocus, 1));
+    else if (down & (L_BUTTON | R_BUTTON))
+    {
+        int dir = (down & R_BUTTON) ? 1 : -1;
+
+        if ((dir > 0 && sOptSub + 1 < (int)PageSubs(sOptPage)) || (dir < 0 && sOptSub > 0))
+            ShowOptionSub(sOptPage, sOptSub + dir);
+        else
+            for (int page = sOptPage + dir; page >= 0 && page < CTR_EXTRAS_PAGES; page += dir)
+                if (page == CTR_EXTRAS_OPTIONS || CtrExtras_PageUsed(page))
+                {
+                    ShowOptionSub(page, dir > 0 ? 0 : PageSubs(page) - 1);
+                    break;
+                }
+    }
     else if (down & DPAD_LEFT)
         ActivateOption(HIT_OPTION + HIT_OPTION_BACK + sOptFocus);
     else if (down & (DPAD_RIGHT | A_BUTTON))

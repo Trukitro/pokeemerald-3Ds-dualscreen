@@ -167,12 +167,50 @@ bool CtrPlatform_BeginFrame(void)
     return true;
 }
 
+/*
+ * Fast-forward (CtrSettings_Speed). Of every `speed` game frames only the last
+ * is presented and waits for the display; the others run back to back. Only
+ * a presented frame ticks the sound engine (CtrPlatform_SoundTick), so music
+ * and effects keep their speed while the game runs faster. A frame is also
+ * presented as soon as one more hidden frame and the present would no longer
+ * fit in the display's frame: the game then runs as fast as the console
+ * allows (an Old 3DS less than a New 3DS at 804 MHz) and the picture and the
+ * sound stay at 60 Hz.
+ */
+#define FRAME_MS (1000.0f / 60)
+static bool sSoundTick = true;
+static unsigned sHidden;
+static uint64_t sShownTick;
+static float sPresentMs = 4.0f;
+
+static bool FrameShown(uint64_t now)
+{
+    int speed = CtrSettings_Speed();
+    float since = sShownTick ? (now - sShownTick) * 1000.0f / SYSCLOCK_ARM11 : FRAME_MS;
+
+    if (speed <= 1 || ++sHidden >= (unsigned)speed || since + sTiming.gameMs + sPresentMs > FRAME_MS)
+    {
+        sHidden = 0;
+        return true;
+    }
+    return false;
+}
+
+bool CtrPlatform_SoundTick(void)
+{
+    return sSoundTick;
+}
+
 void CtrPlatform_EndFrame(void)
 {
     if (sWaiting)
         return;
     sWaiting = true;
     uint64_t endStart = svcGetSystemTick();
+    /* This frame's game work, for FrameShown (set again below). */
+    sTiming.gameMs = (endStart - sWorkStart) * 1000.0f / SYSCLOCK_ARM11;
+    bool shown = FrameShown(endStart);
+    sSoundTick = shown;
     if (sHooks.audioFrame)
         sHooks.audioFrame();
     /* Latch the logical frame BEFORE GPU reads its registers/OAM/palette.
@@ -186,8 +224,15 @@ void CtrPlatform_EndFrame(void)
     sTiming.vblankMs = (presentStart - endStart) * 1000.0f / SYSCLOCK_ARM11;
     /* FrameEnd(0) also flushes the console's linear LCD buffer. Calling
      * gfxFlushBuffers here would flush BOTH screens again, not just bottom. */
-    if (sHooks.videoPresent)
+    if (sHooks.videoPresent && shown)
+    {
         sHooks.videoPresent();
+        /* The present's own work, without its wait for the display. */
+        sPresentMs = (svcGetSystemTick() - presentStart) * 1000.0f / SYSCLOCK_ARM11
+                     - CtrVideo_GetStats()->waitMs;
+        if (sPresentMs < 0) sPresentMs = 0;
+        sShownTick = svcGetSystemTick();
+    }
     ++sFrames;
     uint64_t now = CtrPlatform_Milliseconds();
     sFrameMs = now - sLastFrame;
