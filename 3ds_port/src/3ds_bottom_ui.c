@@ -47,6 +47,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "global.h"
@@ -78,6 +79,7 @@
 #include "pokemon_summary_screen.h"
 #include "pokenav.h"
 #include "region_map.h"
+#include "safari_zone.h"
 #include "save.h"
 #include "script.h"
 #include "sound.h"
@@ -170,7 +172,8 @@ static u16 sCanvas[W * H] __attribute__((aligned(32)));
 static u16 *sDst = sCanvas;
 static int sOX;
 
-enum { CACHE_MENU, CACHE_WIDE, CACHE_MAP, CACHE_CARD, CACHE_COUNT };
+/* CACHE_BATTLE is the battle art's backdrop itself, in this layout already. */
+enum { CACHE_MENU, CACHE_WIDE, CACHE_MAP, CACHE_CARD, CACHE_BATTLE, CACHE_COUNT };
 static u16 *sCache[CACHE_COUNT];
 static int sCardCacheKey = -1;
 
@@ -531,6 +534,9 @@ static void LoadGenderResources(void)
     }
 }
 
+static void LoadBattleArt(void);
+static void BuildRayquaza(void);
+static void BuildTypeColours(void);
 static void InitLook(void);
 static void BuildBall(void);
 
@@ -621,8 +627,11 @@ static void LoadResources(void)
     sRes.badgeTiles = UnlzFile("trainer_card/badges.4bpp.lz", NULL);
 
     LoadGenderResources();
+    LoadBattleArt();
+    BuildTypeColours();
+    BuildRayquaza();
 
-    for (int i = 0; i < CACHE_COUNT; ++i)
+    for (int i = 0; i < CACHE_BATTLE; ++i)
         sCache[i] = malloc(sizeof(sCanvas));
     sRes.ready = sRes.partyTiles && sRes.boxTiles && sRes.slotMain && sRes.slotWide && sRes.slotWideEmpty
               && sCache[CACHE_MENU] && sCache[CACHE_WIDE];
@@ -729,6 +738,374 @@ static void DrawItemIcon(u16 item, int x, int y)
 
     if (slot >= 0)
         DrawSprite(sItemIcons[slot].tiles, 3, 3, x, y, sItemIcons[slot].pal.c);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Battle art                                                               */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * The battle menus' backdrop and plates are the port's own pictures,
+ * drawn smooth by scripts/gen_battle_art.py into bottom/battle.bin. A plate
+ * takes its colour here - FIGHT's red, a move's type - so each pixel is
+ * stored as what it adds over whatever lies under it:
+ *
+ *     out = under * (255 - alpha) / 255 + colour * A / 255 + ring * R / 255 + C
+ *
+ * (R only where a focused plate has its ring). Ids as the script's.
+ */
+enum
+{
+    BTA_BACKDROP = 0,
+    BTA_FIGHT_WIDE = 16, BTA_FIGHT_FULL = 19, BTA_BALL = 22, BTA_BOTTOM = 25, BTA_MOVE = 28, BTA_CANCEL = 31,
+    BTA_TARGET = 34,
+    BTA_CLIP_FIGHT_WIDE = 40, BTA_CLIP_FIGHT_FULL = 41,
+    BTA_ICON_BAG = 48, BTA_ICON_RUN, BTA_ICON_NEAR, BTA_ICON_BLOCK,
+    BTA_PARTY_OK = 56, BTA_PARTY_STATUS, BTA_PARTY_FAINT, BTA_PARTY_EMPTY,
+    BTA_COUNT = 64,
+};
+/* A plate's id plus its state. */
+enum { BTA_NORMAL, BTA_FOCUS, BTA_PRESSED };
+/* How far a pressed plate sinks. */
+#define BTA_SINK 2
+
+typedef struct
+{
+    s16 x, y;          /* the box, from the element's anchor */
+    u16 w, h;
+    u8 flags;
+    const u8 *alpha, *a, *r, *c;   /* c: RGB565, little endian */
+} BtaElem;
+
+static struct
+{
+    u8 *file;
+    BtaElem e[BTA_COUNT];
+} sBta;
+
+static u8 sExpand5[32], sExpand6[64];
+
+static void LoadBattleArt(void)
+{
+    FILE *f = fopen("romfs:/bottom/battle.bin", "rb");
+    long size;
+    const u8 *p, *end;
+    u16 count;
+
+    for (int i = 0; i < 32; ++i)
+        sExpand5[i] = i * 255 / 31;
+    for (int i = 0; i < 64; ++i)
+        sExpand6[i] = i * 255 / 63;
+    if (!f)
+    {
+        CtrLog_Write(CTR_LOG_ERROR, "bottom: bottom/battle.bin missing, battle menus stay plain");
+        return;
+    }
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    sBta.file = size > 10 ? malloc(size) : NULL;
+    if (!sBta.file || fread(sBta.file, 1, size, f) != (size_t)size || memcmp(sBta.file, "EM3DBTA1", 8) != 0)
+    {
+        CtrLog_Write(CTR_LOG_ERROR, "bottom: bottom/battle.bin unreadable");
+        free(sBta.file);
+        sBta.file = NULL;
+        fclose(f);
+        return;
+    }
+    fclose(f);
+    p = sBta.file + 8;
+    end = sBta.file + size;
+    count = p[0] | (p[1] << 8);
+    p += 2;
+    for (u16 n = 0; n < count && p + 10 <= end; ++n)
+    {
+        u8 id = p[0];
+        BtaElem e = {
+            .flags = p[1],
+            .x = (s16)(p[2] | (p[3] << 8)), .y = (s16)(p[4] | (p[5] << 8)),
+            .w = p[6] | (p[7] << 8), .h = p[8] | (p[9] << 8),
+        };
+        u32 area = (u32)e.w * e.h;
+
+        p += 10;
+        if (e.flags & 8)
+        {
+            e.c = p;
+            p += area * 2;
+        }
+        else
+        {
+            e.alpha = p;
+            p += area;
+            if (!(e.flags & 4))
+            {
+                e.a = p;
+                e.c = p + area;
+                p += area * 3;
+                if (e.flags & 2)
+                {
+                    e.r = p;
+                    p += area;
+                }
+            }
+        }
+        if (p > end)
+            break;
+        if (id < BTA_COUNT)
+            sBta.e[id] = e;
+    }
+    /* The backdrop is in the canvas' layout already: it is a cache. */
+    sCache[CACHE_BATTLE] = (u16 *)sBta.e[BTA_BACKDROP].c;
+}
+
+typedef struct { u8 r, g, b; } Rgb;
+
+static inline Rgb RgbOf(u16 c)
+{
+    return (Rgb){sExpand5[c >> 11], sExpand6[(c >> 5) & 63], sExpand5[c & 31]};
+}
+
+static inline u16 PackRgb(int r, int g, int b)
+{
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+}
+
+/* x / 255 for x up to 255 * 255 * 3, rounded. */
+static inline int Div255(int x)
+{
+    return (x + 128 + ((x + 128) >> 8)) >> 8;
+}
+
+/* An element at its anchor, in `colour`, its ring (if any) in `ring`. */
+static void DrawBta(u8 id, int ax, int ay, Rgb colour, Rgb ring)
+{
+    const BtaElem *e = id < BTA_COUNT ? &sBta.e[id] : NULL;
+    int x0, y0, i0, i1, j0, j1;
+
+    if (!e || !e->alpha || !e->a)
+        return;
+    x0 = ax + e->x + sOX;
+    y0 = ay + e->y;
+    i0 = sClipX0 - x0 > 0 ? sClipX0 - x0 : 0;
+    j0 = sClipY0 - y0 > 0 ? sClipY0 - y0 : 0;
+    i1 = sClipX1 - x0 < e->w ? sClipX1 - x0 : e->w;
+    j1 = sClipY1 - y0 < e->h ? sClipY1 - y0 : e->h;
+    for (int i = i0; i < i1; ++i)
+    {
+        u16 *dst = sDst + (x0 + i) * H + (H - 1 - (y0 + j0));
+
+        for (int j = j0; j < j1; ++j, --dst)
+        {
+            u32 q = (u32)j * e->w + i;
+            int al = e->alpha[q], A = e->a[q], R = e->r ? e->r[q] : 0;
+            u16 c = e->c[q * 2] | (e->c[q * 2 + 1] << 8);
+            Rgb under, add;
+
+            if (!al && !A && !R && !c)
+                continue;
+            under = RgbOf(*dst);
+            add = RgbOf(c);
+            *dst = PackRgb(Div255(under.r * (255 - al) + colour.r * A + ring.r * R) + add.r,
+                           Div255(under.g * (255 - al) + colour.g * A + ring.g * R) + add.g,
+                           Div255(under.b * (255 - al) + colour.b * A + ring.b * R) + add.b);
+        }
+    }
+}
+
+/* An alpha mask's value at a point from its anchor (0 outside it). */
+static u8 BtaAlpha(u8 id, int dx, int dy)
+{
+    const BtaElem *e = &sBta.e[id];
+
+    dx -= e->x;
+    dy -= e->y;
+    if (!e->alpha || dx < 0 || dy < 0 || dx >= e->w || dy >= e->h)
+        return 0;
+    return e->alpha[dy * e->w + dx];
+}
+
+/* A coverage map (0-255 per pixel, w x h) in one colour, times a clip. */
+static void DrawCoverage(const u8 *cover, int w, int h, int x, int y, Rgb colour, int opacity, u8 clip, int clipX,
+                         int clipY)
+{
+    for (int i = 0; i < w; ++i)
+    {
+        int sx = x + i + sOX;
+
+        if (sx < sClipX0 || sx >= sClipX1)
+            continue;
+        for (int j = 0; j < h; ++j)
+        {
+            int sy = y + j, al = cover[j * w + i];
+            u16 *dst;
+            Rgb under;
+
+            if (!al || sy < sClipY0 || sy >= sClipY1)
+                continue;
+            if (clip != BTA_COUNT)
+                al = Div255(al * BtaAlpha(clip, x + i - clipX, y + j - clipY));
+            al = Div255(al * opacity);
+            if (!al)
+                continue;
+            dst = sDst + sx * H + (H - 1 - sy);
+            under = RgbOf(*dst);
+            *dst = PackRgb(Div255(under.r * (255 - al) + colour.r * al), Div255(under.g * (255 - al) + colour.g * al),
+                           Div255(under.b * (255 - al) + colour.b * al));
+        }
+    }
+}
+
+/* An item icon's shadow: its shape in black at a quarter. */
+static void DrawItemIconShadow(u16 item, int x, int y)
+{
+    int slot = ItemIcon(item);
+    static u8 cover[24 * 24];
+
+    if (slot < 0)
+        return;
+    for (int t = 0; t < 9; ++t)
+        for (int py = 0; py < 8; ++py)
+            for (int px = 0; px < 8; ++px)
+            {
+                u8 v = (sItemIcons[slot].tiles[t * 32 + py * 4 + px / 2] >> ((px & 1) * 4)) & 15;
+
+                cover[((t / 3) * 8 + py) * 24 + (t % 3) * 8 + px] = v ? 255 : 0;
+            }
+    DrawCoverage(cover, 24, 24, x, y, (Rgb){0, 0, 0}, 64, BTA_COUNT, 0, 0);
+}
+
+/*
+ * FIGHT's watermark: Rayquaza, from its own front picture, as a smooth
+ * silhouette 1.1 times its size, with its darkest pixels (its outline and
+ * inner lines) as a second mask. Each screen pixel takes 4x4 samples of the
+ * picture, softened by a [1 2 1] blur and read bilinearly, against a
+ * threshold: an edge that follows the shape instead of its pixel steps.
+ */
+#define RAY_SIZE 70
+static u8 sRayBody[RAY_SIZE * RAY_SIZE], sRayLines[RAY_SIZE * RAY_SIZE];
+
+static float RaySample(const float *m, float u, float v)
+{
+    int x0 = (int)floorf(u), y0 = (int)floorf(v);
+    float fx = u - x0, fy = v - y0, s = 0;
+
+    for (int dy = 0; dy < 2; ++dy)
+        for (int dx = 0; dx < 2; ++dx)
+        {
+            int x = x0 + dx, y = y0 + dy;
+            float wgt = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+
+            if (x >= 0 && y >= 0 && x < 64 && y < 64)
+                s += wgt * m[y * 64 + x];
+        }
+    return s;
+}
+
+static void BuildRayquaza(void)
+{
+    static float body[64 * 64], lines[64 * 64], soft[64 * 64];
+    u8 *tiles = Unlz(gMonFrontPicTable[SPECIES_RAYQUAZA].data, NULL);
+    u16 *pal = Unlz(gMonPaletteTable[SPECIES_RAYQUAZA].data, NULL);
+
+    if (tiles && pal)
+    {
+        for (int t = 0; t < 64; ++t)
+            for (int py = 0; py < 8; ++py)
+                for (int px = 0; px < 8; ++px)
+                {
+                    u8 v = (tiles[t * 32 + py * 4 + px / 2] >> ((px & 1) * 4)) & 15;
+                    int x = (t % 8) * 8 + px, y = (t / 8) * 8 + py;
+                    u16 c = pal[v];
+                    int sum = ((c & 31) + ((c >> 5) & 31) + ((c >> 10) & 31)) * 255 / 31;
+
+                    body[y * 64 + x] = v ? 1.0f : 0.0f;
+                    lines[y * 64 + x] = v && sum < 200 ? 1.0f : 0.0f;
+                }
+        for (int y = 0; y < 64; ++y)
+            for (int x = 0; x < 64; ++x)
+            {
+                float s = 0, n = 0;
+
+                for (int dy = -1; dy <= 1; ++dy)
+                    for (int dx = -1; dx <= 1; ++dx)
+                    {
+                        float wgt = (dx ? 1.0f : 2.0f) * (dy ? 1.0f : 2.0f);
+
+                        if (x + dx >= 0 && y + dy >= 0 && x + dx < 64 && y + dy < 64)
+                            s += wgt * body[(y + dy) * 64 + x + dx];
+                        n += wgt;
+                    }
+                soft[y * 64 + x] = s / n;
+            }
+        for (int Y = 0; Y < RAY_SIZE; ++Y)
+            for (int X = 0; X < RAY_SIZE; ++X)
+            {
+                int inBody = 0, inLines = 0;
+
+                for (int sy = 0; sy < 4; ++sy)
+                    for (int sx = 0; sx < 4; ++sx)
+                    {
+                        float u = (X + (sx + 0.5f) / 4) * (64.0f / 70.4f) - 0.5f;
+                        float v = (Y + (sy + 0.5f) / 4) * (64.0f / 70.4f) - 0.5f;
+
+                        inBody += RaySample(soft, u, v) >= 0.47f;
+                        inLines += RaySample(lines, u, v) >= 0.43f;
+                    }
+                sRayBody[Y * RAY_SIZE + X] = inBody * 255 / 16;
+                sRayLines[Y * RAY_SIZE + X] = inLines * 255 / 16;
+            }
+    }
+    free(tiles);
+    free(pal);
+}
+
+/* Which of the three type label palettes each type uses
+ * (pokemon_summary_screen.c's sMoveTypeToOamPaletteNum, minus 13). */
+static const u8 sTypeIconPal[NUMBER_OF_MON_TYPES] = {
+    [TYPE_NORMAL] = 0, [TYPE_FIGHTING] = 0, [TYPE_FLYING] = 1, [TYPE_POISON] = 1,
+    [TYPE_GROUND] = 0, [TYPE_ROCK] = 0, [TYPE_BUG] = 2, [TYPE_GHOST] = 1,
+    [TYPE_STEEL] = 0, [TYPE_MYSTERY] = 2, [TYPE_FIRE] = 0, [TYPE_WATER] = 1,
+    [TYPE_GRASS] = 2, [TYPE_ELECTRIC] = 0, [TYPE_PSYCHIC] = 1, [TYPE_ICE] = 1,
+    [TYPE_DRAGON] = 2, [TYPE_DARK] = 0,
+};
+
+/* A move plate's colour: the main colour of the type's own label, its most
+ * used one that is neither its white nor its dark outline. */
+static Rgb sTypeColour[NUMBER_OF_MON_TYPES];
+
+static void BuildTypeColours(void)
+{
+    for (int type = 0; type < NUMBER_OF_MON_TYPES; ++type)
+    {
+        const u16 *pal = sRes.typePal[sTypeIconPal[type]].c;
+        int count[16] = {0}, best = -1;
+
+        sTypeColour[type] = (Rgb){150, 150, 150};
+        if (!sRes.typeTiles)
+            continue;
+        for (int i = 0; i < 8 * 32; ++i)
+        {
+            u8 byte = sRes.typeTiles[type * 8 * 32 + i];
+
+            ++count[byte & 15];
+            ++count[byte >> 4];
+        }
+        for (int v = 1; v < 16; ++v)
+        {
+            Rgb c = RgbOf(pal[v]);
+
+            if ((c.r > 230 && c.g > 230 && c.b > 230) || c.r + c.g + c.b <= 120)
+                continue;
+            if (best < 0 || count[v] > count[best])
+                best = v;
+        }
+        if (best >= 0)
+            sTypeColour[type] = RgbOf(pal[best]);
+    }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -997,6 +1374,295 @@ static const u8 *Number(u32 value, int digits, enum StringConvertMode mode)
 
     ConvertIntToDecimalStringN(out, value, mode, digits);
     return out;
+}
+
+/*
+ * The battle plates' labels: the game's glyphs, enlarged by 1, 1.5, 2 or
+ * 2.5 (k = 4, 6, 8, 10 quarter pixels a glyph pixel), with a smooth round
+ * outline and, for some, a soft drop shadow, as gen_battle_art.py's mockups
+ * draw them. Built at 4x - glyphs, a blurred-and-hardened outline merged with
+ * a dilation, the outline moved down and blurred for the shadow - then
+ * averaged down to screen pixels. A label is built once and kept.
+ */
+#define SMOOTH_PAD 4    /* glyph pixels around the text, for outline and shadow */
+#define SMOOTH_SLOTS 20
+
+typedef struct
+{
+    u32 age;
+    u8 key[40], font, k;
+    Rgb fg, outline, shadow;
+    bool8 hasShadow;
+    u16 w, h;
+    u8 *px;            /* per pixel: coverage, then premultiplied r, g, b */
+} SmoothText;
+
+static SmoothText sSmooth[SMOOTH_SLOTS];
+static u32 sSmoothClock;
+/* How many labels or plates a redraw may still build (0xFF: any). The warm
+ * up while the turn plays out builds one a frame (WarmBattleMenus). */
+static u8 sBuildBudget = 0xFF;
+
+static bool8 TakeBuildBudget(void)
+{
+    if (sBuildBudget == 0)
+        return FALSE;
+    if (sBuildBudget != 0xFF)
+        --sBuildBudget;
+    return TRUE;
+}
+
+/* Three box blurs in a row approximate a Gaussian; one pass, both axes. */
+static void BoxBlur(u8 *buf, u8 *tmp, int w, int h, int radius)
+{
+    int span = 2 * radius + 1;
+
+    if (radius <= 0)
+        return;
+    for (int y = 0; y < h; ++y)
+    {
+        const u8 *row = buf + y * w;
+        int sum = 0;
+
+        for (int x = -radius; x <= radius; ++x)
+            sum += row[x < 0 ? 0 : (x >= w ? w - 1 : x)];
+        for (int x = 0; x < w; ++x)
+        {
+            int add = x + radius + 1, sub = x - radius;
+
+            tmp[y * w + x] = sum / span;
+            sum += row[add >= w ? w - 1 : add] - row[sub < 0 ? 0 : sub];
+        }
+    }
+    for (int x = 0; x < w; ++x)
+    {
+        int sum = 0;
+
+        for (int y = -radius; y <= radius; ++y)
+            sum += tmp[(y < 0 ? 0 : (y >= h ? h - 1 : y)) * w + x];
+        for (int y = 0; y < h; ++y)
+        {
+            int add = y + radius + 1, sub = y - radius;
+
+            buf[y * w + x] = sum / span;
+            sum += tmp[(add >= h ? h - 1 : add) * w + x] - tmp[(sub < 0 ? 0 : sub) * w + x];
+        }
+    }
+}
+
+static void GaussLike(u8 *buf, u8 *tmp, int w, int h, float sigma)
+{
+    int radius = (int)((sqrtf(4.0f * sigma * sigma + 1.0f) - 1.0f) / 2.0f + 0.5f);
+
+    for (int pass = 0; pass < 3; ++pass)
+        BoxBlur(buf, tmp, w, h, radius);
+}
+
+/* A square dilation of a 0/255 mask, separable: a running count of the set
+ * pixels in the window, so its cost does not grow with the radius. */
+static void Dilate(const u8 *src, u8 *dst, u8 *tmp, int w, int h, int radius)
+{
+    for (int y = 0; y < h; ++y)
+    {
+        const u8 *row = src + y * w;
+        int count = 0;
+
+        for (int x = 0; x < radius && x < w; ++x)
+            count += row[x] != 0;
+        for (int x = 0; x < w; ++x)
+        {
+            if (x + radius < w)
+                count += row[x + radius] != 0;
+            if (x - radius - 1 >= 0)
+                count -= row[x - radius - 1] != 0;
+            tmp[y * w + x] = count ? 255 : 0;
+        }
+    }
+    for (int x = 0; x < w; ++x)
+    {
+        int count = 0;
+
+        for (int y = 0; y < radius && y < h; ++y)
+            count += tmp[y * w + x] != 0;
+        for (int y = 0; y < h; ++y)
+        {
+            if (y + radius < h)
+                count += tmp[(y + radius) * w + x] != 0;
+            if (y - radius - 1 >= 0)
+                count -= tmp[(y - radius - 1) * w + x] != 0;
+            dst[y * w + x] = count ? 255 : 0;
+        }
+    }
+}
+
+static bool8 BuildSmoothText(SmoothText *t, const Font *font, const u8 *str)
+{
+    int textW = StrWidth(font, str), k = t->k;
+    int w4 = (textW + 2 * SMOOTH_PAD) * k, h4 = (font->height + 2 * SMOOTH_PAD) * k;
+    int r = k > 4 ? k : 4, x = SMOOTH_PAD;
+    u8 *glyph = calloc((size_t)w4 * h4, 4), *ring, *shadow, *tmp;
+
+    if (!glyph)
+        return FALSE;
+    ring = glyph + w4 * h4;
+    shadow = ring + w4 * h4;
+    tmp = shadow + w4 * h4;
+    for (u16 g; (g = NextGlyph(&str)) != 0xFFFF && g != 0xFFFE;)
+    {
+        const u16 *base = font->glyphs + g * 0x20;
+        int width = font->widths[g] > 16 ? 16 : font->widths[g];
+
+        for (int row = 0; row < font->height; ++row)
+            for (int px = 0; px < width; ++px)
+            {
+                u16 bits = base[(row >= 8 ? 0x10 : 0) + (px / 8) * 8 + (row & 7)];
+                u8 byte = (px & 7) < 4 ? bits >> 8 : bits & 0xFF;
+
+                if (((byte >> (6 - 2 * (px & 3))) & 3) != 1)
+                    continue;
+                for (int dy = 0; dy < k; ++dy)
+                    memset(glyph + ((SMOOTH_PAD + row) * k + dy) * w4 + (x + px) * k, 255, k);
+            }
+        x += font->widths[g];
+    }
+    /* The outline: blurred and hardened, and never thinner than a dilation. */
+    memcpy(ring, glyph, (size_t)w4 * h4);
+    GaussLike(ring, tmp, w4, h4, r * 0.55f);
+    for (int i = 0; i < w4 * h4; ++i)
+        ring[i] = ring[i] > 18 ? 255 : ring[i] * 14;
+    Dilate(glyph, shadow, tmp, w4, h4, (int)(r * 0.7f + 0.5f));
+    for (int i = 0; i < w4 * h4; ++i)
+        if (shadow[i] > ring[i])
+            ring[i] = shadow[i];
+    memset(shadow, 0, (size_t)w4 * h4);
+    if (t->hasShadow)
+    {
+        int drop = (int)(4.8f * (k > 5 ? k / 5.0f : 1.0f) + 0.5f);
+
+        for (int y = drop; y < h4; ++y)
+            memcpy(shadow + y * w4, ring + (y - drop) * w4, w4);
+        GaussLike(shadow, tmp, w4, h4, 3.2f);
+        for (int i = 0; i < w4 * h4; ++i)
+            shadow[i] = shadow[i] * 6 / 10;
+    }
+    /* Down to screen pixels: coverage and premultiplied colour. */
+    t->w = (w4 + 3) / 4;
+    t->h = (h4 + 3) / 4;
+    free(t->px);
+    t->px = calloc((size_t)t->w * t->h, 4);
+    if (!t->px)
+    {
+        free(glyph);
+        return FALSE;
+    }
+    for (int oy = 0; oy < t->h; ++oy)
+        for (int ox = 0; ox < t->w; ++ox)
+        {
+            int a = 0, cr = 0, cg = 0, cb = 0;
+
+            for (int sy = oy * 4; sy < oy * 4 + 4 && sy < h4; ++sy)
+                for (int sx = ox * 4; sx < ox * 4 + 4 && sx < w4; ++sx)
+                {
+                    int i = sy * w4 + sx, ri = ring[i], al = ri > shadow[i] ? ri : shadow[i];
+                    Rgb c;
+
+                    if (!al)
+                        continue;
+                    if (glyph[i])
+                        c = t->fg;
+                    else
+                        c = (Rgb){(u8)Div255(t->shadow.r * (255 - ri) + t->outline.r * ri),
+                                  (u8)Div255(t->shadow.g * (255 - ri) + t->outline.g * ri),
+                                  (u8)Div255(t->shadow.b * (255 - ri) + t->outline.b * ri)};
+                    a += al;
+                    cr += c.r * al;
+                    cg += c.g * al;
+                    cb += c.b * al;
+                }
+            t->px[(oy * t->w + ox) * 4 + 0] = a / 16;
+            t->px[(oy * t->w + ox) * 4 + 1] = cr / (255 * 16);
+            t->px[(oy * t->w + ox) * 4 + 2] = cg / (255 * 16);
+            t->px[(oy * t->w + ox) * 4 + 3] = cb / (255 * 16);
+        }
+    free(glyph);
+    return TRUE;
+}
+
+/* Draws a label with its glyph origin at (x, y); k quarter pixels a glyph pixel. */
+static void DrawSmoothStr(const Font *font, const u8 *str, int x, int y, int k, Rgb fg, Rgb outline,
+                          const Rgb *shadow)
+{
+    SmoothText *t = NULL, *victim = &sSmooth[0];
+    int n = 0;
+
+    if (!font->glyphs || !str)
+        return;
+    while (str[n] != EOS && n < (int)sizeof(t->key) - 1)
+        ++n;
+    for (int i = 0; i < SMOOTH_SLOTS && !t; ++i)
+    {
+        SmoothText *s = &sSmooth[i];
+
+        if (s->px && s->font == (font == &sSmall) && s->k == k && memcmp(s->key, str, n) == 0 && s->key[n] == EOS
+         && !memcmp(&s->fg, &fg, sizeof(fg)) && !memcmp(&s->outline, &outline, sizeof(outline))
+         && s->hasShadow == (shadow != NULL) && (!shadow || !memcmp(&s->shadow, shadow, sizeof(*shadow))))
+            t = s;
+        else if (s->age < victim->age)
+            victim = s;
+    }
+    if (!t)
+    {
+        if (!TakeBuildBudget())
+            return;
+        t = victim;
+        memcpy(t->key, str, n);
+        t->key[n] = EOS;
+        t->font = font == &sSmall;
+        t->k = k;
+        t->fg = fg;
+        t->outline = outline;
+        t->hasShadow = shadow != NULL;
+        t->shadow = shadow ? *shadow : outline;
+        if (!BuildSmoothText(t, font, t->key))
+        {
+            t->age = 0;
+            return;
+        }
+    }
+    t->age = ++sSmoothClock;
+    /* The bitmap starts SMOOTH_PAD glyph pixels up and left: k screen pixels. */
+    x -= k;
+    y -= k;
+    for (int i = 0; i < t->w; ++i)
+    {
+        int sx = x + i + sOX;
+
+        if (sx < sClipX0 || sx >= sClipX1)
+            continue;
+        for (int j = 0; j < t->h; ++j)
+        {
+            const u8 *p = t->px + (j * t->w + i) * 4;
+            int sy = y + j;
+            u16 *dst;
+            Rgb under;
+
+            if (!p[0] || sy < sClipY0 || sy >= sClipY1)
+                continue;
+            dst = sDst + sx * H + (H - 1 - sy);
+            under = RgbOf(*dst);
+            *dst = PackRgb(Div255(under.r * (255 - p[0])) + p[1], Div255(under.g * (255 - p[0])) + p[2],
+                           Div255(under.b * (255 - p[0])) + p[3]);
+        }
+    }
+}
+
+/* The width a label's pixels span, enlarged k quarter pixels a glyph pixel. */
+static int SmoothInkWidth(const Font *font, const u8 *str, int k)
+{
+    int x0, x1;
+
+    InkColumns(font, str, &x0, &x1);
+    return x1 > x0 ? (x1 - x0) * k / 4 : 0;
 }
 
 /* Text colours from the message box palette. */
@@ -1399,14 +2065,6 @@ typedef struct
     u8 nick[POKEMON_NAME_LENGTH + 2];
 } MonView;
 
-typedef struct
-{
-    u8 present, side, level, ailment;
-    u16 hp, maxHp, iconSpecies;
-    u8 deoxys, gender;
-    u8 nick[POKEMON_NAME_LENGTH + 2];
-} BattlerView;
-
 /* Everything a redraw reads. Zeroed before every snapshot: memcmp-safe. */
 typedef struct
 {
@@ -1447,11 +2105,11 @@ typedef struct
     /* The keyboard focus (X): the column item, or FOCUS_NONE; inside the
      * options, the option; the ring's blink frame. */
     u8 focus, optFocus, blink;
-    /* Battle. */
+    /* Battle: the cursor is 4 on the quick ball (actions) or CANCEL (moves). */
     u8 isDouble, safari, cursor, battler;
-    u16 quickBall, quickBallCount;    /* the ball R throws, ITEM_NONE if none */
-    u8 quickBallFocus;                /* the D-pad is on the ball button */
-    BattlerView battlers[MAX_BATTLERS_COUNT];
+    u16 quickBall, quickBallCount;    /* the ball a quick throw would use, ITEM_NONE if none */
+    u8 safariBalls;
+    u8 partyBalls[PARTY_SIZE];        /* PARTY_BALL_*, as the game's party indicator */
     struct ChooseMoveStruct moves4;
     u8 text[96];
 } ViewState;
@@ -1632,12 +2290,6 @@ static u8 HitTest(int x, int y)
     return HIT_NONE;
 }
 
-static void DrawButton(int x, int y, int wt, int ht, bool8 on, u8 id)
-{
-    DrawBoxEx(BOX_MENU, x, y, wt, ht, on);
-    AddHit(x, y, wt * 8, ht * 8, id);
-}
-
 static void DrawLabelButtonFont(const Font *font, int x, int y, int wt, int ht, const u8 *label, bool8 on,
                                 bool8 enabled, u8 id)
 {
@@ -1662,12 +2314,6 @@ static AnimIcon sAnim[8];
 static u8 sAnimCount;
 /* What was under each animated icon, to redraw its frames in place. */
 static u16 sUnder[8][32 * 32];
-
-static void AddMonIcon(u16 iconSpecies, bool8 deoxys, int x, int y, bool8 still)
-{
-    if (sAnimCount < ARRAY_COUNT(sAnim) && iconSpecies != SPECIES_NONE)
-        sAnim[sAnimCount++] = (AnimIcon){x + sOX, y, iconSpecies, deoxys, still};
-}
 
 static void IconRect(const AnimIcon *icon, int *x0, int *y0, int *x1, int *y1)
 {
@@ -1776,6 +2422,16 @@ static u8 sBattleTap = 0xFF;   /* a tap for the controller to take */
 static bool8 sMoveCancel;      /* the move menu's cursor is on CANCEL */
 static bool8 sQuickBallTap;    /* the ball button was tapped */
 static bool8 sQuickBallFocus;  /* the D-pad is on the ball button (A throws) */
+
+/*
+ * The quick ball (battle_controller_player.c, an optional patch in the
+ * public tree): the ball R or the ball button would throw now, or
+ * ITEM_NONE. Without that patch no battle offers one.
+ */
+u16 __attribute__((weak)) CtrBattle_QuickBallItem(void)
+{
+    return ITEM_NONE;
+}
 
 static u8 CurrentMode(void)
 {
@@ -1939,7 +2595,6 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
 {
     u8 tap = TakeBattleTap(ASK_ACTION), next = *cursor;
     u16 dpad = gMain.newKeys & DPAD_ANY;
-
     /* FIGHT on top; BAG, POKéMON and RUN in a row under it. The ball
      * button, right of FIGHT and over RUN, is reached from both. */
     bool8 ball = !safari && CtrBattle_QuickBallItem() != ITEM_NONE;
@@ -2064,6 +2719,7 @@ void CtrBattleMenu_TargetInput(void)
 /* Snapshots                                                                */
 /* ------------------------------------------------------------------------ */
 
+#if 0
 static void SnapshotMon(MonView *view, struct Pokemon *mon)
 {
     u16 species = GetMonData(mon, MON_DATA_SPECIES);
@@ -2088,13 +2744,6 @@ static void SnapshotMon(MonView *view, struct Pokemon *mon)
         view->gender = MON_GENDERLESS;
 }
 
-static void SnapshotParty(ViewState *s)
-{
-    for (int i = 0; i < PARTY_SIZE; ++i)
-        SnapshotMon(&s->party[i], &gPlayerParty[i]);
-}
-
-#if 0
 static void SnapshotSummary(ViewState *s, u8 slot)
 {
     struct Pokemon *mon = &gPlayerParty[slot];
@@ -2220,53 +2869,40 @@ static void SnapshotCard(ViewState *s)
             s->badges |= 1 << i;
 }
 
-static void SnapshotBattler(BattlerView *v, u8 battler)
-{
-    struct Pokemon *mon;
-
-    if (battler >= gBattlersCount || (gAbsentBattlerFlags & gBitTable[battler]))
-        return;
-    /* Shown once the game shows its healthbox, so nothing is revealed early. */
-    if (gHealthboxSpriteIds[battler] >= MAX_SPRITES || gSprites[gHealthboxSpriteIds[battler]].invisible
-     || !gSprites[gHealthboxSpriteIds[battler]].inUse)
-        return;
-    mon = GetBattlerSide(battler) == B_SIDE_PLAYER ? &gPlayerParty[gBattlerPartyIndexes[battler]]
-                                                   : &gEnemyParty[gBattlerPartyIndexes[battler]];
-    v->present = TRUE;
-    v->side = GetBattlerSide(battler);
-    v->level = gBattleMons[battler].level;
-    v->hp = gBattleMons[battler].hp;
-    v->maxHp = gBattleMons[battler].maxHP;
-    v->iconSpecies = GetIconSpecies(gBattleMons[battler].species, gBattleMons[battler].personality);
-    v->deoxys = gBattleMons[battler].species == SPECIES_DEOXYS;
-    v->gender = GetMonGender(mon);
-    GetMonNickname(mon, v->nick);
-    if (v->hp == 0)
-        v->ailment = AILMENT_FNT;
-    else if (gBattleMons[battler].status1 & STATUS1_SLEEP)
-        v->ailment = AILMENT_SLP;
-    else if (gBattleMons[battler].status1 & STATUS1_PSN_ANY)
-        v->ailment = AILMENT_PSN;
-    else if (gBattleMons[battler].status1 & STATUS1_BURN)
-        v->ailment = AILMENT_BRN;
-    else if (gBattleMons[battler].status1 & STATUS1_FREEZE)
-        v->ailment = AILMENT_FRZ;
-    else if (gBattleMons[battler].status1 & STATUS1_PARALYSIS)
-        v->ailment = AILMENT_PRZ;
-}
+/* The party ball states, as battle_interface.c's party indicator has them. */
+enum { PARTY_BALL_OK, PARTY_BALL_STATUS, PARTY_BALL_FAINT, PARTY_BALL_EMPTY };
 
 static void SnapshotBattle(ViewState *s)
 {
     s->isDouble = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) != 0;
     s->safari = (gBattleTypeFlags & BATTLE_TYPE_SAFARI) != 0;
-    /* Player left, opponent left, player right, opponent right. */
-    SnapshotBattler(&s->battlers[0], GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
-    SnapshotBattler(&s->battlers[1], GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
-    if (s->isDouble)
+    if (s->mode == MODE_BATTLE_INFO)
+        return;
+    s->blink = (sFrames >> 4) & 1;
+}
+
+/* The six party balls: the mons in party order, then the empty places (an
+ * egg is one, as in the game's indicator). */
+static void SnapshotPartyBalls(ViewState *s)
+{
+    int n = 0;
+
+    for (int i = 0; i < PARTY_SIZE; ++i)
     {
-        SnapshotBattler(&s->battlers[2], GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT));
-        SnapshotBattler(&s->battlers[3], GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
+        struct Pokemon *mon = &gPlayerParty[i];
+        u16 species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);
+
+        if (species == SPECIES_NONE || species == SPECIES_EGG)
+            continue;
+        if (GetMonData(mon, MON_DATA_HP) == 0)
+            s->partyBalls[n++] = PARTY_BALL_FAINT;
+        else if (GetMonData(mon, MON_DATA_STATUS) != 0)
+            s->partyBalls[n++] = PARTY_BALL_STATUS;
+        else
+            s->partyBalls[n++] = PARTY_BALL_OK;
     }
+    while (n < PARTY_SIZE)
+        s->partyBalls[n++] = PARTY_BALL_EMPTY;
 }
 
 static void CopyText(u8 *dst, int size, const u8 *src)
@@ -2408,14 +3044,13 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
     {
         u8 b = sAsked.battler;
         SnapshotBattle(s);
-        SnapshotParty(s);
+        SnapshotPartyBalls(s);
         s->battler = b;
-        s->cursor = sQuickBallFocus ? 4 : gActionSelectionCursor[b];   /* 4: none lit */
-        s->quickBallFocus = sQuickBallFocus;
-        /* The FIGHT button previews the four move types. */
-        for (int i = 0; i < MAX_MON_MOVES; ++i)
-            s->moves4.moves[i] = gBattleMons[b].moves[i];
-        s->quickBall = CtrBattle_QuickBallItem();
+        s->cursor = sQuickBallFocus ? 4 : gActionSelectionCursor[b];
+        if (s->safari)
+            s->safariBalls = gNumSafariBalls;
+        else
+            s->quickBall = CtrBattle_QuickBallItem();
         if (s->quickBall != ITEM_NONE)
             s->quickBallCount = CountTotalItemQuantityInBag(s->quickBall);
         break;
@@ -2432,7 +3067,6 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
     }
     case MODE_BATTLE_INFO:
         SnapshotBattle(s);
-        SnapshotParty(s);
         break;
     }
 }
@@ -2444,17 +3078,14 @@ static bool8 Prefetch(const ViewState *s)
     for (int i = 0; i < PARTY_SIZE && sIconBudget; ++i)
         if (s->party[i].species)
             MonIcon(s->party[i].iconSpecies, s->party[i].deoxys);
-    for (int i = 0; i < MAX_BATTLERS_COUNT && sIconBudget; ++i)
-        if (s->battlers[i].present)
-            MonIcon(s->battlers[i].iconSpecies, s->battlers[i].deoxys);
     if (sIconBudget && s->summary >= 0 && s->heldItem)
         ItemIcon(s->heldItem);
     if (sIconBudget && s->registered != ITEM_NONE && s->mode < MODE_BATTLE_INFO)
         ItemIcon(s->registered);
-    if (sIconBudget && s->mode == MODE_BATTLE_ACTION)
-        ItemIcon(ITEM_ESCAPE_ROPE);
     if (sIconBudget && s->mode == MODE_BATTLE_ACTION && s->quickBall != ITEM_NONE)
         ItemIcon(s->quickBall);
+    if (sIconBudget && s->mode == MODE_BATTLE_ACTION && s->safari)
+        ItemIcon(ITEM_SAFARI_BALL);
     if (sIconBudget)
     {
         sIconBudget = FALSE;
@@ -2569,7 +3200,7 @@ static void DrawColumn(const ViewState *s)
         sClipY1 = H;
         for (int c = 0; c < CACHE_COUNT; ++c)
         {
-            if (!sCache[c] || c == CACHE_WIDE)
+            if (!sCache[c] || c == CACHE_WIDE || c == CACHE_BATTLE)
                 continue;
             sDst = sCache[c];
             for (int i = 0; i < SCR_COUNT; ++i)
@@ -2650,31 +3281,6 @@ typedef struct
 static const SlotLayout sMainLayout = {24, 11, 32, 20, 64, 20, 38, 37, 53, 37, 24, 35, -8, 0, 26, 24};
 static const SlotLayout sWideLayout = {22, 3, 30, 12, 62, 12, 102, 12, 117, 12, 88, 10, -8, -6, 24, 15};
 #endif
-
-static void DrawHpBar(int x, int y, int width, u16 hp, u16 maxHp, const Pal *pal)
-{
-    static const u8 green[] = {57, 58}, yellow[] = {73, 74}, red[] = {89, 90};
-    const u8 *ids;
-    int fill;
-
-    if (maxHp == 0)
-        return;
-    fill = hp * width / maxHp;
-    if (hp > 0 && fill == 0)
-        fill = 1;
-    ids = hp * 2 > maxHp ? green : hp * 5 > maxHp ? yellow : red;
-    FillRect(x, y, fill, 1, Rgb565(sRes.partyRaw[ids[1]]));
-    FillRect(x, y + 1, fill, 2, Rgb565(sRes.partyRaw[ids[0]]));
-    FillRect(x + fill, y, width - fill, 1, pal->c[0x0D]);
-    FillRect(x + fill, y + 1, width - fill, 2, pal->c[0x02]);
-}
-
-static void DrawStatusIcon(u8 ailment, int x, int y)
-{
-    if (ailment == AILMENT_NONE || !sRes.statusTiles)
-        return;
-    DrawSprite(sRes.statusTiles + (ailment - 1) * 4 * 32, 4, 1, x, y, sRes.statusPal.c);
-}
 
 #if 0
 static void DrawPartySlot(const MonView *m, int slot, int x, int y, bool8 selected)
@@ -3355,214 +3961,498 @@ static void DrawOptions(const ViewState *s)
 }
 
 /* ------------------------------------------------------------------------ */
-/* Drawing: battle                                                        */
+/* Drawing: battle                                                          */
 /* ------------------------------------------------------------------------ */
 
-#define HEADER_H 56
+/*
+ * The battle menus, over the whole screen on the battle backdrop (see
+ * "Battle art"): FIGHT and the quick ball on top, BAG, POKéMON and RUN under
+ * them; the four moves two by two with CANCEL; the target choice. While the
+ * turn plays out, the backdrop alone: the top screen shows the battle and its
+ * message. Labels are the game's strings and glyphs (DrawSmoothStr), item
+ * and type icons the game's; FIGHT's watermark is Rayquaza's own picture.
+ */
+
+static const Rgb sHueFight = {230, 52, 56}, sHueBag = {240, 178, 36}, sHueMon = {36, 172, 96},
+                 sHueRun = {40, 112, 226}, sHueBall = {140, 76, 200}, sHueCancel = {88, 104, 130},
+                 sHueEmpty = {150, 150, 158};
+static const Rgb sCream = {252, 245, 234}, sWhite = {255, 255, 255};
+static const Rgb sFocusRing[2] = {{255, 120, 40}, {255, 206, 72}};
+
+/* A colour at keep/100 of its brightness. */
+static Rgb Shade(Rgb c, int keep)
+{
+    return (Rgb){(u8)(c.r * keep / 100), (u8)(c.g * keep / 100), (u8)(c.b * keep / 100)};
+}
+
+/* A plate's labels: outlined in its dark tone, shadowed darker still. */
+#define PLATE_DARK(c) Shade(c, 38)
+#define PLATE_SHADOW(c) Shade(c, 27)
 
 static void DrawTypeIcon(u8 type, int x, int y)
 {
-    static const u8 palettes[NUMBER_OF_MON_TYPES] = {
-        [TYPE_NORMAL] = 0, [TYPE_FIGHTING] = 0, [TYPE_FLYING] = 1, [TYPE_POISON] = 1,
-        [TYPE_GROUND] = 0, [TYPE_ROCK] = 0, [TYPE_BUG] = 2, [TYPE_GHOST] = 1,
-        [TYPE_STEEL] = 0, [TYPE_MYSTERY] = 2, [TYPE_FIRE] = 0, [TYPE_WATER] = 1,
-        [TYPE_GRASS] = 2, [TYPE_ELECTRIC] = 0, [TYPE_PSYCHIC] = 1, [TYPE_ICE] = 1,
-        [TYPE_DRAGON] = 2, [TYPE_DARK] = 0,
-    }; /* pokemon_summary_screen.c's sMoveTypeToOamPaletteNum, minus 13 */
-
     if (sRes.typeTiles && type < NUMBER_OF_MON_TYPES)
-        DrawSprite(sRes.typeTiles + type * 8 * 32, 4, 2, x, y, sRes.typePal[palettes[type]].c);
+        DrawSprite(sRes.typeTiles + type * 8 * 32, 4, 2, x, y, sRes.typePal[sTypeIconPal[type]].c);
 }
 
-static void DrawBattlerPanel(const BattlerView *v, int x, int y, bool8 compact)
+static u8 PlateState(const ViewState *s, u8 hit, bool8 focused)
 {
-    const Pal *pal = &sRes.partyPal[4];
+    if (s->pressed == hit && hit != HIT_NONE)
+        return BTA_PRESSED;
+    return focused ? BTA_FOCUS : BTA_NORMAL;
+}
 
-    if (!v->present)
-        return;
-    if (compact)
+/*
+ * A plate in a colour, worked out once: the same plate in the same colour
+ * (and ring) is then copied. Stored a column at a time in the canvas' own
+ * order (bottom to top), each pixel as its coverage and the colour it adds;
+ * the run of each column the plate covers whole is copied with memcpy, only
+ * its edges and shadow are blended. FIGHT's has Rayquaza in it already.
+ */
+#define TINT_SLOTS 40
+
+typedef struct
+{
+    u32 age;
+    u8 id;
+    Rgb colour, ring;
+    s16 x, y;
+    u16 w, h;
+    u16 *p;          /* premultiplied RGB565, w columns of h */
+    u8 *a;           /* coverage, the same way */
+    u8 *run;         /* per column: the opaque run's first and end index */
+} Tint;
+
+static Tint sTints[TINT_SLOTS];
+static u32 sTintClock;
+
+static bool8 SameRgb(Rgb a, Rgb b)
+{
+    return a.r == b.r && a.g == b.g && a.b == b.b;
+}
+
+static bool8 BuildTint(Tint *t, u8 id, Rgb colour, Rgb ring)
+{
+    const BtaElem *e = &sBta.e[id];
+    bool8 wide = id >= BTA_FIGHT_WIDE && id < BTA_FIGHT_WIDE + 3, full = id >= BTA_FIGHT_FULL && id < BTA_FIGHT_FULL + 3;
+    u8 clip = wide ? BTA_CLIP_FIGHT_WIDE : BTA_CLIP_FIGHT_FULL;
+    int sink = (wide && id - BTA_FIGHT_WIDE == BTA_PRESSED) || (full && id - BTA_FIGHT_FULL == BTA_PRESSED) ? BTA_SINK : 0;
+    int plateW = wide ? 224 : 284;
+    const Rgb body = Shade(sHueFight, 82), lines = Shade(sHueFight, 66);
+
+    free(t->p);
+    t->p = malloc((size_t)e->w * e->h * 3 + e->w * 2);
+    if (!t->p)
+        return FALSE;
+    t->a = (u8 *)(t->p + e->w * e->h);
+    t->run = t->a + e->w * e->h;
+    t->id = id;
+    t->colour = colour;
+    t->ring = ring;
+    t->x = e->x;
+    t->y = e->y;
+    t->w = e->w;
+    t->h = e->h;
+    for (int i = 0; i < e->w; ++i)
     {
-        DrawStr(&sSmall, v->nick, x, y, TXT_DARK, TXT_LIGHT);
-        DrawHpBar(x + 72, y + 5, 48, v->hp, v->maxHp, pal);
-        DrawStatusIcon(v->ailment, x + 124, y + 3);
-        return;
+        int best0 = 0, best1 = 0, start = -1;
+
+        for (int k = 0; k <= e->h; ++k)
+        {
+            int al = 0;
+
+            if (k < e->h)
+            {
+                int j = e->h - 1 - k, o = i * e->h + k;
+                u32 q = (u32)j * e->w + i;
+                int A = e->a[q], R = e->r ? e->r[q] : 0;
+                Rgb add = RgbOf(e->c[q * 2] | (e->c[q * 2 + 1] << 8));
+                int r = Div255(colour.r * A + ring.r * R) + add.r, g = Div255(colour.g * A + ring.g * R) + add.g,
+                    b = Div255(colour.b * A + ring.b * R) + add.b;
+
+                al = e->alpha[q];
+                /* FIGHT's watermark, over the colour, inside it. */
+                if (wide || full)
+                {
+                    int px = e->x + i, py = e->y + j, rx = px - (plateW - 84), ry = py - (sink - 1);
+
+                    if (rx >= 0 && ry >= 0 && rx < RAY_SIZE && ry < RAY_SIZE)
+                    {
+                        int c = BtaAlpha(clip, px, py - sink);
+                        int cb = Div255(Div255(sRayBody[ry * RAY_SIZE + rx] * c) * 217);
+                        int cl = Div255(Div255(sRayLines[ry * RAY_SIZE + rx] * c) * 153);
+
+                        r = Div255(r * (255 - cb) + body.r * cb);
+                        g = Div255(g * (255 - cb) + body.g * cb);
+                        b = Div255(b * (255 - cb) + body.b * cb);
+                        r = Div255(r * (255 - cl) + lines.r * cl);
+                        g = Div255(g * (255 - cl) + lines.g * cl);
+                        b = Div255(b * (255 - cl) + lines.b * cl);
+                    }
+                }
+                t->p[o] = PackRgb(r, g, b);
+                t->a[o] = al;
+            }
+            if (k < e->h && al == 255)
+            {
+                if (start < 0)
+                    start = k;
+            }
+            else if (start >= 0)
+            {
+                if (k - start > best1 - best0)
+                    best0 = start, best1 = k;
+                start = -1;
+            }
+        }
+        /* Columns are at most a plate's height: the run fits a byte each. */
+        t->run[i * 2] = best0;
+        t->run[i * 2 + 1] = best1;
     }
-    AddMonIcon(v->iconSpecies, v->deoxys, x, y - 4, v->hp == 0);
-    DrawStr(&sSmall, v->nick, x + 34, y, TXT_DARK, TXT_LIGHT);
+    return TRUE;
+}
+
+static const Tint *GetTint(u8 id, Rgb colour, Rgb ring)
+{
+    Tint *victim = &sTints[0];
+
+    if (id >= BTA_COUNT || !sBta.e[id].alpha || !sBta.e[id].a || sBta.e[id].h > 255)
+        return NULL;
+    for (int i = 0; i < TINT_SLOTS; ++i)
     {
-        u8 text[12];
-        StringCopy(text, gText_LevelSymbol);
-        StringAppend(text, Number(v->level, 3, STR_CONV_MODE_LEFT_ALIGN));
-        DrawStrRight(&sSmall, text, x + 142, y, TXT_DARK, TXT_LIGHT);
+        Tint *t = &sTints[i];
+
+        /* The ring only shows on a focused plate. */
+        if (t->p && t->id == id && SameRgb(t->colour, colour) && (!sBta.e[id].r || SameRgb(t->ring, ring)))
+        {
+            t->age = ++sTintClock;
+            return t;
+        }
+        if (t->age < victim->age)
+            victim = t;
     }
-    DrawHpBar(x + 34, y + 16, 96, v->hp, v->maxHp, pal);
-    DrawStatusIcon(v->ailment, x + 34, y + 23);
-    /* The game shows exact HP for the player's side only. */
-    if (v->side == B_SIDE_PLAYER)
+    if (!TakeBuildBudget())
+        return NULL;
+    if (!BuildTint(victim, id, colour, ring))
     {
-        u8 text[12];
-        StringCopy(text, Number(v->hp, 3, STR_CONV_MODE_RIGHT_ALIGN));
-        StringAppend(text, gText_Slash);
-        StringAppend(text, Number(v->maxHp, 3, STR_CONV_MODE_RIGHT_ALIGN));
-        DrawStrRight(&sSmall, text, x + 130, y + 21, TXT_DARK, TXT_LIGHT);
+        victim->age = 0;
+        return NULL;
+    }
+    victim->age = ++sTintClock;
+    return victim;
+}
+
+static void DrawTint(const Tint *t, int ax, int ay)
+{
+    int x0 = ax + t->x + sOX, y0 = ay + t->y;
+    int i0 = sClipX0 - x0 > 0 ? sClipX0 - x0 : 0, i1 = sClipX1 - x0 < t->w ? sClipX1 - x0 : t->w;
+    /* Rows y0 .. y0 + h - 1 are column indices h - 1 .. 0 (bottom up). */
+    int k0 = y0 + t->h - sClipY1, k1 = y0 + t->h - sClipY0;
+
+    if (k0 < 0) k0 = 0;
+    if (k1 > t->h) k1 = t->h;
+    for (int i = i0; i < i1; ++i)
+    {
+        u16 *col = sDst + (x0 + i) * H + (H - y0 - t->h);
+        const u16 *p = t->p + i * t->h;
+        const u8 *a = t->a + i * t->h;
+        int r0 = t->run[i * 2], r1 = t->run[i * 2 + 1];
+
+        if (r0 < k0) r0 = k0;
+        if (r1 > k1) r1 = k1;
+        if (r0 < r1)
+            memcpy(col + r0, p + r0, (r1 - r0) * sizeof(u16));
+        else
+            r0 = r1 = k1;
+        for (int k = k0; k < k1; ++k)
+        {
+            Rgb under, add;
+            int al;
+
+            if (k == r0)
+            {
+                k = r1 - 1;
+                continue;
+            }
+            al = a[k];
+            if (!al && !p[k])
+                continue;
+            if (al == 255)
+            {
+                col[k] = p[k];
+                continue;
+            }
+            under = RgbOf(col[k]);
+            add = RgbOf(p[k]);
+            col[k] = PackRgb(Div255(under.r * (255 - al)) + add.r, Div255(under.g * (255 - al)) + add.g,
+                             Div255(under.b * (255 - al)) + add.b);
+        }
     }
 }
 
-static void DrawBattleHeader(const ViewState *s)
+/* A plate, its hit added; returns the y its contents start at (lower when
+ * pressed). Without the art, a flat box in its colour. */
+static int DrawBattlePlate(u8 id, int x, int y, int w, int h, Rgb colour, u8 state, u8 blink, u8 hit)
 {
-    DrawBox(BOX_MENU, 0, 0, 20, HEADER_H / 8);
-    DrawBox(BOX_MENU, 160, 0, 20, HEADER_H / 8);
-    if (s->isDouble)
+    const Tint *t = GetTint(id + state, colour, sFocusRing[blink & 1]);
+
+    if (t)
+        DrawTint(t, x, y);
+    else if (!sBta.e[id + state].alpha)
+        FillRect(x, y, w, h, PackRgb(colour.r, colour.g, colour.b));
+    if (hit != HIT_NONE)
+        AddHit(x, y, w, h, hit);
+    return y + (state == BTA_PRESSED ? BTA_SINK : 0);
+}
+
+/* The index-th of the four words of the game's action menu text, split where
+ * the game moves on to the next ({CLEAR_TO} or a new line). */
+static const u8 *ActionLabel(bool8 safari, int index)
+{
+    static u8 out[4][24];
+    const u8 *src = safari ? gText_SafariZoneMenu : gText_BattleMenu;
+    int part = 0, n = 0;
+
+    while (*src != EOS && part <= index)
     {
-        DrawBattlerPanel(&s->battlers[0], 10, 8, TRUE);
-        DrawBattlerPanel(&s->battlers[2], 10, 28, TRUE);
-        DrawBattlerPanel(&s->battlers[1], 170, 8, TRUE);
-        DrawBattlerPanel(&s->battlers[3], 170, 28, TRUE);
+        if (*src == EXT_CTRL_CODE_BEGIN || *src == CHAR_NEWLINE)
+        {
+            if (*src++ == EXT_CTRL_CODE_BEGIN && *src != EOS)
+                src += GetExtCtrlCodeLength(*src);
+            if (n || part < index)
+                ++part;
+            continue;
+        }
+        if (part == index && n < (int)sizeof(out[0]) - 1)
+            out[index][n++] = *src;
+        ++src;
     }
-    else
+    out[index][n] = EOS;
+    return out[index];
+}
+
+/* "×N", the game's way of counting items. */
+static const u8 *Times(u32 n)
+{
+    static u8 out[2][8];
+    static u8 next;
+    u8 *text = out[next++ & 1];
+
+    text[0] = CHAR_MULT_SIGN;
+    StringCopy(text + 1, Number(n, 3, STR_CONV_MODE_LEFT_ALIGN));
+    return text;
+}
+
+#define ACT_Y 32
+#define ACT_H 74
+#define ROW_Y 138
+#define ROW_W 100
+#define ROW_H 72
+
+static void DrawFightPlate(const ViewState *s, bool8 wide)
+{
+    int x = wide ? 6 : 18, w = wide ? 224 : 284;
+    u8 state = PlateState(s, HIT_ACTION + 0, s->cursor == 0);
+    int oy = DrawBattlePlate(wide ? BTA_FIGHT_WIDE : BTA_FIGHT_FULL, x, ACT_Y, w, ACT_H, sHueFight, state, s->blink,
+                             HIT_ACTION + 0);
+    Rgb dark = PLATE_DARK(sHueFight), shadow = PLATE_SHADOW(sHueFight);
+    const u8 *label = ActionLabel(s->safari, 0);
+
+    /* Rayquaza is in the plate's tint (BuildTint). */
+    if (s->safari)
     {
-        DrawBattlerPanel(&s->battlers[0], 10, 12, FALSE);
-        DrawBattlerPanel(&s->battlers[1], 170, 12, FALSE);
+        DrawItemIcon(ITEM_SAFARI_BALL, x + w / 2 - 34, oy + ACT_H / 2 - 15);
+        DrawSmoothStr(&sNormal, label, x + w / 2 - 4, oy + ACT_H / 2 - 16, 8, sCream, dark, &shadow);
+        DrawSmoothStr(&sSmall, Times(s->safariBalls), x + w / 2 + 52, oy + ACT_H / 2 + 4, 4, sWhite, dark, NULL);
+        return;
     }
+    DrawSmoothStr(&sNormal, label, x + (60 + w - 64) / 2 - SmoothInkWidth(&sNormal, label, 10) / 2,
+                  oy + ACT_H / 2 - 21, 10, sCream, dark, &shadow);
+}
+
+static void DrawQuickBall(const ViewState *s)
+{
+    int x = 236, w = 78;
+    u8 state = PlateState(s, HIT_QUICK_BALL, s->cursor == 4);
+    int oy = DrawBattlePlate(BTA_BALL, x, ACT_Y, w, ACT_H, sHueBall, state, s->blink, HIT_QUICK_BALL);
+    Rgb dark = PLATE_DARK(sHueBall), shadow = PLATE_SHADOW(sHueBall);
+    const u8 *name = GetItemName(s->quickBall), *count = Times(s->quickBallCount);
+
+    DrawItemIconShadow(s->quickBall, x + 4, oy + ACT_H / 2 - 11);
+    DrawItemIcon(s->quickBall, x + 3, oy + ACT_H / 2 - 13);
+    DrawSmoothStr(&sSmall, name, x + w - 5 - SmoothInkWidth(&sSmall, name, 4), oy + 9, 4, sWhite, dark, NULL);
+    DrawSmoothStr(&sNormal, count, x + w - 8 - SmoothInkWidth(&sNormal, count, 4), oy + ACT_H - 28, 4, sCream, dark,
+                  &shadow);
 }
 
 static void DrawBattleActions(const ViewState *s)
 {
-    static const char *const safari[4] = {"BALL", "POK*BLOCK", "GO NEAR", "RUN"};
-    bool8 on[4];
-
-    for (int i = 0; i < 4; ++i)
-        on[i] = s->cursor == i || s->pressed == HIT_ACTION + i;
-
-    /* FIGHT: the move types it leads to. With a ball to throw, it makes
-     * room for the ball button on its right. */
+    static const s16 rowX[3] = {6, 110, 214};
+    const Rgb hues[3] = {sHueBag, sHueMon, sHueRun};
     bool8 ball = !s->safari && s->quickBall != ITEM_NONE;
-    int fightX = ball ? 120 : 160;
 
-    DrawButton(16, 60, ball ? 26 : 36, 10, on[0], HIT_ACTION + 0);
+    DrawFightPlate(s, ball);
     if (ball)
+        DrawQuickBall(s);
+    for (int k = 0; k < 3; ++k)
     {
-        bool8 hot = s->pressed == HIT_QUICK_BALL || s->quickBallFocus;
-        u8 text[8];
+        int x = rowX[k], idx = k + 1;
+        u8 state = PlateState(s, HIT_ACTION + idx, s->cursor == idx);
+        int oy = DrawBattlePlate(BTA_BOTTOM, x, ROW_Y, ROW_W, ROW_H, hues[k], state, s->blink, HIT_ACTION + idx);
+        const u8 *label = ActionLabel(s->safari, idx);
 
-        DrawButton(232, 60, 9, 10, hot, HIT_QUICK_BALL);
-        DrawStrCentered(&sSmall, GetItemName(s->quickBall), 268, 66, LABEL_FG(hot), LABEL_SH(hot));
-        DrawItemIcon(s->quickBall, 256, 84);
-        StringCopy(text, Ascii("x"));
-        StringAppend(text, Number(s->quickBallCount, 3, STR_CONV_MODE_LEFT_ALIGN));
-        DrawStrCentered(&sSmall, text, 268, 116, LABEL_FG(hot), LABEL_SH(hot));
+        if (k == 1 && !s->safari)
+            for (int b = 0; b < PARTY_SIZE; ++b)
+                DrawBta(BTA_PARTY_OK + s->partyBalls[b], x + ROW_W - 82 + b * 14, oy + 18, hues[k], hues[k]);
+        else if (s->safari)
+            DrawBta(k == 0 ? BTA_ICON_BLOCK : k == 1 ? BTA_ICON_NEAR : BTA_ICON_RUN, x, oy, hues[k], hues[k]);
+        else
+            DrawBta(k == 0 ? BTA_ICON_BAG : BTA_ICON_RUN, x, oy, hues[k], hues[k]);
+        DrawSmoothStr(&sNormal, label, x + 9, oy + ROW_H - 28, 6, PLATE_DARK(hues[k]), sCream, NULL);
     }
-    if (s->safari)
-    {
-        DrawStrCentered(&sNormal, Ascii(safari[0]), 160, 90, LABEL_FG(on[0]), LABEL_SH(on[0]));
-    }
+}
+
+/* The PP's colour as the game warns: at 0 red, then orange to a quarter,
+ * yellow to half. */
+static void PpColours(u8 pp, u8 maxPp, u16 *fg, u16 *shadow)
+{
+    if (pp == 0)
+        *fg = TXT_RED, *shadow = TXT_LRED;
+    else if (pp <= maxPp / 4)
+        *fg = PackRgb(224, 112, 32), *shadow = PackRgb(248, 200, 152);
+    else if (pp <= maxPp / 2)
+        *fg = PackRgb(200, 160, 16), *shadow = PackRgb(248, 232, 152);
     else
-    {
-        int count = 0;
-        DrawStrCentered(&sNormal, Ascii("FIGHT"), fightX, 76, LABEL_FG(on[0]), LABEL_SH(on[0]));
-        for (int i = 0; i < MAX_MON_MOVES; ++i)
-            if (s->moves4.moves[i] != MOVE_NONE)
-                ++count;
-        for (int i = 0, x = fightX - (count * 40 - 8) / 2; i < MAX_MON_MOVES; ++i)
-            if (s->moves4.moves[i] != MOVE_NONE)
-            {
-                DrawTypeIcon(gBattleMoves[s->moves4.moves[i]].type, x, 104);
-                x += 40;
-            }
-    }
+        *fg = TXT_DARK, *shadow = TXT_LIGHT;
+}
 
-    /* BAG, POKéMON, RUN. */
-    DrawButton(16, 148, 11, 11, on[1], HIT_ACTION + 1);
-    DrawButton(116, 148, 11, 11, on[2], HIT_ACTION + 2);
-    DrawButton(216, 148, 11, 11, on[3], HIT_ACTION + 3);
-    if (s->safari)
+#define MOVE_W 150
+#define MOVE_H 80
+
+static void DrawMovePlate(const ViewState *s, int i)
+{
+    int x = i & 1 ? 164 : 6, y = i & 2 ? 106 : 20, oy;
+    u16 move = s->moves4.moves[i], fg, sh;
+    const struct BattleMove *data = &gBattleMoves[move];
+    Rgb colour, dark, shadow;
+    u8 text[20];
+
+    if (move == MOVE_NONE)
     {
-        DrawStrCentered(&sNormal, Ascii(safari[1]), 60, 184, LABEL_FG(on[1]), LABEL_SH(on[1]));
-        DrawStrCentered(&sNormal, Ascii(safari[2]), 160, 184, LABEL_FG(on[2]), LABEL_SH(on[2]));
-        DrawStrCentered(&sNormal, Ascii(safari[3]), 260, 184, LABEL_FG(on[3]), LABEL_SH(on[3]));
+        DrawBattlePlate(BTA_MOVE, x, y, MOVE_W, MOVE_H, sHueEmpty, BTA_NORMAL, 0, HIT_NONE);
         return;
     }
-    if (sRes.bagTiles[s->gender])
-        DrawSprite(sRes.bagTiles[s->gender], 8, 8, 28, 150, sRes.bagPal.c);
-    DrawStrCentered(&sNormal, Ascii("BAG"), 60, 212, LABEL_FG(on[1]), LABEL_SH(on[1]));
-    if (s->battlers[0].present)
-        AddMonIcon(s->battlers[0].iconSpecies, s->battlers[0].deoxys, 144, 168, FALSE);
-    else if (s->party[0].species)
-        AddMonIcon(s->party[0].iconSpecies, s->party[0].deoxys, 144, 168, FALSE);
-    DrawStrCentered(&sNormal, Ascii("POK*MON"), 160, 212, LABEL_FG(on[2]), LABEL_SH(on[2]));
-    DrawItemIcon(ITEM_ESCAPE_ROPE, 248, 176);
-    DrawStrCentered(&sNormal, Ascii("RUN"), 260, 212, LABEL_FG(on[3]), LABEL_SH(on[3]));
+    colour = data->type < NUMBER_OF_MON_TYPES ? sTypeColour[data->type] : sHueEmpty;
+    dark = PLATE_DARK(colour);
+    shadow = PLATE_SHADOW(colour);
+    oy = DrawBattlePlate(BTA_MOVE, x, y, MOVE_W, MOVE_H, colour, PlateState(s, HIT_MOVE + i, s->cursor == i),
+                         s->blink, HIT_MOVE + i);
+    DrawSmoothStr(&sNormal, gMoveNames[move], x + 10, oy + 5, 4, sWhite, dark, &shadow);
+    DrawTypeIcon(data->type, x + 11, oy + 33);
+    StringCopy(text, gText_MoveInterfacePP);
+    StringAppend(text, Number(s->moves4.currentPp[i], 2, STR_CONV_MODE_RIGHT_ALIGN));
+    StringAppend(text, gText_Slash);
+    StringAppend(text, Number(s->moves4.maxPp[i], 2, STR_CONV_MODE_RIGHT_ALIGN));
+    PpColours(s->moves4.currentPp[i], s->moves4.maxPp[i], &fg, &sh);
+    DrawStrRight(&sNormal, text, x + MOVE_W - 12, oy + 32, fg, sh);
+    {
+        int tx = DrawStr(&sSmall, Ascii("POW "), x + 12, oy + 56, TXT_DARK, TXT_LIGHT);
+
+        DrawStr(&sSmall, data->power > 1 ? Number(data->power, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"), tx,
+                oy + 56, TXT_DARK, TXT_LIGHT);
+        StringCopy(text, Ascii("ACC "));
+        StringAppend(text, data->accuracy ? Number(data->accuracy, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"));
+        DrawStrRight(&sSmall, text, x + MOVE_W - 12, oy + 56, TXT_DARK, TXT_LIGHT);
+    }
 }
 
 static void DrawBattleMoves(const ViewState *s)
 {
-    for (int i = 0; i < MAX_MON_MOVES; ++i)
-    {
-        int x = i & 1 ? 164 : 12, y = i & 2 ? 140 : 64;
-        u16 move = s->moves4.moves[i];
-        bool8 on = move != MOVE_NONE && (s->cursor == i || s->pressed == HIT_MOVE + i);
-        const struct BattleMove *data = &gBattleMoves[move];
-        u8 text[20];
+    int oy;
 
-        DrawBoxEx(BOX_MENU, x, y, 18, 9, on);
-        if (move == MOVE_NONE)
-        {
-            DrawStrCentered(&sNormal, Ascii("-"), x + 72, y + 28, TXT_LIGHT, TXT_WHITE);
-            continue;
-        }
-        AddHit(x, y, 144, 72, HIT_MOVE + i);
-        DrawStr(&sNormal, gMoveNames[move], x + 14, y + 9, s->moves4.currentPp[i] ? LABEL_FG(on) : TXT_RED,
-                s->moves4.currentPp[i] ? LABEL_SH(on) : TXT_LRED);
-        DrawTypeIcon(data->type, x + 14, y + 30);
-        StringCopy(text, gText_MoveInterfacePP);
-        StringAppend(text, Ascii(" "));
-        StringAppend(text, Number(s->moves4.currentPp[i], 2, STR_CONV_MODE_RIGHT_ALIGN));
-        StringAppend(text, gText_Slash);
-        StringAppend(text, Number(s->moves4.maxPp[i], 2, STR_CONV_MODE_RIGHT_ALIGN));
-        DrawStrRight(&sSmall, text, x + 130, y + 32, LABEL_FG(on), LABEL_SH(on));
-        {
-            int tx = DrawStr(&sSmall, Ascii("POW "), x + 14, y + 50, LABEL_FG(on), LABEL_SH(on));
-            tx = DrawStr(&sSmall, data->power > 1 ? Number(data->power, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"),
-                         tx, y + 50, LABEL_FG(on), LABEL_SH(on));
-            tx = DrawStr(&sSmall, Ascii("   ACC "), tx, y + 50, LABEL_FG(on), LABEL_SH(on));
-            DrawStr(&sSmall, data->accuracy ? Number(data->accuracy, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"),
-                    tx, y + 50, LABEL_FG(on), LABEL_SH(on));
-        }
-    }
-    DrawLabelButton(12, 216, 37, 3, gText_Cancel2, s->pressed == HIT_CANCEL || s->cursor == MAX_MON_MOVES, TRUE,
-                    HIT_CANCEL);
+    for (int i = 0; i < MAX_MON_MOVES; ++i)
+        DrawMovePlate(s, i);
+    oy = DrawBattlePlate(BTA_CANCEL, 84, 192, 152, 26, sHueCancel,
+                         PlateState(s, HIT_CANCEL, s->cursor == MAX_MON_MOVES), s->blink, HIT_CANCEL);
+    DrawSmoothStr(&sNormal, gText_Cancel2, 160 - SmoothInkWidth(&sNormal, gText_Cancel2, 4) / 2, oy + 5, 4, sWhite,
+                  PLATE_DARK(sHueCancel), NULL);
 }
 
+/* Left and right move the game's target cursor; OK is what A does. */
 static void DrawBattleTarget(const ViewState *s)
 {
-    static const u8 left[] = {CHAR_LEFT_ARROW, EOS}, right[] = {CHAR_RIGHT_ARROW, EOS};
+    static const u8 left[] = {CHAR_LEFT_ARROW, EOS}, right[] = {CHAR_RIGHT_ARROW, EOS}, ok[] = {CHAR_O, CHAR_K, EOS};
+    const struct { s16 x, y; Rgb hue; const u8 *label; u8 hit; } plates[4] = {
+        {6, ACT_Y, sHueRun, left, HIT_TARGET_LEFT},
+        {164, ACT_Y, sHueRun, right, HIT_TARGET_RIGHT},
+        {6, ROW_Y, sHueFight, ok, HIT_TARGET_OK},
+        {164, ROW_Y, sHueCancel, gText_Cancel2, HIT_CANCEL},
+    };
 
-    DrawLabelButton(12, 64, 18, 9, left, s->pressed == HIT_TARGET_LEFT, TRUE, HIT_TARGET_LEFT);
-    DrawLabelButton(164, 64, 18, 9, right, s->pressed == HIT_TARGET_RIGHT, TRUE, HIT_TARGET_RIGHT);
-    DrawLabelButton(12, 144, 18, 9, Ascii("OK"), s->pressed == HIT_TARGET_OK, TRUE, HIT_TARGET_OK);
-    DrawLabelButton(164, 144, 18, 9, gText_Cancel2, s->pressed == HIT_CANCEL, TRUE, HIT_CANCEL);
+    for (int i = 0; i < 4; ++i)
+    {
+        Rgb dark = PLATE_DARK(plates[i].hue), shadow = PLATE_SHADOW(plates[i].hue);
+        int oy = DrawBattlePlate(BTA_TARGET, plates[i].x, plates[i].y, MOVE_W, ROW_H, plates[i].hue,
+                                 PlateState(s, plates[i].hit, plates[i].hit == HIT_TARGET_OK), s->blink, plates[i].hit);
+
+        DrawSmoothStr(&sNormal, plates[i].label, plates[i].x + 85 - SmoothInkWidth(&sNormal, plates[i].label, 8) / 2,
+                      oy + 22, 8, sCream, dark, &shadow);
+    }
 }
 
-static void DrawBattleInfo(const ViewState *s)
-{
-    /* The party, so a switch can be planned while the turn plays out. The
-     * message is not repeated here: the top screen shows it. */
-    DrawBox(BOX_MENU, 0, 64, 40, 22);
-    for (int i = 0; i < PARTY_SIZE; ++i)
-    {
-        const MonView *m = &s->party[i];
-        int x = 12 + (i % 3) * 100, y = 100 + (i / 3) * 72;
+/*
+ * While the turn plays out (the backdrop alone) the next menus are made
+ * ready, one plate or label a frame: the action menu as it will come and the
+ * moves of the mon on the left, with the focus ring's two blink tones. The
+ * menus are walked with an empty clip, so nothing is drawn: only the one
+ * piece missing is built. When they come they are copied together instead
+ * of worked out in the frame they appear in. A pressed plate is built when
+ * it is first pressed.
+ */
+static u32 sWarmKey = 0xFFFFFFFF;
 
-        if (!m->species)
-            continue;
-        AddMonIcon(m->iconSpecies, m->deoxys, x, y, m->fainted);
-        DrawStr(&sSmall, m->nick, x + 34, y + 2, TXT_DARK, TXT_LIGHT);
-        if (!m->isEgg)
-        {
-            DrawHpBar(x + 34, y + 18, 48, m->hp, m->maxHp, &sRes.partyPal[4]);
-            DrawStatusIcon(m->ailment, x + 34, y + 24);
-        }
+static void WarmBattleMenus(void)
+{
+    static ViewState v;
+    u8 battler = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+    int ox = sOX, hits = sHitCount, clip[4] = {sClipX0, sClipY0, sClipX1, sClipY1};
+    u32 key;
+
+    if (!sBta.file || battler >= MAX_BATTLERS_COUNT || sBuildBudget != 0xFF)
+        return;
+    memset(&v, 0, sizeof(v));
+    v.safari = (gBattleTypeFlags & BATTLE_TYPE_SAFARI) != 0;
+    v.quickBall = v.safari ? ITEM_NONE : CtrBattle_QuickBallItem();
+    v.pressed = HIT_NONE;
+    for (int i = 0; i < MAX_MON_MOVES; ++i)
+        v.moves4.moves[i] = gBattleMons[battler].moves[i];
+    key = (v.safari ? 1 : 0) | (v.quickBall != ITEM_NONE ? 2 : 0);
+    for (int i = 0; i < MAX_MON_MOVES; ++i)
+        key = key * 31 + v.moves4.moves[i];
+    if (key == sWarmKey)
+        return;
+    ResolveFonts();
+    sOX = 0;
+    sClipX0 = sClipY0 = sClipX1 = sClipY1 = 0;
+    sBuildBudget = 1;
+    SnapshotPartyBalls(&v);
+    for (v.blink = 0; v.blink < 2 && sBuildBudget; ++v.blink)
+    {
+        v.mode = MODE_BATTLE_ACTION;
+        DrawBattleActions(&v);
+        v.mode = MODE_BATTLE_MOVE;
+        DrawBattleMoves(&v);
     }
+    /* A pass that built nothing: all of it is ready. */
+    if (sBuildBudget == 1)
+        sWarmKey = key;
+    sBuildBudget = 0xFF;
+    sOX = ox;
+    sHitCount = hits;
+    sClipX0 = clip[0];
+    sClipY0 = clip[1];
+    sClipX1 = clip[2];
+    sClipY1 = clip[3];
 }
 
 /* ------------------------------------------------------------------------ */
@@ -3597,16 +4487,13 @@ static void Render(const ViewState *s)
     }
     else if (s->mode >= MODE_BATTLE_INFO)
     {
-        CopyCache(CACHE_WIDE);
-        DrawBattleHeader(s);
+        CopyCache(sCache[CACHE_BATTLE] ? CACHE_BATTLE : CACHE_WIDE);
         if (s->mode == MODE_BATTLE_ACTION)
             DrawBattleActions(s);
         else if (s->mode == MODE_BATTLE_MOVE)
             DrawBattleMoves(s);
         else if (s->mode == MODE_BATTLE_TARGET)
             DrawBattleTarget(s);
-        else
-            DrawBattleInfo(s);
     }
     else
     {
@@ -3702,30 +4589,27 @@ static bool8 RectAddHit(Rect *r, u8 id)
     return RectAddHitOf(r, id);
 }
 
-/* The pixels the header's panel of a battler covers, and a party slot's on
- * the battle info screen: where an HP bar, its numbers and the status icon
- * change. Positions from DrawBattleHeader and DrawBattleInfo. */
-static void RectAddBattler(Rect *r, const ViewState *s, int i)
+/* A battle plate's hit, with the room its ring and shadow take. */
+static bool8 RectAddPlate(Rect *r, u8 id)
 {
-    if (s->isDouble)
-    {
-        int x = i & 1 ? 170 : 10, y = i & 2 ? 28 : 8;
+    Rect plate;
 
-        RectAdd(r, x + 66, y - 2, x + 150, y + 18);
-    }
-    else
-    {
-        int x = i == 0 ? 10 : 170;
-
-        RectAdd(r, x - 2, 6, x + 148, 54);
-    }
+    RectInit(&plate);
+    if (!RectAddHitOf(&plate, id))
+        return FALSE;
+    RectAdd(r, plate.x0 - 4, plate.y0 - 4, plate.x1 + 4, plate.y1 + 6);
+    return TRUE;
 }
 
-static void RectAddPartySlot(Rect *r, int i)
+/* The battle cursor's plate: the action (or the quick ball, 4), the move
+ * (or CANCEL), or OK when choosing a target. */
+static u8 BattleCursorHit(const ViewState *s, u8 cursor)
 {
-    int x = 12 + (i % 3) * 100, y = 100 + (i / 3) * 72;
-
-    RectAdd(r, x - 2, y - 2, x + 98, y + 34);
+    if (s->mode == MODE_BATTLE_ACTION)
+        return cursor == 4 ? HIT_QUICK_BALL : HIT_ACTION + cursor;
+    if (s->mode == MODE_BATTLE_MOVE)
+        return cursor == MAX_MON_MOVES ? HIT_CANCEL : HIT_MOVE + cursor;
+    return HIT_TARGET_OK;
 }
 
 /* The clip a redraw can be limited to, when the new view differs from the
@@ -3742,19 +4626,11 @@ static bool8 DirtyRect(const ViewState *now, const ViewState *shown, Rect *r)
         return FALSE;
     probe = *now;
     probe.pressed = shown->pressed;
-    if (now->mode == MODE_BATTLE_ACTION || now->mode == MODE_BATTLE_MOVE)
-        probe.cursor = shown->cursor;
-    for (int i = 0; i < MAX_BATTLERS_COUNT; ++i)
+    if (battle)
     {
-        probe.battlers[i].hp = shown->battlers[i].hp;
-        probe.battlers[i].ailment = shown->battlers[i].ailment;
+        probe.cursor = shown->cursor;
+        probe.blink = shown->blink;
     }
-    if (now->mode == MODE_BATTLE_INFO)
-        for (int i = 0; i < PARTY_SIZE; ++i)
-        {
-            probe.party[i].hp = shown->party[i].hp;
-            probe.party[i].ailment = shown->party[i].ailment;
-        }
     if (now->mode == MODE_FIELD)
         for (int i = 0; i < OPTION_ROWS; ++i)
             if (i != OPT_VOXEL)
@@ -3763,28 +4639,20 @@ static bool8 DirtyRect(const ViewState *now, const ViewState *shown, Rect *r)
         return FALSE;
 
     RectInit(r);
+    if (battle)
+    {
+        /* A plate pressed or let go, the cursor moved, its ring blinked. */
+        if (now->pressed != shown->pressed
+         && !((now->pressed == HIT_NONE || RectAddPlate(r, now->pressed))
+              && (shown->pressed == HIT_NONE || RectAddPlate(r, shown->pressed))))
+            return FALSE;
+        if ((now->cursor != shown->cursor || now->blink != shown->blink)
+         && !(RectAddPlate(r, BattleCursorHit(now, now->cursor)) && RectAddPlate(r, BattleCursorHit(now, shown->cursor))))
+            return FALSE;
+        return r->x0 < r->x1 && r->y0 < r->y1;
+    }
     if (now->pressed != shown->pressed && !(RectAddHit(r, now->pressed) && RectAddHit(r, shown->pressed)))
         return FALSE;
-    if (now->cursor != shown->cursor)
-    {
-        for (int k = 0; k < 2; ++k)
-        {
-            u8 c = k ? now->cursor : shown->cursor, id;
-
-            if (now->mode == MODE_BATTLE_ACTION)
-                id = HIT_ACTION + c;
-            else
-                id = c == MAX_MON_MOVES ? HIT_CANCEL : HIT_MOVE + c;
-            if (!RectAddHit(r, id))
-                return FALSE;
-        }
-    }
-    for (int i = 0; i < MAX_BATTLERS_COUNT; ++i)
-        if (now->battlers[i].hp != shown->battlers[i].hp || now->battlers[i].ailment != shown->battlers[i].ailment)
-            RectAddBattler(r, now, i);
-    for (int i = 0; i < PARTY_SIZE; ++i)
-        if (now->party[i].hp != shown->party[i].hp || now->party[i].ailment != shown->party[i].ailment)
-            RectAddPartySlot(r, i);
     for (int i = 0; now->mode == MODE_FIELD && i < OPTION_ROWS; ++i)
         if (now->options[i] != shown->options[i] && !RectAddHit(r, HIT_OPTION + i))
             return FALSE;
@@ -4930,6 +5798,14 @@ static u8 ProcessTouch(u8 mode)
                 NavSwipe(sTouch.lastY - sTouch.startY);
             return HIT_NONE;
         }
+        /* While the turn plays out the screen is the backdrop: a tap on it is
+         * A, on with the text. */
+        if (mode == MODE_BATTLE_INFO)
+        {
+            if (!sTouch.dragged)
+                PressOnce(A_BUTTON);
+            return HIT_NONE;
+        }
         if ((!sTouch.dragged || sTouch.pressed == HIT_MAP) && HitTest(sTouch.lastX, sTouch.lastY) == sTouch.pressed)
             Activate(sTouch.pressed, mode);
         return HIT_NONE;
@@ -5458,5 +6334,7 @@ void CtrBottom_Frame(void)
         sAnimFrame = (frames >> 4) & 1;
         AnimateIcons();
     }
+    if (mode == MODE_BATTLE_INFO)
+        WarmBattleMenus();
     BottomProfile(frames, mode, ticks, 0);
 }
