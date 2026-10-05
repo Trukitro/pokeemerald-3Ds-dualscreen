@@ -12,6 +12,11 @@
 #include "pokemon.h"
 #include "constants/pokedex.h"
 #include "sound.h"
+#include "characters.h"
+#include "item.h"
+#include "sound.h"
+#include "constants/item.h"
+#include "constants/items.h"
 #include "constants/songs.h"
 
 const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
@@ -52,6 +57,103 @@ static void CompleteNationalDex(void)
 }
 
 static const char *const sDexDone[] = {"TAP TO SET"};
+/*
+ * Give items (CHEATS): a pocket, an item of it, a count, and GIVE puts them in
+ * the bag (OPTIONS is only open in the field). The item steps through the
+ * pocket's items in the game's order, skipping unused ids.
+ */
+static const char *const sGivePockets[] = {"ITEMS", "POKE BALLS", "TMS & HMS", "BERRIES", "KEY ITEMS"};
+static const char *const sGiveCounts[] = {"1", "5", "10", "50", "99"};
+static const u8 sGiveCountValues[] = {1, 5, 10, 50, 99};
+
+static bool8 GiveItemUsable(u16 item, u8 pocket)
+{
+    u8 name[ITEM_NAME_LENGTH + 1];
+
+    if (item == ITEM_NONE || item >= ITEMS_COUNT || GetPocketByItemId(item) != pocket)
+        return FALSE;
+    CopyItemName(item, name);
+    return name[0] != CHAR_QUESTION_MARK && name[0] != EOS;
+}
+
+static u8 GivePocket(void)
+{
+    int pocket = CtrSettings_GetInt("give_pocket", 0);
+
+    return POCKET_ITEMS + (pocket >= 0 && pocket < (int)ARRAY_COUNT(sGivePockets) ? pocket : 0);
+}
+
+/* The chosen item, or the pocket's first when that is not one of it. */
+static u16 GiveItem(void)
+{
+    u16 item = CtrSettings_GetInt("give_item", ITEM_NONE);
+    u8 pocket = GivePocket();
+
+    if (GiveItemUsable(item, pocket))
+        return item;
+    for (item = 1; item < ITEMS_COUNT; item++)
+        if (GiveItemUsable(item, pocket))
+            return item;
+    return ITEM_NONE;
+}
+
+static void GiveItemStep(int direction)
+{
+    u16 item = GiveItem();
+    u8 pocket = GivePocket();
+
+    if (item == ITEM_NONE)
+        return;
+    for (u16 tries = 0; tries < ITEMS_COUNT; tries++)
+    {
+        item = direction < 0 ? (item <= 1 ? ITEMS_COUNT - 1 : item - 1) : (item + 1 >= ITEMS_COUNT ? 1 : item + 1);
+        if (GiveItemUsable(item, pocket))
+            break;
+    }
+    CtrSettings_SetInt("give_item", item);
+}
+
+static const u8 *GiveItemText(void)
+{
+    static u8 name[ITEM_NAME_LENGTH + 1];
+    u16 item = GiveItem();
+
+    if (item == ITEM_NONE)
+        name[0] = EOS;
+    else
+        CopyItemName(item, name);
+    return name;
+}
+
+static void GiveItemsNow(void)
+{
+    u16 item = GiveItem();
+    int count = CtrSettings_GetInt("give_count", 0);
+    u16 quantity = sGiveCountValues[count >= 0 && count < (int)ARRAY_COUNT(sGiveCountValues) ? count : 0];
+
+    /* Key items come one at a time. */
+    if (GetPocketByItemId(item) == POCKET_KEY_ITEMS)
+        quantity = 1;
+    if (item != ITEM_NONE && CheckBagHasSpace(item, quantity) && AddBagItem(item, quantity))
+        PlaySE(SE_SUCCESS);
+    else
+        PlaySE(SE_FAILURE);
+}
+
+static const char *const sGiveText[] = {"TAP TO GIVE"};
+static const char *const sGiveOpenText[] = {"TAP TO OPEN"};
+static const char *const sGiveBackText[] = {"BACK TO CHEATS"};
+
+/* The cells have a screen of their own, opened from the first. */
+static void GiveOpen(void)
+{
+    CtrExtras_ShowScreen(CTR_EXTRAS_CHEATS, 1);
+}
+
+static void GiveBack(void)
+{
+    CtrExtras_ShowScreen(CTR_EXTRAS_CHEATS, 0);
+}
 
 const CtrExtra gCtrExtras[] =
 {
@@ -70,6 +172,12 @@ const CtrExtra gCtrExtras[] =
     {CTR_EXTRAS_CHEATS, "HOENN DEX FULL", "dex_hoenn", 0, 0, sDexDone, CompleteHoennDex, NULL, NULL},
     {CTR_EXTRAS_CHEATS, "NATIONAL DEX ON", "dex_national_on", 0, 0, sDexDone, UnlockNationalDex, NULL, NULL},
     {CTR_EXTRAS_CHEATS, "NATIONAL DEX FULL", "dex_national", 0, 0, sDexDone, CompleteNationalDex, NULL, NULL},
+    {CTR_EXTRAS_CHEATS, "GIVE ITEMS", "give_open", 0, 0, sGiveOpenText, GiveOpen, NULL, NULL},
+    {CTR_EXTRAS_SCREEN(CTR_EXTRAS_CHEATS, 1), "GIVE ITEMS", "give_back", 0, 0, sGiveBackText, GiveBack, NULL, NULL},
+    {CTR_EXTRAS_SCREEN(CTR_EXTRAS_CHEATS, 1), "POCKET", "give_pocket", 5, 0, sGivePockets, NULL, NULL, NULL},
+    {CTR_EXTRAS_SCREEN(CTR_EXTRAS_CHEATS, 1), "ITEM", "give_item", 0, 0, NULL, NULL, GiveItemStep, GiveItemText},
+    {CTR_EXTRAS_SCREEN(CTR_EXTRAS_CHEATS, 1), "HOW MANY", "give_count", 5, 0, sGiveCounts, NULL, NULL, NULL},
+    {CTR_EXTRAS_SCREEN(CTR_EXTRAS_CHEATS, 1), "GIVE", "give_now", 0, 0, sGiveText, GiveItemsNow, NULL, NULL},
     {0},
 };
 
