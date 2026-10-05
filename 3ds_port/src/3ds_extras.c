@@ -7,12 +7,55 @@
 #include "global.h"
 #include "3ds_extras.h"
 #include "3ds_platform.h"
+#include "event_data.h"
+#include "pokedex.h"
+#include "pokemon.h"
+#include "constants/pokedex.h"
+#include "sound.h"
+#include "constants/songs.h"
 
 const char *const gCtrExtrasOffOn[2] = {"OFF", "ON"};
+
+/*
+ * Pokedex (CHEATS): the Hoenn Pokedex complete, the National Pokedex
+ * unlocked, or complete (and unlocked): every Pokemon seen and caught. OPTIONS
+ * is only open in the field; the player saves to keep it.
+ */
+static void SetDexSeenCaught(u16 national)
+{
+    GetSetPokedexFlag(national, FLAG_SET_SEEN);
+    GetSetPokedexFlag(national, FLAG_SET_CAUGHT);
+}
+
+static void CompleteHoennDex(void)
+{
+    for (u16 hoenn = 1; hoenn <= HOENN_DEX_COUNT; hoenn++)
+        SetDexSeenCaught(HoennToNationalOrder(hoenn));
+    PlaySE(SE_SUCCESS);
+}
+
+static void UnlockNationalDex(void)
+{
+    EnableNationalPokedex();
+    PlaySE(SE_SUCCESS);
+}
+
+static void CompleteNationalDex(void)
+{
+    EnableNationalPokedex();
+    for (u16 national = 1; national <= NATIONAL_DEX_COUNT; national++)
+        SetDexSeenCaught(national);
+    PlaySE(SE_SUCCESS);
+}
+
+static const char *const sDexDone[] = {"TAP TO SET"};
 
 const CtrExtra gCtrExtras[] =
 {
     /* Features add their lines here. */
+    {CTR_EXTRAS_CHEATS, "HOENN DEX FULL", "dex_hoenn", 0, 0, sDexDone, CompleteHoennDex, NULL, NULL},
+    {CTR_EXTRAS_CHEATS, "NATIONAL DEX ON", "dex_national_on", 0, 0, sDexDone, UnlockNationalDex, NULL, NULL},
+    {CTR_EXTRAS_CHEATS, "NATIONAL DEX FULL", "dex_national", 0, 0, sDexDone, CompleteNationalDex, NULL, NULL},
     {0},
 };
 
