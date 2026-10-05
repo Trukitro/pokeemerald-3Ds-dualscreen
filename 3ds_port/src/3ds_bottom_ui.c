@@ -1445,6 +1445,7 @@ typedef struct
     /* Battle. */
     u8 isDouble, safari, cursor, battler;
     u16 quickBall, quickBallCount;    /* the ball R throws, ITEM_NONE if none */
+    u8 quickBallFocus;                /* the D-pad is on the ball button */
     BattlerView battlers[MAX_BATTLERS_COUNT];
     struct ChooseMoveStruct moves4;
     u8 text[96];
@@ -1714,6 +1715,7 @@ static BattleAsk sAsk, sAsked;
 static u8 sBattleTap = 0xFF;   /* a tap for the controller to take */
 static bool8 sMoveCancel;      /* the move menu's cursor is on CANCEL */
 static bool8 sQuickBallTap;    /* the ball button was tapped */
+static bool8 sQuickBallFocus;  /* the D-pad is on the ball button (A throws) */
 
 static u8 CurrentMode(void)
 {
@@ -1838,6 +1840,7 @@ void CtrBattleMenu_Begin(void)
     sBattleTap = HIT_NONE;
     sMoveCancel = FALSE;
     sQuickBallTap = FALSE;
+    sQuickBallFocus = FALSE;
 }
 
 /* The ball button, once per tap: the action handler throws the ball. */
@@ -1877,8 +1880,35 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
     u8 tap = TakeBattleTap(ASK_ACTION), next = *cursor;
     u16 dpad = gMain.newKeys & DPAD_ANY;
 
-    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. */
+    /* FIGHT on top; BAG, POKéMON and RUN in a row under it. The ball
+     * button, right of FIGHT and over RUN, is reached from both. */
+    bool8 ball = !safari && CtrBattle_QuickBallItem() != ITEM_NONE;
+
     gMain.newKeys &= ~DPAD_ANY;
+    if (!ball)
+        sQuickBallFocus = FALSE;
+    if (sQuickBallFocus)
+    {
+        if (dpad & (DPAD_LEFT | DPAD_DOWN))
+        {
+            sQuickBallFocus = FALSE;
+            next = (dpad & DPAD_LEFT) ? 0 : 3;
+            PlaySE(SE_SELECT);
+            *cursor = next;
+        }
+        else if (gMain.newKeys & A_BUTTON)
+        {
+            gMain.newKeys &= ~A_BUTTON;
+            sQuickBallTap = TRUE;
+        }
+        dpad = 0;
+    }
+    else if (ball && (((dpad & DPAD_RIGHT) && next == 0) || ((dpad & DPAD_UP) && next == 3)))
+    {
+        sQuickBallFocus = TRUE;
+        PlaySE(SE_SELECT);
+        dpad = 0;
+    }
     if (dpad & DPAD_UP)
         next = 0;
     else if ((dpad & DPAD_DOWN) && next == 0)
@@ -1896,6 +1926,7 @@ void CtrBattleMenu_ActionInput(u8 *cursor, bool8 safari)
         sQuickBallTap = TRUE;
     if (tap >= HIT_ACTION && tap < HIT_ACTION + 4)
     {
+        sQuickBallFocus = FALSE;
         *cursor = tap - HIT_ACTION;
         gMain.newKeys |= A_BUTTON;
     }
@@ -2310,7 +2341,8 @@ static void Snapshot(ViewState *s, u8 mode, u8 pressed)
         SnapshotBattle(s);
         SnapshotParty(s);
         s->battler = b;
-        s->cursor = gActionSelectionCursor[b];
+        s->cursor = sQuickBallFocus ? 4 : gActionSelectionCursor[b];   /* 4: none lit */
+        s->quickBallFocus = sQuickBallFocus;
         /* The FIGHT button previews the four move types. */
         for (int i = 0; i < MAX_MON_MOVES; ++i)
             s->moves4.moves[i] = gBattleMons[b].moves[i];
@@ -3260,7 +3292,7 @@ static void DrawBattleActions(const ViewState *s)
     DrawButton(16, 60, ball ? 26 : 36, 10, on[0], HIT_ACTION + 0);
     if (ball)
     {
-        bool8 hot = s->pressed == HIT_QUICK_BALL;
+        bool8 hot = s->pressed == HIT_QUICK_BALL || s->quickBallFocus;
         u8 text[8];
 
         DrawButton(232, 60, 9, 10, hot, HIT_QUICK_BALL);
