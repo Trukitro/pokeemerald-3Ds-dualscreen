@@ -465,13 +465,14 @@ const uint16_t *VoxelBuildings_Footprint(const VoxelMapInstance *inst, int x, in
     return &sMasks[(unsigned)sFootprints[k] * 16u];
 }
 
-bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z)
+bool VoxelBuildings_FrontAt(const VoxelMapInstance *inst, int x, int y,
+                            float x0, float x1, float height, float *z)
 {
     unsigned i, count;
     const BuildingPlacement *p;
     const BuildingModel *m;
     const VoxelVertex *v;
-    float cx, south, best = -2.0f;
+    float left, south, best = -2.0f;
 
     if (ModelCell(inst, x, y, &i) < 0)
         return false;
@@ -479,21 +480,23 @@ bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *
     m = &sModels[sPageModels[p->pageModel].model];
     v = &sVertices[m->firstVertex];
     /* the model's own coordinates: tiles from its top-left cell */
-    cx = (float)(x - inst->originX - p->x) + 0.5f;
+    left = (float)(inst->originX + p->x);
     south = (float)(y - inst->originY - p->y) + 1.0f;
+    x0 -= left;
+    x1 -= left;
     for (uint32_t k = 0; k + 2 < m->vertexCount; k += 3)
     {
         const VoxelVertex *a = &v[k], *b = &v[k + 1], *c = &v[k + 2];
-        float x0 = a->x < b->x ? a->x : b->x, x1 = a->x > b->x ? a->x : b->x;
+        float lo = a->x < b->x ? a->x : b->x, hi = a->x > b->x ? a->x : b->x;
         float y0 = a->y < b->y ? a->y : b->y, y1 = a->y > b->y ? a->y : b->y;
 
-        if (c->x < x0) x0 = c->x;
-        if (c->x > x1) x1 = c->x;
+        if (c->x < lo) lo = c->x;
+        if (c->x > hi) hi = c->x;
         if (c->y < y0) y0 = c->y;
         if (c->y > y1) y1 = c->y;
-        /* upright, facing along z, across the cell's middle half a tile up */
+        /* upright, facing along z, in the cell, across the span at the height */
         if (a->z != b->z || a->z != c->z || a->z > south + 0.01f || a->z < south - 1.01f
-         || x0 > cx || x1 < cx || y0 > 0.5f || y1 < 0.5f)
+         || lo >= x1 || hi <= x0 || y0 > height || y1 < height)
             continue;
         if (a->z > best)
             best = a->z;
@@ -502,6 +505,12 @@ bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *
         return false;
     *z = (float)(inst->originY + p->y) + best;
     return true;
+}
+
+bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z)
+{
+    /* across the middle of the cell, half a tile up */
+    return VoxelBuildings_FrontAt(inst, x, y, (float)x + 0.49f, (float)x + 0.51f, 0.5f, z);
 }
 
 bool VoxelBuildings_EmitSome(VoxelBuilder *builder, const VoxelMapInstance *inst,

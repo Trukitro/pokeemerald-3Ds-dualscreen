@@ -473,26 +473,41 @@ static float CardPush(float cx, float cz, float halfW, float height)
 
 /*
  * Furniture against a room's back wall is modelled from its drawing, and the
- * drawing comes forward of the wall by half a cell: to the middle of the cell
- * before it, where a walker's card stands. Card and model front then share a
- * depth, and the model, drawn first, hid the walker in front of it. A pixel
- * along the line of sight puts the card in front again, as on the GBA. Under
- * either edge of the card, not only its middle: walking along the furniture,
- * half the card is over a model's cell before its middle is.
+ * drawing comes forward of the wall: half a cell, to the middle of the cell
+ * before it, where a walker's card stands - or further, a Pokemon Center's
+ * PC two pixels past it. Card and model front then share a depth, or the
+ * card is behind, and the model, drawn first, hid the walker in front of it.
+ * The card comes along the line of sight to a pixel in front of the model's
+ * face there, as on the GBA. Under either edge of the card, not only its
+ * middle: walking along the furniture, half the card is over a model's cell
+ * before its middle is, and beside a machine a sliver of it is.
  */
+#define VOXEL_MODEL_PUSH_MAX 0.5f      /* further than that is not furniture's front */
+#define VOXEL_MODEL_PUSH_HEIGHT 0.25f  /* where on the card the face is looked for */
+
 static float ModelPush(float cx, float cz, float halfW)
 {
     int y = (int)floorf(cz);
-    int x0 = (int)floorf(cx - halfW + VOXEL_CARD_CLEAR), x1 = (int)floorf(cx + halfW - VOXEL_CARD_CLEAR);
+    float left = cx - halfW + VOXEL_CARD_CLEAR, right = cx + halfW - VOXEL_CARD_CLEAR;
+    int x0 = (int)floorf(left), x1 = (int)floorf(right);
+    float push = 0.0f;
 
     for (int x = x0; x <= x1; ++x)
     {
         const VoxelMapInstance *inst = VoxelWorld_GetInstanceAt(x, y);
+        float front, need = VOXEL_CARD_CLEAR;
 
-        if (inst != NULL && VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
-            return VOXEL_CARD_CLEAR;
+        if (inst == NULL || !VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
+            continue;
+        if (VoxelBuildings_FrontAt(inst, x, y, left, right, VOXEL_MODEL_PUSH_HEIGHT, &front)
+         && front - cz + VOXEL_CARD_CLEAR > need)
+            need = front - cz + VOXEL_CARD_CLEAR;
+        if (need > VOXEL_MODEL_PUSH_MAX)
+            need = VOXEL_CARD_CLEAR;
+        if (need > push)
+            push = need;
     }
-    return 0.0f;
+    return push;
 }
 
 /*

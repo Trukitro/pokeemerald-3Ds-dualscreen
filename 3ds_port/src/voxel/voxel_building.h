@@ -76,6 +76,12 @@ bool VoxelBuildings_Variant(unsigned i, unsigned *layout, unsigned *metatile, un
  * model covers the cell or it has no such face.
  */
 bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z);
+/*
+ * The same face for anything standing in the cell: the southernmost upright
+ * face of the model there that crosses world x0..x1 at `height` tiles up.
+ */
+bool VoxelBuildings_FrontAt(const VoxelMapInstance *inst, int x, int y,
+                            float x0, float x1, float height, float *z);
 
 /* Appends every model whose top-left cell lies in [x0,x1) x [y0,y1), with
  * its placement's ground patches. */
