@@ -966,6 +966,27 @@ def house2():
     ])
 
 
+def house_with_bed():
+    """LAYOUT_HOUSE_WITH_BED (Petalburg's second house, and two more maps'):
+    the two houses' room with a bed in it, two chests and a bookcase along
+    the back wall, a table and two chairs."""
+    fl = GENERIC_FLOOR
+    # the chairs and the chest of drawers are the second house's, pixel for
+    # pixel, and stand here as they are (gen_voxel_buildings.reuse_pieces)
+    return [
+        piece("table", [(128, 64, 158, 96)], 10, leave=fl, solid=True),
+        # the bed, its head a board at the mattress's back
+        piece("bed_head", [(4, 48, 28, 56)], 7, base=7, leave=fl),
+        piece("bed", [(4, 56, 28, 80)], 7, leave=fl, solid=True),
+        # along the back wall: the green chest, the bookcase
+        piece("chest", [(16, 15, 32, 40)], 17, leave=GENERIC_WALL + fl, back=32),
+        piece("bookcase", [(128, 10, 160, 40)], 22, leave=GENERIC_WALL + fl, back=32),
+        piece("wall", [(0, 0, 160, 32)], 32, fill=16, foot=32, side=(64, 0, 80, 32)),
+        piece("side_w", [], 32, side=(64, 0, 80, 32), walls=[((0, 128), (0, 32))]),
+        piece("side_e", [], 32, side=(64, 0, 80, 32), walls=[((160, 32), (160, 128))]),
+    ]
+
+
 # ── Professor Birch's lab ─────────────────────────────────────────────────
 #
 # Desks and a bookcase along the back wall, standing on its row of collision
@@ -1364,6 +1385,11 @@ SPECS = [
         # Oldale's second house, and eleven more maps'
         "name": "house2",
         "interior": {"layout": "LAYOUT_HOUSE2", "ground": [0x223], "pieces": house2()},
+    },
+    {
+        # Petalburg's second house, and two more maps'
+        "name": "house_with_bed",
+        "interior": {"layout": "LAYOUT_HOUSE_WITH_BED", "ground": [0x223], "pieces": house_with_bed()},
     },
     {
         # Rustboro's gym: Roxanne's maze
