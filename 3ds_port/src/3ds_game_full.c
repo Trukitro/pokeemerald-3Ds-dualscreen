@@ -20,6 +20,7 @@
 #include "scanline_effect.h"
 #include "item_menu.h"
 #include "party_menu.h"
+#include "fldeff_misc.h"
 #include "constants/party_menu.h"
 #include "port_platform.h"
 #include "port_log.h"
@@ -403,6 +404,12 @@ bool CtrGame_IsOverworld(void)
     if (gMapHeader.mapLayout == NULL || gSaveBlock1Ptr == NULL)
         return false;
     return gMain.callback2 == CB2_Overworld || gMain.callback2 == CB2_OverworldBasic;
+}
+
+/* The poison step's effect is running (see DrawPoisonVeil in 3ds_video.c). */
+bool CtrGame_FieldPoison(void)
+{
+    return FldEffPoison_IsActive() != 0;
 }
 
 /* AgbMain never returns, so a reset request restarts the process state here. */
