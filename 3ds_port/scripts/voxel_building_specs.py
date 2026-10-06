@@ -1045,6 +1045,41 @@ def plain_room(width, height, plain_x, sides):
     return pieces
 
 
+# ── Dewford's gym ─────────────────────────────────────────────────────────
+#
+# A maze cut in rock two cells tall: every blocked cell is rock, its top or
+# the two rows of its face, so each column's run of blocked cells is a block
+# drawn from the run's first row to its foot. Runs side by side with the same
+# rows are one rectangle (cells: x0, y0, x1, y1), front first. The leader's
+# alcove and the statues, blocked too, are not rock and stay flat.
+
+DEWFORD_GYM_BLOCKS = [
+    (0, 0, 1, 28), (1, 18, 2, 28), (2, 23, 3, 28), (3, 24, 4, 28), (8, 23, 12, 28),
+    (13, 23, 16, 28), (16, 19, 17, 28), (17, 0, 18, 28), (3, 17, 6, 22), (6, 15, 8, 22),
+    (9, 15, 10, 21), (10, 16, 11, 21), (12, 16, 13, 19), (13, 9, 14, 19), (8, 15, 9, 18),
+    (14, 13, 16, 18), (3, 11, 5, 16), (1, 12, 2, 15), (5, 7, 6, 14), (6, 6, 7, 14),
+    (10, 9, 12, 14), (7, 9, 9, 13), (14, 7, 16, 12), (1, 6, 2, 10), (3, 7, 5, 10),
+    (16, 0, 17, 9), (13, 0, 15, 6), (7, 0, 10, 5), (12, 0, 13, 5), (11, 0, 12, 4),
+    (2, 0, 3, 3), (5, 0, 6, 3), (10, 0, 11, 3), (15, 0, 16, 3),
+]
+DEWFORD_GYM_FLOOR = [0x201, 0x202, 0x203, 0x205, 0x206, 0x209, 0x20A, 0x20B, 0x20D, 0x211,
+                     0x212, 0x213, 0x215, 0x216, 0x218, 0x21A, 0x21B, 0x222, 0x223]
+
+
+def dewford_gym():
+    side = (128, 416, 144, 448)     # a stretch of the front wall's face
+    # The rock the room is cut in, down its west and east edges, is a wall's
+    # face each side and not a block: a block's art is its drawing three times
+    # over (its hidden top and sides), and those two columns' would put the
+    # layout's page past the console's 512x512.
+    return [piece("block_%d" % i, [(x0 * 16, y0 * 16, x1 * 16, y1 * 16)], 32)
+            for i, (x0, y0, x1, y1) in enumerate(DEWFORD_GYM_BLOCKS)
+            if x0 not in (0, 17)] + [
+        piece("edge_w", [], 32, side=side, walls=[((16, 448), (16, 32))]),
+        piece("edge_e", [], 32, side=side, walls=[((272, 32), (272, 448))]),
+    ]
+
+
 # ── Professor Birch's lab ─────────────────────────────────────────────────
 #
 # Desks and a bookcase along the back wall, standing on its row of collision
@@ -1457,6 +1492,12 @@ SPECS = [
     }
     for layout, width, height, ground, plain_x, sides in PLAIN_ROOMS
 ] + [
+    {
+        # Dewford's gym: Brawly's maze
+        "name": "dewford_gym",
+        "interior": {"layout": "LAYOUT_DEWFORD_TOWN_GYM", "ground": [0x210],
+                     "shade": DEWFORD_GYM_FLOOR, "pieces": dewford_gym()},
+    },
     {
         # Petalburg's gym: Norman's rooms
         "name": "petalburg_gym",
