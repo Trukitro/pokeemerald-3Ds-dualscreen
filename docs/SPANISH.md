@@ -4,8 +4,7 @@ Pokémon Emerald 3Ds Dual Screen funciona con la ROM española limpia de
 **Pokémon Esmeralda (España, BPES)**, con sus textos y gráficos. La traducción
 no se distribuye: sale de tu propia ROM, en tu ordenador o en tu navegador.
 
-Es **experimental**. Una versión anterior se probó en una 3DS física; la
-integración con las funciones actuales necesita su propia prueba en consola.
+Probado en una 3DS física con las funciones actuales (6 de octubre de 2026).
 
 ## Instalar
 

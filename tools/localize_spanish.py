@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the experimental BPES localization from a user's clean Spanish ROM.
+"""Stage the BPES localization from a user's clean Spanish ROM.
 
 The checked-in manifest contains source positions and ROM offsets, never game
 text or graphics. Run after bootstrap applies the pinned source patches.

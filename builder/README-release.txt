@@ -15,7 +15,7 @@ What you need
   Homebrew Launcher.
 - A clean ROM of Pokémon Emerald (USA, Europe),
   SHA-1 f3ae088181bf583e55daf962a92bb46f4f1d07b7, or of Pokémon Esmeralda
-  (Spain), SHA-1 fe1558a3dcb0360ab558969e09b690888b846dd9 (experimental).
+  (Spain), SHA-1 fe1558a3dcb0360ab558969e09b690888b846dd9.
 - The console's SD card in this computer (or any folder, to copy by hand).
 
 Install
