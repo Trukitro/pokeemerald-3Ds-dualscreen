@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+New and improved:
+
+- Spanish: the game in Spanish from your own Pokémon Esmeralda (Spain) ROM.
+  The web and Windows builders accept it and pick the language from the ROM;
+  every release carries both languages. The texts, graphics, braille, credits
+  and Trainer Hill come from your ROM; the touch screen has Spanish labels and
+  the Pokédex shows metres and kilograms. Translation work by Jesus Oliva
+  (pull request #6).
+- Building from source: `tools/bootstrap.py --make --spanish-rom` builds the
+  Spanish game, and a clean tree now builds in one go.
+
 ## 0.2.0 — 2026-10-04
 
 New and improved:

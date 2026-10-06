@@ -195,6 +195,25 @@ class WebBuildTests(SyntheticPayloadMixin, unittest.TestCase):
         result = self.build(self.synthetic["rom"], bad)
         self.assertEqual(result["error"]["code"], "manifest_invalid")
 
+    def test_second_variant_builds_from_its_own_rom(self):
+        result = self.build(self.synthetic["rom_es"])
+        self.assertTrue(result["ok"], result)
+        manifest = json.loads((self.unpacked / "web-manifest.json").read_text())
+        variant = manifest["variants"][0]
+        self.assertNotEqual(variant["dataAbi"], manifest["dataAbi"])
+        self.assertEqual(result["result"]["abi"], variant["dataAbi"])
+        with pak.PakReader(result["pak"]) as reader:
+            self.assertEqual(reader.verify(), 3)
+            self.assertEqual(reader.rom_sha1.hex(), variant["rom"]["sha1"])
+
+    def test_variant_abi_must_match(self):
+        bad = self.tmp / "abi-es.json"
+        manifest = json.loads((self.unpacked / "web-manifest.json").read_text())
+        manifest["variants"][0]["dataAbi"] = "00000001"
+        bad.write_text(json.dumps(manifest))
+        result = self.build(self.synthetic["rom_es"], bad)
+        self.assertEqual(result["error"]["code"], "abi_mismatch")
+
     def test_manifest_abi_must_match(self):
         bad = self.tmp / "abi.json"
         manifest = json.loads((self.unpacked / "web-manifest.json").read_text())
@@ -228,6 +247,29 @@ class ManifestTests(SyntheticPayloadMixin, unittest.TestCase):
             "pak listed": lambda m: m["files"].append({"path": "payload/emerald3ds.pak", "sha256": "0" * 64,
                                                        "size": 1}),
             "hash": lambda m: m["assets"]["smdh"].update(sha256="abc"),
+        }
+        for name, change in cases.items():
+            with self.subTest(name):
+                manifest = self.manifest()
+                change(manifest)
+                with self.assertRaises(webmanifest.ManifestError):
+                    webmanifest.validate(manifest)
+
+    def test_variants_are_described(self):
+        manifest = self.manifest()
+        self.assertEqual(len(manifest["supportedRoms"]), 1)
+        [variant] = manifest["variants"]
+        self.assertEqual(variant["assets"]["threeDsx"]["path"], "payload/es/Emerald3DS.3dsx")
+        self.assertEqual(variant["assets"]["threeDsx"]["releaseAsset"], "Emerald3DS-es.3dsx")
+        shas = [v["rom"]["sha1"] for v in webmanifest.rom_variants(manifest)]
+        self.assertEqual(shas, [manifest["supportedRoms"][0]["sha1"], variant["rom"]["sha1"]])
+
+    def test_invalid_variants_are_refused(self):
+        cases = {
+            "not a list": lambda m: m.update(variants={}),
+            "abi": lambda m: m["variants"][0].update(dataAbi="XYZ"),
+            "same rom twice": lambda m: m["variants"][0]["rom"].update(sha1=m["supportedRoms"][0]["sha1"]),
+            "file not listed": lambda m: m["variants"][0]["assets"]["recipe"].update(path="payload/es/other"),
         }
         for name, change in cases.items():
             with self.subTest(name):
