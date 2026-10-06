@@ -516,6 +516,17 @@ unsigned VoxelWorld_GetMetatileBehavior(int worldX, int worldY)
     return UNPACK_BEHAVIOR(GetMetatileAttribute(inst, block & MAPGRID_METATILE_ID_MASK));
 }
 
+bool VoxelWorld_IsStillWater(int worldX, int worldY)
+{
+    unsigned behavior = VoxelWorld_GetMetatileBehavior(worldX, worldY);
+
+    return behavior == MB_POND_WATER
+        || MetatileBehavior_IsPuddle(behavior)
+        || MetatileBehavior_IsShallowFlowingWater(behavior)
+        || behavior == MB_HOT_SPRINGS
+        || behavior == MB_REFLECTION_UNDER_BRIDGE;
+}
+
 bool VoxelWorld_IsVisibleReflectiveSurface(int worldX, int worldY)
 {
     const VoxelMapInstance *inst = NULL;

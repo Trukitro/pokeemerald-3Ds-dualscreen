@@ -19,6 +19,8 @@ bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst)
     return inst == &sMap && sGeneral;
 }
 
+bool VoxelWorld_IsStillWater(int x, int y) { (void)x; (void)y; return false; }
+
 /* Grass by behaviour on the console; here the tiles that are tall grass. */
 VoxelGrass VoxelWorld_Grass(int x, int y)
 {

@@ -181,6 +181,7 @@ static DVLB_s *sDvlb;
 static shaderProgram_s sProgram;
 static int sUniProjection = -1, sUniModelView = -1;
 static int sUniWind = -1;
+static int sUniWaveA = -1, sUniWaveB = -1, sUniWaveGain = -1;
 static int sUniShadeTint = -1, sUniTintDiff = -1, sUniGrade = -1, sUniFog = -1;
 static int sUniDappleU = -1, sUniDappleV = -1;
 /* The tree crowns' brightness against the rest of the art, applied once as
@@ -1591,6 +1592,9 @@ bool CtrVoxel_Init(void)
     sUniDappleU = shaderInstanceGetUniformLocation(sProgram.vertexShader, "dappleU");
     sUniDappleV = shaderInstanceGetUniformLocation(sProgram.vertexShader, "dappleV");
     sUniWind = shaderInstanceGetUniformLocation(sProgram.vertexShader, "wind");
+    sUniWaveA = shaderInstanceGetUniformLocation(sProgram.vertexShader, "waveA");
+    sUniWaveB = shaderInstanceGetUniformLocation(sProgram.vertexShader, "waveB");
+    sUniWaveGain = shaderInstanceGetUniformLocation(sProgram.vertexShader, "waveGain");
     if (sUniProjection < 0 || sUniModelView < 0 || sUniShadeTint < 0
      || sUniTintDiff < 0 || sUniGrade < 0 || sUniFog < 0
      || sUniDappleU < 0 || sUniDappleV < 0)
@@ -4587,9 +4591,44 @@ static void FitToLogicalSurface(C3D_Mtx *mtx)
     }
 }
 
+/*
+ * The light that crosses the water (voxel.v.pica): two trains of waves, each
+ * a direction and a length in tiles and a speed in waves a second, and how
+ * much brighter the sea is under them, how deep they are on it and how much
+ * shallower on still water. A draw's vertices are measured from its own
+ * origin, so each wave's phase there goes in with it: the waves are the
+ * world's, and run on unbroken from chunk to chunk and map to map.
+ */
+#define VOXEL_WAVE_A_X     0.21f
+#define VOXEL_WAVE_A_Z     0.13f
+#define VOXEL_WAVE_A_SPEED 0.30f
+#define VOXEL_WAVE_B_X    (-0.11f)
+#define VOXEL_WAVE_B_Z     0.27f
+#define VOXEL_WAVE_B_SPEED 0.42f
+#define VOXEL_WATER_GLOW   0.10f
+#define VOXEL_WAVE_DEPTH_SEA   0.34f
+#define VOXEL_WAVE_DEPTH_STILL 0.16f
+
+static void SetWaves(int worldX, int worldZ)
+{
+    float t = (float)(sFrame % 36000u) * (1.0f / 60.0f);
+    float a = VOXEL_WAVE_A_X * (float)worldX + VOXEL_WAVE_A_Z * (float)worldZ + VOXEL_WAVE_A_SPEED * t;
+    float b = VOXEL_WAVE_B_X * (float)worldX + VOXEL_WAVE_B_Z * (float)worldZ + VOXEL_WAVE_B_SPEED * t;
+
+    if (sUniWaveA < 0 || sUniWaveB < 0 || sUniWaveGain < 0)
+        return;
+    /* Only its fraction matters, and a small number keeps it exact. */
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, sUniWaveA, VOXEL_WAVE_A_X, 0.0f, VOXEL_WAVE_A_Z, a - floorf(a));
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, sUniWaveB, VOXEL_WAVE_B_X, 0.0f, VOXEL_WAVE_B_Z, b - floorf(b));
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, sUniWaveGain, VOXEL_WATER_GLOW, VOXEL_WAVE_DEPTH_SEA,
+                  VOXEL_WAVE_DEPTH_STILL - VOXEL_WAVE_DEPTH_SEA, 0.0f);
+}
+
 static void SetModelView(const C3D_Mtx *view, int worldX, int worldZ)
 {
     C3D_Mtx model;
+
+    SetWaves(worldX, worldZ);
 
     Mtx_Copy(&model, view);
     Mtx_Translate(&model, (float)worldX, 0.0f, (float)worldZ, true);

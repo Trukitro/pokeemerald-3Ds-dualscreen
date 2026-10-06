@@ -88,6 +88,9 @@ int VoxelWorld_GetMetatileId(int worldX, int worldY);
 /* The cell's collision bits (0: walkable). */
 unsigned VoxelWorld_GetCollision(int worldX, int worldY);
 unsigned VoxelWorld_GetMetatileBehavior(int worldX, int worldY);
+/* Of a cell of water (VOXEL_SHAPE_WATER): a pond, a puddle, a stream or a
+ * spring rather than the sea. Its waves are gentler (voxel.v.pica). */
+bool VoxelWorld_IsStillWater(int worldX, int worldY);
 /* Reflective behavior whose metatile art actually depicts water or ice. */
 bool VoxelWorld_IsVisibleReflectiveSurface(int worldX, int worldY);
 /*
