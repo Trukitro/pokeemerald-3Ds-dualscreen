@@ -468,43 +468,50 @@ const uint16_t *VoxelBuildings_Footprint(const VoxelMapInstance *inst, int x, in
 bool VoxelBuildings_FrontAt(const VoxelMapInstance *inst, int x, int y,
                             float x0, float x1, float height, float *z)
 {
-    unsigned i, count;
-    const BuildingPlacement *p;
-    const BuildingModel *m;
-    const VoxelVertex *v;
-    float left, south, best = -2.0f;
+    unsigned count;
+    const BuildingPlacement *p = LayoutPlacements(inst, &count);
+    bool found = false;
 
-    if (ModelCell(inst, x, y, &i) < 0)
-        return false;
-    p = &LayoutPlacements(inst, &count)[i];
-    m = &sModels[sPageModels[p->pageModel].model];
-    v = &sVertices[m->firstVertex];
-    /* the model's own coordinates: tiles from its top-left cell */
-    left = (float)(inst->originX + p->x);
-    south = (float)(y - inst->originY - p->y) + 1.0f;
-    x0 -= left;
-    x1 -= left;
-    for (uint32_t k = 0; k + 2 < m->vertexCount; k += 3)
+    /*
+     * Every model that reaches the cell, not the first one whose rectangle
+     * holds it: a Pokemon Center's PC stands in a cell of the counter's
+     * rectangle, and the counter has no face there.
+     */
+    for (unsigned i = 0; p != NULL && i < count; ++i)
     {
-        const VoxelVertex *a = &v[k], *b = &v[k + 1], *c = &v[k + 2];
-        float lo = a->x < b->x ? a->x : b->x, hi = a->x > b->x ? a->x : b->x;
-        float y0 = a->y < b->y ? a->y : b->y, y1 = a->y > b->y ? a->y : b->y;
+        const BuildingModel *m = &sModels[sPageModels[p[i].pageModel].model];
+        const VoxelVertex *v = &sVertices[m->firstVertex];
+        int lx = x - inst->originX - p[i].x, ly = y - inst->originY - p[i].y;
+        float left = (float)(inst->originX + p[i].x), north = (float)ly;
 
-        if (c->x < lo) lo = c->x;
-        if (c->x > hi) hi = c->x;
-        if (c->y < y0) y0 = c->y;
-        if (c->y > y1) y1 = c->y;
-        /* upright, facing along z, in the cell, across the span at the height */
-        if (a->z != b->z || a->z != c->z || a->z > south + 0.01f || a->z < south - 1.01f
-         || lo >= x1 || hi <= x0 || y0 > height || y1 < height)
+        if (lx < 0 || ly < 0 || lx >= m->w || ly >= m->h)
             continue;
-        if (a->z > best)
-            best = a->z;
+        for (uint32_t k = 0; k + 2 < m->vertexCount; k += 3)
+        {
+            const VoxelVertex *a = &v[k], *b = &v[k + 1], *c = &v[k + 2];
+            float lo = a->x < b->x ? a->x : b->x, hi = a->x > b->x ? a->x : b->x;
+            float y0 = a->y < b->y ? a->y : b->y, y1 = a->y > b->y ? a->y : b->y;
+            float world;
+
+            if (c->x < lo) lo = c->x;
+            if (c->x > hi) hi = c->x;
+            if (c->y < y0) y0 = c->y;
+            if (c->y > y1) y1 = c->y;
+            /* upright, in the cell, across the span at the height */
+            if (a->z != b->z || a->z != c->z || a->z < north - 0.01f || a->z > north + 1.01f
+             || lo + left >= x1 || hi + left <= x0 || y0 > height || y1 < height)
+                continue;
+            /* and looking south: a counter's back is not in front of the
+             * nurse behind it (a face winds outwards) */
+            if ((b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x) <= 0.0f)
+                continue;
+            world = (float)(inst->originY + p[i].y) + a->z;
+            if (!found || world > *z)
+                *z = world;
+            found = true;
+        }
     }
-    if (best < -1.0f)
-        return false;
-    *z = (float)(inst->originY + p->y) + best;
-    return true;
+    return found;
 }
 
 bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z)

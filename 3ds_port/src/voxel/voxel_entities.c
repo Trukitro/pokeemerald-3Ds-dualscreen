@@ -244,6 +244,15 @@ static u32 GatherSource(const struct Sprite *sprite, int w, int h, bool color256
     return written;
 }
 
+/* A sprite pixel of the atlas: its square of texels (voxel_entities.h). */
+static void PutPixel(uint16_t *atlas, unsigned x, unsigned y, uint16_t value)
+{
+    for (unsigned dy = 0; dy < VOXEL_SPRITE_SCALE; ++dy)
+        for (unsigned dx = 0; dx < VOXEL_SPRITE_SCALE; ++dx)
+            atlas[CtrVideo_Texel(x * VOXEL_SPRITE_SCALE + dx, y * VOXEL_SPRITE_SCALE + dy,
+                                 VOXEL_SPRITE_TEXTURE_DIM)] = value;
+}
+
 /* Writes the gathered tiles into the slot's 64x64 cell of the atlas. */
 static void DecodeSlot(VoxelSpriteSlot *slot, unsigned index, uint16_t *atlas)
 {
@@ -258,8 +267,7 @@ static void DecodeSlot(VoxelSpriteSlot *slot, unsigned index, uint16_t *atlas)
 
     for (int y = 0; y < clearH; ++y)
         for (int x = 0; x < clearW; ++x)
-            atlas[CtrVideo_Texel(baseX + (unsigned)x, baseY + (unsigned)y,
-                                 VOXEL_SPRITE_ATLAS_DIM)] = 0;
+            PutPixel(atlas, baseX + (unsigned)x, baseY + (unsigned)y, 0);
     slot->drawnWidth = slot->width;
     slot->drawnHeight = slot->height;
 
@@ -285,9 +293,8 @@ static void DecodeSlot(VoxelSpriteSlot *slot, unsigned index, uint16_t *atlas)
                         continue;
                     if (slot->flipX) outX = slot->width - 1 - outX;
                     if (slot->flipY) outY = slot->height - 1 - outY;
-                    atlas[CtrVideo_Texel(baseX + (unsigned)outX, baseY + (unsigned)outY,
-                                         VOXEL_SPRITE_ATLAS_DIM)] =
-                        VoxelGrade_RGBA5551(slot->palette[colorIdx]);
+                    PutPixel(atlas, baseX + (unsigned)outX, baseY + (unsigned)outY,
+                             VoxelGrade_RGBA5551(slot->palette[colorIdx]));
                 }
             }
         }
@@ -495,14 +502,17 @@ static float ModelPush(float cx, float cz, float halfW)
     for (int x = x0; x <= x1; ++x)
     {
         const VoxelMapInstance *inst = VoxelWorld_GetInstanceAt(x, y);
-        float front, need = VOXEL_CARD_CLEAR;
+        float front, need = 0.0f;
 
-        if (inst == NULL || !VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
+        if (inst == NULL)
             continue;
+        /* A model's face in the cell, whether or not the cell is the
+         * model's: the PC's foot is drawn on the floor the walker uses it
+         * from, in a cell that is the counter's. */
         if (VoxelBuildings_FrontAt(inst, x, y, left, right, VOXEL_MODEL_PUSH_HEIGHT, &front)
-         && front - cz + VOXEL_CARD_CLEAR > need)
+         && front + VOXEL_CARD_CLEAR > cz && front - cz + VOXEL_CARD_CLEAR <= VOXEL_MODEL_PUSH_MAX)
             need = front - cz + VOXEL_CARD_CLEAR;
-        if (need > VOXEL_MODEL_PUSH_MAX)
+        else if (VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
             need = VOXEL_CARD_CLEAR;
         if (need > push)
             push = need;
@@ -659,8 +669,9 @@ static bool OpaqueTexel(const uint16_t *atlas, float *u, float *v)
             continue;
         for (int y = 0; y < sSlots[s].height; ++y)
             for (int x = 0; x < sSlots[s].width; ++x)
-                if (atlas[CtrVideo_Texel(baseX + (unsigned)x, baseY + (unsigned)y,
-                                         VOXEL_SPRITE_ATLAS_DIM)] & 1)
+                if (atlas[CtrVideo_Texel((baseX + (unsigned)x) * VOXEL_SPRITE_SCALE,
+                                         (baseY + (unsigned)y) * VOXEL_SPRITE_SCALE,
+                                         VOXEL_SPRITE_TEXTURE_DIM)] & 1)
                 {
                     *u = (baseX + x + 0.5f) / (float)VOXEL_SPRITE_ATLAS_DIM;
                     *v = 1.0f - (baseY + y + 0.5f) / (float)VOXEL_SPRITE_ATLAS_DIM;
