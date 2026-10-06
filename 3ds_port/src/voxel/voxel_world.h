@@ -90,6 +90,19 @@ unsigned VoxelWorld_GetCollision(int worldX, int worldY);
 unsigned VoxelWorld_GetMetatileBehavior(int worldX, int worldY);
 /* Reflective behavior whose metatile art actually depicts water or ice. */
 bool VoxelWorld_IsVisibleReflectiveSurface(int worldX, int worldY);
+/*
+ * The grass that stands on a cell, by its behaviour: the tall grass of the
+ * routes (and of Jagged Pass), the long grass, and Route 113's under its ash.
+ * Lavaridge's own ash grass is drawn in other colours and stays flat.
+ */
+typedef enum
+{
+    VOXEL_GRASS_NONE = 0,
+    VOXEL_GRASS_TALL,
+    VOXEL_GRASS_LONG,
+    VOXEL_GRASS_ASH
+} VoxelGrass;
+VoxelGrass VoxelWorld_Grass(int worldX, int worldY);
 /* Explicit tileset identity: these tree IDs mean other art in other tilesets. */
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst);
 

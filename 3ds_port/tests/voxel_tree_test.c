@@ -19,6 +19,14 @@ bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst)
     return inst == &sMap && sGeneral;
 }
 
+/* Grass by behaviour on the console; here the tiles that are tall grass. */
+VoxelGrass VoxelWorld_Grass(int x, int y)
+{
+    int id = VoxelWorld_GetMetatileId(x, y);
+
+    return id == 0x1C6 || id == 0x1C7 || id == 0x00D ? VOXEL_GRASS_TALL : VOXEL_GRASS_NONE;
+}
+
 const VoxelMapInstance *VoxelWorld_Instance(unsigned index)
 {
     return index == 0 ? &sMap : NULL;

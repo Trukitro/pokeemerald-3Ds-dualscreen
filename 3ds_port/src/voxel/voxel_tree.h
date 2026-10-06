@@ -16,8 +16,7 @@ int VoxelTree_Part(int metatileId);
 /* Remove the old canopy from the cell above a tree, leaving its ground. */
 int VoxelTree_GroundMetatile(int metatileId);
 
-/* Tall grass of the General tileset: tufts stand on its cells. */
-#define VOXEL_TALL_GRASS_METATILE 0x00D
+/* Rows of tufts that stand on a cell of grass (VoxelWorld_Grass). */
 #define VOXEL_GRASS_TUFT_ROWS 2
 
 /* Appended after the ordinary terrain; these vertices use the tree texture. */

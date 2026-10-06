@@ -101,21 +101,33 @@ static void EmitCell(VoxelBuilder *builder, int x, int y, int part)
 }
 
 /*
- * Tall grass: the ground keeps its drawing and rows of tufts stand on it,
- * cards leaning north like a crown's so the camera meets them face on. Half
- * a tile tall: a walker's card stands on the middle of its cell, between the
- * rows, and the row in front hides its feet as the grass does on the GBA.
- * Every other row mirrored, so a field does not read as columns.
+ * Grass: the ground keeps its drawing and rows of tufts stand on it, cards
+ * leaning north like a crown's so the camera meets them face on. Tall grass
+ * is half a tile tall: a walker's card stands on the middle of its cell,
+ * between the rows, and the row in front hides its feet as the grass does on
+ * the GBA. Long grass is a tile tall and hides them to the waist. Every other
+ * row mirrored, so a field does not read as columns.
  */
-static void EmitTallGrass(VoxelBuilder *builder, int x, int y)
+static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
 {
-    /* The tuft in the tree texture (gen_voxel_trees.py): 16x10 at (0, 44). */
-    const float u0 = 0.0f, u1 = 16.0f / VOXEL_TREE_TEXTURE_DIM;
-    const float v0 = 1.0f - 44.0f / VOXEL_TREE_TEXTURE_DIM;
-    const float v1 = 1.0f - 54.0f / VOXEL_TREE_TEXTURE_DIM;
-    /* 10 pixels of card at 60 degrees from the ground, its foot a little
+    /* The tufts in the tree texture (gen_voxel_trees.py), 16 pixels wide:
+     * where each is, and how many rows of pixels tall. */
+    static const struct
+    {
+        unsigned char x, y, rows;
+    } tufts[] = {
+        [VOXEL_GRASS_TALL] = {0, 44, 10},
+        [VOXEL_GRASS_LONG] = {16, 44, 16},
+        [VOXEL_GRASS_ASH] = {48, 50, 10},
+    };
+    const float u0 = (float)tufts[kind].x / VOXEL_TREE_TEXTURE_DIM;
+    const float u1 = u0 + 16.0f / VOXEL_TREE_TEXTURE_DIM;
+    const float v0 = 1.0f - (float)tufts[kind].y / VOXEL_TREE_TEXTURE_DIM;
+    const float v1 = v0 - (float)tufts[kind].rows / VOXEL_TREE_TEXTURE_DIM;
+    /* The card at 60 degrees from the ground (sin, cos), its foot a little
      * under it so no gap shows below the blades. */
-    const float rise = 0.541266f, run = 0.3125f, baseHeight = -0.04f;
+    const float length = tufts[kind].rows / 16.0f;
+    const float rise = 0.866025f * length, run = 0.5f * length, baseHeight = -0.04f;
     float wx = (float)x, wz = (float)y;
 #if CTR_VOXEL_LIGHTING
     /* Lit as one object, like a sign: a sample a corner for two cards a cell
@@ -156,18 +168,17 @@ void VoxelTree_EmitInstance(VoxelBuilder *builder, const VoxelMapInstance *inst,
     for (int y = y0; y < y1; ++y)
         for (int x = x0; x < x1; ++x)
         {
-            int metatile = VoxelWorld_GetMetatileId(x, y);
-            int part = VoxelTree_Part(metatile);
-            bool grass = VoxelTree_GroundMetatile(metatile) == VOXEL_TALL_GRASS_METATILE;
+            int part = VoxelTree_Part(VoxelWorld_GetMetatileId(x, y));
+            VoxelGrass grass = part >= 0 ? VOXEL_GRASS_NONE : VoxelWorld_Grass(x, y);
 
-            if (part >= 0 || grass)
+            if (part >= 0 || grass != VOXEL_GRASS_NONE)
             {
                 builder->lift = VoxelRelief_CellLift(inst, x, y);
                 builder->shift = VoxelRelief_CellShift(inst, x, y);
                 if (part >= 0)
                     EmitCell(builder, x, y, part);
                 else
-                    EmitTallGrass(builder, x, y);
+                    EmitGrass(builder, x, y, grass);
                 builder->lift = 0.0f;
                 builder->shift = 0.0f;
             }

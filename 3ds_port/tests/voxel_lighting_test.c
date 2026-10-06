@@ -33,6 +33,7 @@ const VoxelMapInstance *VoxelWorld_GetInstanceAt(int x, int z)
     return NULL;
 }
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst) { return inst != NULL; }
+VoxelGrass VoxelWorld_Grass(int x, int y) { (void)x; (void)y; return VOXEL_GRASS_NONE; }
 int VoxelWorld_GetMetatileId(int x, int z)
 {
     int lx = x - sOffsetX, lz = z - sOffsetZ;
