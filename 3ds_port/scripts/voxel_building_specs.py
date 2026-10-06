@@ -1000,6 +1000,51 @@ def petalburg_gym():
             for room, y in ((room, room * 13 * 16) for room in range(9))]
 
 
+# ── The other houses of the general indoor tileset ────────────────────────
+#
+# Rooms no one has modelled piece by piece yet: a back wall two cells tall,
+# blocked all across, over a rectangle of floor. Their walls stand - the back
+# one, and where the floor runs to the room's edges the two sides the drawing
+# has no pixel of - and their furniture stays drawn on the floor until the
+# room gets pieces of its own. Each: its layout, its size in cells, its floor,
+# the wall's cell the sides are dressed with (bare panelling: the pair of
+# metatiles the wall repeats most), and whether it has side walls.
+
+PLAIN_ROOMS = [
+    ("LAYOUT_HOUSE3", 10, 8, 0x229, 1, True),
+    ("LAYOUT_DEWFORD_TOWN_HALL", 17, 9, 0x223, 3, True),
+    ("LAYOUT_HOUSE4", 10, 9, 0x229, 3, True),
+    ("LAYOUT_LILYCOVE_CITY_HOUSE2", 8, 8, 0x229, 3, True),
+    ("LAYOUT_VERDANTURF_TOWN_WANDAS_HOUSE", 17, 8, 0x223, 5, True),
+    ("LAYOUT_PACIFIDLOG_TOWN_HOUSE1", 10, 9, 0x3A3, 4, True),
+    ("LAYOUT_PACIFIDLOG_TOWN_HOUSE2", 10, 9, 0x3A3, 5, True),
+    ("LAYOUT_RUSTBORO_CITY_HOUSE", 12, 9, 0x32C, 3, True),
+    ("LAYOUT_RUSTBORO_CITY_HOUSE1", 13, 8, 0x32C, 4, True),
+    ("LAYOUT_RUSTBORO_CITY_CUTTERS_HOUSE", 11, 9, 0x32C, 4, True),
+    ("LAYOUT_FORTREE_CITY_HOUSE1", 8, 6, 0x3D9, 2, True),
+    ("LAYOUT_FORTREE_CITY_HOUSE2", 8, 6, 0x3D9, 1, True),
+    ("LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", 12, 9, 0x229, 5, True),
+    ("LAYOUT_ROUTE116_TUNNELERS_REST_HOUSE", 10, 9, 0x229, 3, True),
+    ("LAYOUT_ROUTE110_TRICK_HOUSE_ENTRANCE", 12, 8, 0x229, 1, True),
+    ("LAYOUT_FORTREE_CITY_DECORATION_SHOP", 8, 6, 0x3D9, 1, False),
+    ("LAYOUT_SOOTOPOLIS_CITY_LOTAD_AND_SEEDOT_HOUSE", 8, 7, 0x3FE, 2, True),
+    ("LAYOUT_SOOTOPOLIS_CITY_HOUSE1", 8, 7, 0x3FE, 1, True),
+    ("LAYOUT_SOOTOPOLIS_CITY_HOUSE2", 8, 7, 0x3FE, 4, True),
+    ("LAYOUT_SOOTOPOLIS_CITY_HOUSE3", 8, 7, 0x3FE, 3, True),
+    ("LAYOUT_MOSSDEEP_CITY_STEVENS_HOUSE", 11, 8, 0x223, 3, True),
+]
+
+
+def plain_room(width, height, plain_x, sides):
+    w, h = width * 16, height * 16
+    side = (plain_x * 16, 0, plain_x * 16 + 16, 32)
+    pieces = [piece("wall", [(0, 0, w, 32)], 32, fill=16, foot=32, side=side)]
+    if sides:
+        pieces += [piece("side_w", [], 32, side=side, walls=[((0, h), (0, 32))]),
+                   piece("side_e", [], 32, side=side, walls=[((w, 32), (w, h))])]
+    return pieces
+
+
 # ── Professor Birch's lab ─────────────────────────────────────────────────
 #
 # Desks and a bookcase along the back wall, standing on its row of collision
@@ -1404,6 +1449,14 @@ SPECS = [
         "name": "house_with_bed",
         "interior": {"layout": "LAYOUT_HOUSE_WITH_BED", "ground": [0x223], "pieces": house_with_bed()},
     },
+] + [
+    {
+        "name": layout[len("LAYOUT_"):].lower(),
+        "interior": {"layout": layout, "ground": [ground],
+                     "pieces": plain_room(width, height, plain_x, sides)},
+    }
+    for layout, width, height, ground, plain_x, sides in PLAIN_ROOMS
+] + [
     {
         # Petalburg's gym: Norman's rooms
         "name": "petalburg_gym",
