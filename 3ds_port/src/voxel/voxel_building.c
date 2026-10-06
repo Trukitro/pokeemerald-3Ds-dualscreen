@@ -465,6 +465,45 @@ const uint16_t *VoxelBuildings_Footprint(const VoxelMapInstance *inst, int x, in
     return &sMasks[(unsigned)sFootprints[k] * 16u];
 }
 
+bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z)
+{
+    unsigned i, count;
+    const BuildingPlacement *p;
+    const BuildingModel *m;
+    const VoxelVertex *v;
+    float cx, south, best = -2.0f;
+
+    if (ModelCell(inst, x, y, &i) < 0)
+        return false;
+    p = &LayoutPlacements(inst, &count)[i];
+    m = &sModels[sPageModels[p->pageModel].model];
+    v = &sVertices[m->firstVertex];
+    /* the model's own coordinates: tiles from its top-left cell */
+    cx = (float)(x - inst->originX - p->x) + 0.5f;
+    south = (float)(y - inst->originY - p->y) + 1.0f;
+    for (uint32_t k = 0; k + 2 < m->vertexCount; k += 3)
+    {
+        const VoxelVertex *a = &v[k], *b = &v[k + 1], *c = &v[k + 2];
+        float x0 = a->x < b->x ? a->x : b->x, x1 = a->x > b->x ? a->x : b->x;
+        float y0 = a->y < b->y ? a->y : b->y, y1 = a->y > b->y ? a->y : b->y;
+
+        if (c->x < x0) x0 = c->x;
+        if (c->x > x1) x1 = c->x;
+        if (c->y < y0) y0 = c->y;
+        if (c->y > y1) y1 = c->y;
+        /* upright, facing along z, across the cell's middle half a tile up */
+        if (a->z != b->z || a->z != c->z || a->z > south + 0.01f || a->z < south - 1.01f
+         || x0 > cx || x1 < cx || y0 > 0.5f || y1 < 0.5f)
+            continue;
+        if (a->z > best)
+            best = a->z;
+    }
+    if (best < -1.0f)
+        return false;
+    *z = (float)(inst->originY + p->y) + best;
+    return true;
+}
+
 bool VoxelBuildings_EmitSome(VoxelBuilder *builder, const VoxelMapInstance *inst,
                              int x0, int y0, int x1, int y1, VoxelBuildingCursor *cursor,
                              unsigned triangles)
