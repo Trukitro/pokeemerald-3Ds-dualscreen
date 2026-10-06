@@ -51,6 +51,7 @@
 #include <string.h>
 
 #include "global.h"
+#include "3ds_locale.h"
 #include "main.h"
 #include "money.h"
 #include "battle.h"
@@ -3103,7 +3104,7 @@ enum { PLATE_NORMAL, PLATE_CHOSEN, PLATE_PRESSED, PLATE_OFF };
 static void DrawColumnButton(const ViewState *s, int i, u8 state)
 {
     const u8 *labels[SCR_COUNT] = {
-        Ascii("MAP"), gText_MenuPokemon, gText_MenuBag, s->name, gText_MenuPokedex, gText_MenuPokenav,
+        Ascii(CTR_TEXT("MAP", "MAPA")), gText_MenuPokemon, gText_MenuBag, s->name, gText_MenuPokedex, gText_MenuPokenav,
         gText_MenuSave, gText_MenuOption,
     };
     const Icon *icon = &sRes.column[i];
@@ -3373,7 +3374,7 @@ static void DrawPanel(const ViewState *s, int y, const u8 *hint)
         DrawPanelMessage(s->text, y, ht - 4, FALSE);
         DrawLabelButton(0, H - 32, 7, 4, up, s->pressed == HIT_UP, TRUE, HIT_UP);
         DrawLabelButton(56, H - 32, 7, 4, down, s->pressed == HIT_DOWN, TRUE, HIT_DOWN);
-        DrawLabelButton(112, H - 32, 8, 4, Ascii("OK"), s->pressed == HIT_OK, TRUE, HIT_OK);
+        DrawLabelButton(112, H - 32, 8, 4, Ascii(CTR_TEXT("OK", "VALE")), s->pressed == HIT_OK, TRUE, HIT_OK);
         DrawLabelButton(176, H - 32, 8, 4, gText_Cancel2, s->pressed == HIT_CANCEL, TRUE, HIT_CANCEL);
         break;
     }
@@ -3414,7 +3415,9 @@ static void DrawParty(const ViewState *s)
 
 static void DrawSummary(const ViewState *s)
 {
-    static const char *const statNames[6] = {"HP", "ATTACK", "DEFENSE", "SP. ATK", "SP. DEF", "SPEED"};
+    static const char *const statNames[6] = {CTR_TEXT("HP", "PS"), CTR_TEXT("ATTACK", "ATAQUE"), CTR_TEXT("DEFENSE", "DEFENSA"),
+                                             CTR_TEXT("SP. ATK", "AT. ESP."), CTR_TEXT("SP. DEF", "DEF. ESP."),
+                                             CTR_TEXT("SPEED", "VELOC.")};
     const MonView *m = &s->party[s->summary];
     u8 text[24];
 
@@ -3750,7 +3753,7 @@ static void DrawSave(const ViewState *s)
     DrawStr(&sNormal, s->text, 18, 52, TXT_WHITE, TXT_DARK);
     if (s->saveStep == SAVE_DONE)
     {
-        DrawLabelButton(64, 136, 14, 5, Ascii("OK"), s->pressed == HIT_OK, TRUE, HIT_OK);
+        DrawLabelButton(64, 136, 14, 5, Ascii(CTR_TEXT("OK", "VALE")), s->pressed == HIT_OK, TRUE, HIT_OK);
         return;
     }
     DrawLabelButton(8, 136, 13, 6, gText_Yes, s->pressed == HIT_YES, s->canSave, HIT_YES);
@@ -3939,9 +3942,9 @@ static void DrawOptions(const ViewState *s)
         DrawOptionTabs(s);
 
     const u8 *names[OPTION_ROWS] = {gText_TextSpeed, gText_BattleScene, gText_BattleStyle, gText_Sound,
-                                    gText_ButtonMode, gText_Frame, Ascii("SHOW FPS"), Ascii("VOXEL 3D"),
-                                    Ascii("3D ANGLE"), Ascii("3D ZOOM"), Ascii("3D BLUR"),
-                                    Ascii("3D BATTLE")};
+                                    gText_ButtonMode, gText_Frame, Ascii(CTR_TEXT("SHOW FPS", "MOSTRAR FPS")), Ascii("VOXEL 3D"),
+                                    Ascii(CTR_TEXT("3D ANGLE", "ANGULO 3D")), Ascii(CTR_TEXT("3D ZOOM", "ZOOM 3D")),
+                                    Ascii(CTR_TEXT("3D BLUR", "DESENFOQUE 3D")), Ascii(CTR_TEXT("3D BATTLE", "COMBATE 3D"))};
     bool8 voxel = OPTION_SHOWN > OPT_VOXEL && s->options[OPT_VOXEL];
 
     if (s->optPage != CTR_EXTRAS_OPTIONS)
@@ -4356,11 +4359,11 @@ static void DrawMovePlate(const ViewState *s, int i)
     PpColours(s->moves4.currentPp[i], s->moves4.maxPp[i], &fg, &sh);
     DrawStrRight(&sNormal, text, x + MOVE_W - 12, oy + 32, fg, sh);
     {
-        int tx = DrawStr(&sSmall, Ascii("POW "), x + 12, oy + 56, TXT_DARK, TXT_LIGHT);
+        int tx = DrawStr(&sSmall, Ascii(CTR_TEXT("POW ", "POT. ")), x + 12, oy + 56, TXT_DARK, TXT_LIGHT);
 
         DrawStr(&sSmall, data->power > 1 ? Number(data->power, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"), tx,
                 oy + 56, TXT_DARK, TXT_LIGHT);
-        StringCopy(text, Ascii("ACC "));
+        StringCopy(text, Ascii(CTR_TEXT("ACC ", "PREC. ")));
         StringAppend(text, data->accuracy ? Number(data->accuracy, 3, STR_CONV_MODE_LEFT_ALIGN) : Ascii("---"));
         DrawStrRight(&sSmall, text, x + MOVE_W - 12, oy + 56, TXT_DARK, TXT_LIGHT);
     }

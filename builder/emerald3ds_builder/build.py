@@ -83,7 +83,10 @@ def build_pack(rom_path: Path, payload: Payload, out_pak: Path, progress=None,
         raise BuilderError("The release's recipe could not be read.", str(exc),
                            code="recipe_unreadable") from exc
     if recipe.rom_sha1 != rom.sha1:
-        raise BuilderError("This release expects a different ROM.", code="rom_mismatch")
+        raise BuilderError("This release has no matching recipe for %s (%s)." % (rom.title, rom.code),
+                           "Each language needs its own payload: a recipe and 3DS executable "
+                           "built for that ROM. An English payload cannot be used with BPES.",
+                           code="rom_mismatch")
 
     files: dict[str, bytes] = {}
     total = len(recipe.entries)
