@@ -1650,7 +1650,7 @@ bool CtrVoxel_Init(void)
         goto fail;
 
     step = "sprite atlas in linear memory";
-    if (!C3D_TexInit(&sSpriteAtlas, VOXEL_SPRITE_ATLAS_DIM, VOXEL_SPRITE_ATLAS_DIM, GPU_RGBA5551))
+    if (!C3D_TexInit(&sSpriteAtlas, VOXEL_SPRITE_TEXTURE_DIM, VOXEL_SPRITE_TEXTURE_DIM, GPU_RGBA5551))
         goto fail;
     /*
      * Smoothed, unlike the world's textures. A card is not drawn at a whole
