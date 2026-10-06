@@ -614,7 +614,8 @@ def own_shell(pieces):
     nowhere, was found wherever another room had the same floor down a
     column - walls standing loose in the middle of Rustboro's flats."""
     for pc in pieces:
-        if pc["name"].split("_")[0] in ("wall", "side", "stairwell", "edge", "block"):
+        if pc["name"].split("_")[0] in ("wall", "side", "stairwell", "edge", "block",
+                                         "partition", "divider"):
             pc["alone"] = True
     return pieces
 
@@ -1090,25 +1091,39 @@ def briney_room():
 # above, so it lies on the floor of a recess one cell deep, with the doorway's
 # sides and back round it - a way out of the room, not a picture of stairs
 # flat on the floor. Each: its layout, its size in cells, its floor, the
-# wall's cell the sides are dressed with, and the doorways' columns.
+# wall's cell the sides are dressed with, and the doorways' columns - and, in
+# Rustboro's second block of flats, where the wall that parts the room in two
+# runs down from the back wall (its left edge), with the low wall the same
+# three floors have along the front of the east half.
+
+FLAT_FLOOR = ("d5d5b4", "f6f6a4", "b4b4a4", "8b8b8b", "ded552")
 
 STAIR_ROOMS = [
     ("LAYOUT_RUSTBORO_CITY_FLAT1_1F", 14, 8, 0x32C, 5, (2,)),
     ("LAYOUT_RUSTBORO_CITY_FLAT1_2F", 14, 8, 0x32C, 5, (2,)),
-    ("LAYOUT_RUSTBORO_CITY_FLAT2_1F", 14, 9, 0x32C, 1, (3,)),
-    ("LAYOUT_RUSTBORO_CITY_FLAT2_2F", 14, 9, 0x32C, 9, (1, 3)),
-    ("LAYOUT_RUSTBORO_CITY_FLAT2_3F", 14, 9, 0x32C, 3, (1,)),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_1F", 14, 9, 0x32C, 1, (3,), 80),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_2F", 14, 9, 0x32C, 9, (1, 3), 80),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_3F", 14, 9, 0x32C, 3, (1,), 64),
     ("LAYOUT_LILYCOVE_CITY_COVE_LILY_MOTEL_1F", 12, 9, 0x229, 4, (2,)),
     ("LAYOUT_LILYCOVE_CITY_COVE_LILY_MOTEL_2F", 12, 9, 0x229, 4, (2,)),
     ("LAYOUT_ROUTE114_FOSSIL_MANIACS_HOUSE", 10, 8, 0x229, 2, (4,)),
     ("LAYOUT_ROUTE110_TRICK_HOUSE_END", 12, 8, 0x229, 6, (2, 10)),
+    # the Devon Corporation's upper floors
+    ("LAYOUT_RUSTBORO_CITY_DEVON_CORP_2F", 19, 9, 0x380, 4, (2, 14)),
+    ("LAYOUT_RUSTBORO_CITY_DEVON_CORP_3F", 19, 9, 0x380, 4, (2,)),
 ]
 
 
-def stair_room(width, height, plain_x, doors):
+def stair_room(width, height, plain_x, doors, partition=None):
     w, h = width * 16, height * 16
     side = (plain_x * 16, 0, plain_x * 16 + 16, 32)
     wall, pieces, x = [], [], 0
+    if partition is not None:
+        # seen from above: the white of their tops, and a face at the end
+        pieces += [
+            piece("divider", [(128, 90, 224, 127)], 27, solid=True, leave=FLAT_FLOOR),
+            piece("partition", [(partition, 0, partition + 16, 127)], 29, solid=True),
+        ]
     for door in sorted(doors):
         d = door * 16
         wall += [(x, 0, d, 32), (d, 0, d + 16, 13)]
@@ -1122,6 +1137,22 @@ def stair_room(width, height, plain_x, doors):
         piece("wall", wall, 32, fill=16, foot=32, side=side),
         piece("side_w", [], 32, side=side, walls=[((0, h), (0, 32))]),
         piece("side_e", [], 32, side=side, walls=[((w, 32), (w, h))]),
+    ]
+
+
+# ── Rustboro's Pokemon school ─────────────────────────────────────────────
+#
+# One classroom. Its back wall is drawn from 8 rows down the first cell (the
+# black over it is nothing) to its foot 36 rows down, the blackboard and the
+# windows on its face; the pillars' feet and the teacher's step, drawn a few
+# rows further, stay on the floor.
+
+def school_room():
+    side = (176, 8, 192, 36)
+    return [
+        piece("wall", [(0, 8, 192, 36)], 28, fill=16, foot=36, side=side),
+        piece("side_w", [], 28, side=side, walls=[((0, 176), (0, 36))]),
+        piece("side_e", [], 28, side=side, walls=[((192, 36), (192, 176))]),
     ]
 
 
@@ -1618,10 +1649,16 @@ SPECS = [
     {
         "name": layout[len("LAYOUT_"):].lower(),
         "interior": {"layout": layout, "ground": [ground],
-                     "pieces": own_shell(stair_room(width, height, plain_x, doors))},
+                     "pieces": own_shell(stair_room(width, height, plain_x, doors, *extra))},
     }
-    for layout, width, height, ground, plain_x, doors in STAIR_ROOMS
+    for layout, width, height, ground, plain_x, doors, *extra in STAIR_ROOMS
 ] + [
+    {
+        # Rustboro's Pokemon school
+        "name": "school_room",
+        "interior": {"layout": "LAYOUT_RUSTBORO_CITY_POKEMON_SCHOOL", "ground": [0x201],
+                     "pieces": own_shell(school_room())},
+    },
     {
         # The Pretty Petal flower shop on Route 104
         "name": "flower_shop_room",
