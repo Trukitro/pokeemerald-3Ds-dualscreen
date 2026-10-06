@@ -1023,7 +1023,6 @@ PLAIN_ROOMS = [
     ("LAYOUT_RUSTBORO_CITY_CUTTERS_HOUSE", 11, 9, 0x32C, 4, True),
     ("LAYOUT_FORTREE_CITY_HOUSE1", 8, 6, 0x3D9, 2, True),
     ("LAYOUT_FORTREE_CITY_HOUSE2", 8, 6, 0x3D9, 1, True),
-    ("LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", 12, 9, 0x229, 5, True),
     ("LAYOUT_ROUTE116_TUNNELERS_REST_HOUSE", 10, 9, 0x229, 3, True),
     ("LAYOUT_ROUTE110_TRICK_HOUSE_ENTRANCE", 12, 8, 0x229, 1, True),
     ("LAYOUT_FORTREE_CITY_DECORATION_SHOP", 8, 6, 0x3D9, 1, False),
@@ -1043,6 +1042,32 @@ def plain_room(width, height, plain_x, sides):
         pieces += [piece("side_w", [], 32, side=side, walls=[((0, h), (0, 32))]),
                    piece("side_e", [], 32, side=side, walls=[((w, 32), (w, h))])]
     return pieces
+
+
+# ── Mr. Briney's house ────────────────────────────────────────────────────
+#
+# A room of tatami by the dock on Route 104: a chest of drawers, a small one
+# and a glass case along the back wall, three jars in the corner, a low table.
+
+BRINEY_FLOOR = ("c5ffac", "a4cd6a", "83ac4a", "7b7b83", "6a8b31", "414a6a")
+BRINEY_WALL = ("d5b483", "ffffff", "d5c54a", "947329", "ac8b39", "629c8b")
+
+
+def briney_room():
+    fl = BRINEY_FLOOR
+    side = (48, 0, 64, 32)
+    return [
+        piece("table", [(114, 67, 139, 94)], 10, leave=fl, solid=True),
+        piece("jar_s", [(1, 65, 14, 80)], 9, leave=fl, solid=True),
+        piece("jar_w", [(1, 49, 14, 64)], 9, leave=fl, solid=True),
+        piece("jar_e", [(17, 49, 30, 64)], 9, leave=fl, solid=True),
+        piece("drawers", [(17, 10, 45, 45)], 22, leave=BRINEY_WALL + fl, back=32),
+        piece("chest", [(128, 16, 144, 45)], 16, leave=BRINEY_WALL + fl, back=32),
+        piece("case", [(144, 12, 177, 45)], 20, leave=BRINEY_WALL + fl, back=32),
+        piece("wall", [(0, 0, 192, 32)], 32, fill=16, foot=32, side=side),
+        piece("side_w", [], 32, side=side, walls=[((0, 144), (0, 32))]),
+        piece("side_e", [], 32, side=side, walls=[((192, 32), (192, 144))]),
+    ]
 
 
 # ── Dewford's gym ─────────────────────────────────────────────────────────
@@ -1492,6 +1517,12 @@ SPECS = [
     }
     for layout, width, height, ground, plain_x, sides in PLAIN_ROOMS
 ] + [
+    {
+        # Mr. Briney's house, by the dock on Route 104
+        "name": "briney_room",
+        "interior": {"layout": "LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", "ground": [0x229],
+                     "pieces": briney_room()},
+    },
     {
         # Dewford's gym: Brawly's maze
         "name": "dewford_gym",
