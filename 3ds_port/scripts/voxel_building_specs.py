@@ -607,6 +607,18 @@ def piece(name, shape, height, base=0, fill=None, leave=(), side=None, solid=Fal
             "cells": cells, "against": against, "claim": claim}
 
 
+def own_shell(pieces):
+    """Marks a room's shell - its walls, its doorways' recesses, a maze's
+    blocks - as its own (`alone`): the generator stands a known piece
+    wherever its cells are drawn again, and a side wall, which is drawn
+    nowhere, was found wherever another room had the same floor down a
+    column - walls standing loose in the middle of Rustboro's flats."""
+    for pc in pieces:
+        if pc["name"].split("_")[0] in ("wall", "side", "stairwell", "edge", "block"):
+            pc["alone"] = True
+    return pieces
+
+
 # the Center's floor and its shadows, and the counter's cream and trim: what
 # a stool, the table or a Poke Ball on the counter leaves round it
 CENTER_FLOOR = ("cdc58b", "eedea4", "ffffc5")
@@ -1586,13 +1598,13 @@ SPECS = [
     {
         # Petalburg's second house, and two more maps'
         "name": "house_with_bed",
-        "interior": {"layout": "LAYOUT_HOUSE_WITH_BED", "ground": [0x223], "pieces": house_with_bed()},
+        "interior": {"layout": "LAYOUT_HOUSE_WITH_BED", "ground": [0x223], "pieces": own_shell(house_with_bed())},
     },
 ] + [
     {
         "name": layout[len("LAYOUT_"):].lower(),
         "interior": {"layout": layout, "ground": [ground],
-                     "pieces": plain_room(width, height, plain_x, sides)},
+                     "pieces": own_shell(plain_room(width, height, plain_x, sides))},
     }
     for layout, width, height, ground, plain_x, sides in PLAIN_ROOMS
 ] + [
@@ -1600,13 +1612,13 @@ SPECS = [
         # Mr. Briney's house, by the dock on Route 104
         "name": "briney_room",
         "interior": {"layout": "LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", "ground": [0x229],
-                     "pieces": briney_room()},
+                     "pieces": own_shell(briney_room())},
     },
 ] + [
     {
         "name": layout[len("LAYOUT_"):].lower(),
         "interior": {"layout": layout, "ground": [ground],
-                     "pieces": stair_room(width, height, plain_x, doors)},
+                     "pieces": own_shell(stair_room(width, height, plain_x, doors))},
     }
     for layout, width, height, ground, plain_x, doors in STAIR_ROOMS
 ] + [
@@ -1614,13 +1626,13 @@ SPECS = [
         # The Pretty Petal flower shop on Route 104
         "name": "flower_shop_room",
         "interior": {"layout": "LAYOUT_ROUTE104_PRETTY_PETAL_FLOWER_SHOP", "ground": [0x201],
-                     "pieces": flower_shop_room()},
+                     "pieces": own_shell(flower_shop_room())},
     },
     {
         # Dewford's gym: Brawly's maze
         "name": "dewford_gym",
         "interior": {"layout": "LAYOUT_DEWFORD_TOWN_GYM", "ground": [0x210],
-                     "shade": DEWFORD_GYM_FLOOR, "pieces": dewford_gym()},
+                     "shade": DEWFORD_GYM_FLOOR, "pieces": own_shell(dewford_gym())},
     },
     {
         # Petalburg's gym: Norman's rooms
@@ -1628,7 +1640,7 @@ SPECS = [
         "interior": {"layout": "LAYOUT_PETALBURG_CITY_GYM", "ground": [0x201, 0x22B],
                      "shade": [0x209, 0x212, 0x213, 0x214, 0x22A, 0x232,
                                0x216, 0x22C],
-                     "pieces": petalburg_gym()},
+                     "pieces": own_shell(petalburg_gym())},
     },
     {
         # Rustboro's gym: Roxanne's maze
