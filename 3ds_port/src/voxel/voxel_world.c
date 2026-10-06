@@ -18,6 +18,7 @@
 #include "event_object_movement.h"
 #include "field_player_avatar.h"
 #include "constants/map_types.h"
+#include "constants/region_map_sections.h"
 #include "constants/metatile_behaviors.h"
 #include "port_platform.h"
 
@@ -736,6 +737,11 @@ float VoxelWorld_FogDensity(void)
 #else
     return 0.0f;
 #endif
+}
+
+float VoxelWorld_Mist(void)
+{
+    return gMapHeader.regionMapSectionId == MAPSEC_PETALBURG_WOODS ? 0.35f : 0.0f;
 }
 
 bool VoxelWorld_Underground(void)

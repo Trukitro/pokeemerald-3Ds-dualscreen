@@ -4832,6 +4832,21 @@ static VoxelLight LightFor(bool indoor)
         default:
             break;
         }
+        /* A wood's mist: the fog's veil, greener and only part of the way,
+         * over whatever light the weather gave. Its banks drift as the
+         * fog's do (CtrVoxel_Draw). */
+        if (VoxelWorld_Mist() > 0.0f)
+        {
+            VoxelLight mist = light;
+
+            mist.haze = 0.70f;
+            mist.rays = 0.0f;
+            mist.bloom = 0.18f;
+            mist.hazeRgb[0] = 0.76f; mist.hazeRgb[1] = 0.86f; mist.hazeRgb[2] = 0.80f;
+            mist.hazeStart = 0.80f;
+            mist.hazeRamp = 0.65f;
+            light = LightMix(&light, &mist, VoxelWorld_Mist());
+        }
         return light;
     }
 #endif
@@ -5762,7 +5777,7 @@ void CtrVoxel_Draw(C3D_RenderTarget *target, float eyeOffset)
     VoxelLight light = LightFor(indoor), unlit = LightFor(true);
     bool dapples = DapplesOn(&light);
 #if CTR_VOXEL_LIGHTING
-    float fog = !indoor && sHaveFog ? VoxelWorld_FogDensity() : 0.0f;
+    float fog = !indoor && sHaveFog ? fmaxf(VoxelWorld_FogDensity(), VoxelWorld_Mist()) : 0.0f;
     bool cave = fog > 0.0f && VoxelWorld_Underground();
 #endif
 

@@ -134,6 +134,11 @@ VoxelWeatherClass VoxelWorld_Weather(void);
 /* How thick the game's fog is right now, 0-1: its sprites' blend as it fades
  * in and out, 0 when there are none (voxel_world.c). */
 float VoxelWorld_FogDensity(void);
+/*
+ * A place's own mist, 0-1, whatever the weather: Petalburg Woods, which the
+ * game only shades. Thin - a wood, not a fog bank.
+ */
+float VoxelWorld_Mist(void);
 /* A cave, tunnel or other map under the ground (MAP_TYPE_UNDERGROUND). */
 bool VoxelWorld_Underground(void);
 /* The palette fade on the backgrounds as a blend towards rgb (0-1) by amount,
