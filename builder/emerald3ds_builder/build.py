@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import pak
 from .errors import BuilderError
-from .recipe import Recipe, RecipeError, build_entry
+from .recipe import Recipe, RecipeError, build_entry, recipe_rom_sha1
 from .rom import Rom, load_rom
 from .voxel import run_generators
 from .vtree import build_tree
@@ -29,7 +29,15 @@ def default_payload() -> Path:
 
 @dataclass
 class Payload:
+    """A release's payload/ folder.
+
+    payload/ holds the default variant (the English game: executable and
+    recipe) and the voxel generators every variant shares. Each other
+    language is a subfolder with its own executable and recipe, e.g.
+    payload/es/ for the Spanish ROM; `for_rom` picks the one made from the
+    player's ROM."""
     root: Path
+    shared: Path | None = None   # the payload/ folder, for a language subfolder
 
     @property
     def recipe(self) -> Path:
@@ -37,7 +45,25 @@ class Payload:
 
     @property
     def voxelgen(self) -> Path:
-        return self.root / "voxelgen"
+        return (self.shared or self.root) / "voxelgen"
+
+    def variants(self) -> list["Payload"]:
+        """The default variant first, then every language subfolder."""
+        base = self.shared or self.root
+        if not base.is_dir():
+            return [Payload(base)]
+        subs = sorted(p for p in base.iterdir() if p.is_dir() and (p / RECIPE_NAME).is_file())
+        return [Payload(base)] + [Payload(p, base) for p in subs]
+
+    def for_rom(self, sha1: str) -> "Payload":
+        """The variant whose recipe was made from this ROM (self when none is)."""
+        for variant in self.variants():
+            try:
+                if variant.recipe.is_file() and recipe_rom_sha1(variant.recipe) == sha1:
+                    return variant
+            except (OSError, ValueError, KeyError, RecipeError):
+                continue
+        return self
 
     def executables(self) -> list[Path]:
         return [self.root / name for name in EXECUTABLE_NAMES]
@@ -77,15 +103,16 @@ def build_pack(rom_path: Path, payload: Payload, out_pak: Path, progress=None,
     report(0.0, "Checking the ROM")
     if rom is None:
         rom = load_rom(rom_path)
+    payload = payload.for_rom(rom.sha1)
     try:
         recipe = Recipe.load(payload.recipe)
     except (OSError, RecipeError) as exc:
         raise BuilderError("The release's recipe could not be read.", str(exc),
                            code="recipe_unreadable") from exc
     if recipe.rom_sha1 != rom.sha1:
-        raise BuilderError("This release has no matching recipe for %s (%s)." % (rom.title, rom.code),
-                           "Each language needs its own payload: a recipe and 3DS executable "
-                           "built for that ROM. An English payload cannot be used with BPES.",
+        raise BuilderError("This release has no game data for %s (%s)." % (rom.title, rom.code),
+                           "Each language needs its own executable and recipe in the release; "
+                           "this one does not include them for that ROM.",
                            code="rom_mismatch")
 
     files: dict[str, bytes] = {}
@@ -122,4 +149,5 @@ def build_pack(rom_path: Path, payload: Payload, out_pak: Path, progress=None,
     with pak.PakReader(out_pak) as reader:
         reader.verify()
     report(1.0, "Done")
-    return {"entries": info["entries"], "bytes": info["bytes"], "abi": abi, "release": recipe.release}
+    return {"entries": info["entries"], "bytes": info["bytes"], "abi": abi, "release": recipe.release,
+            "payload": payload}

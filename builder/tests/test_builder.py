@@ -189,6 +189,29 @@ class RegionalBuildTests(unittest.TestCase):
                 self.assertEqual(reader.rom_sha1, bytes.fromhex(sha))
 
 
+class VariantPayloadTests(unittest.TestCase):
+    def test_build_picks_the_variant_made_from_the_rom(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+        import build_web_payload
+        from contextlib import redirect_stdout
+        import io
+        with tempfile.TemporaryDirectory() as tmp:
+            with redirect_stdout(io.StringIO()):
+                synthetic = build_web_payload.make_synthetic(Path(tmp) / "s")
+            payload = Payload(synthetic["payload"])
+            self.assertEqual([v.root.name for v in payload.variants()], ["payload", "es"])
+            for rom, name in ((synthetic["rom"], "payload"), (synthetic["rom_es"], "es")):
+                data = rom.read_bytes() + b"\xff" * (romlib.ROM_SIZE - rom.stat().st_size)
+                sha = hashlib.sha1(data).hexdigest()
+                checked = romlib.Rom(data=data, sha1=sha, title="SYNTHETIC", code="TEST", source=rom)
+                info = build_pack(rom, payload, Path(tmp) / ("%s.pak" % name), runner="inprocess",
+                                  rom=checked)
+                self.assertEqual(info["payload"].root.name, name)
+                self.assertEqual(info["payload"].voxelgen, synthetic["payload"] / "voxelgen")
+                with pak.PakReader(Path(tmp) / ("%s.pak" % name)) as reader:
+                    self.assertEqual(reader.rom_sha1.hex(), sha)
+
+
 class InstallTests(unittest.TestCase):
     def test_install_writes_the_app_folder(self):
         with tempfile.TemporaryDirectory() as tmp:

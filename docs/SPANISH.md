@@ -1,21 +1,26 @@
 # Pokémon Esmeralda en español
 
-Pokémon Emerald 3Ds Dual Screen puede compilarse con los textos y gráficos de
-la ROM española limpia de **Pokémon Esmeralda (España, BPES)**. La traducción
-no se distribuye: se extrae en tu ordenador de tu propia ROM al compilar el
-juego desde el código fuente.
+Pokémon Emerald 3Ds Dual Screen funciona con la ROM española limpia de
+**Pokémon Esmeralda (España, BPES)**, con sus textos y gráficos. La traducción
+no se distribuye: sale de tu propia ROM, en tu ordenador o en tu navegador.
 
 Es **experimental**. Una versión anterior se probó en una 3DS física; la
 integración con las funciones actuales necesita su propia prueba en consola.
-El builder de las releases sigue siendo inglés: el payload publicado necesita
-la ROM inglesa (BPEE) y rechaza la española.
+
+## Instalar
+
+Igual que la versión inglesa: el builder web y el de Windows aceptan las dos
+ROM y eligen solos el idioma. Cada release incluye las dos variantes: el
+ejecutable inglés y el español, cada uno con su receta. Para la actualización
+rápida (solo el 3DSX), la web comprueba tu `emerald3ds.pak` y te ofrece
+`Emerald3DS-es.3dsx`, que se guarda en la SD como `Emerald3DS.3dsx`.
 
 | Idioma | Código | SHA-1 de la ROM limpia |
 |---|---|---|
 | Español | BPES | `fe1558a3dcb0360ab558969e09b690888b846dd9` |
 | Inglés | BPEE | `f3ae088181bf583e55daf962a92bb46f4f1d07b7` |
 
-## Compilar la versión española
+## Compilar la versión española desde el código
 
 Con los requisitos de la [guía de desarrollo](DEVELOPMENT.md):
 
@@ -43,14 +48,15 @@ gráficos, sonidos ni secciones de la ROM.
 El proceso sustituye los textos y campos del código por los de tu ROM, extrae
 104 recursos gráficos y reconstruye las 55 páginas de créditos y los pisos de
 la Colina Desafío. Incluye nombres, diálogos, menús, vocabulario, canciones
-del bardo, frases de entrenadores, cartas y preguntas. La pantalla táctil usa
-etiquetas españolas y la Pokédex muestra metros y kilos.
+del bardo, frases de entrenadores, cartas, preguntas y los textos en braille de
+las ruinas. La pantalla táctil usa etiquetas españolas y la Pokédex muestra
+metros y kilos.
 
-Los parches de idioma (`patches/pokeemerald/0030-…` a `0035-…`, todos bajo
+Los parches de idioma (`patches/pokeemerald/0030-…` a `0036-…`, todos bajo
 `PORT_BRIDGE`) copian por nombre las tablas de la Colina Desafío y adaptan los
 nombres de bayas, las descripciones de los rivales, los títulos de concursos,
-la pantalla «FIN», el ancho de una tabla de textos de combate y las unidades
-de la Pokédex. En la compilación inglesa no cambian nada salvo la copia de la
+la pantalla «FIN», el ancho de una tabla de textos de combate, las unidades
+de la Pokédex y las ventanas de la etiqueta de bayas. En la compilación inglesa no cambian nada salvo la copia de la
 Colina Desafío, que ya no depende del orden en que el enlazador coloca las
 tablas.
 
