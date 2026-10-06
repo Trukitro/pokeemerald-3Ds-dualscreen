@@ -167,10 +167,18 @@ int main(void)
     sAtlas.slotOf[0x00D] = 2;
     Init(&parts, sParts);
     VoxelMesh_EmitInstance(&parts, &sMap, -3, -5, -1, -3);
-    VoxelTree_EmitInstance(&parts, &sMap, -3, -5, -1, -3);
     assert(parts.count == 24 && parts.uncovered == 0);
     for (unsigned i = 0; i < parts.count; ++i)
         assert(parts.vertices[i].y == 0);
+    /* The two cells of tall grass stand their tufts up, off the tree texture's
+     * own corner; the ordinary grass stands nothing. */
+    VoxelTree_EmitInstance(&parts, &sMap, -3, -5, -1, -3);
+    assert(parts.count == 24 + 2 * VOXEL_GRASS_TUFT_ROWS * 6 && parts.dropped == 0);
+    for (unsigned i = 24; i < parts.count; ++i)
+    {
+        const VoxelVertex *v = &parts.vertices[i];
+        assert(v->u <= 0.25f && v->v < 0.32f && v->v > 0.15f && v->y < 0.6f);
+    }
 
     /* Small trees: the canopy top keeps its ground; each trunk cell - edge of
      * a wood or inside it - lays the trunk and stands the whole crown on it. */

@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include "voxel_tree.h"
+#include "voxel_lighting.h"
 #include "voxel_relief.h"
 
 int VoxelTree_Part(int metatileId)
@@ -99,6 +100,50 @@ static void EmitCell(VoxelBuilder *builder, int x, int y, int part)
     builder->rounded = false;
 }
 
+/*
+ * Tall grass: the ground keeps its drawing and rows of tufts stand on it,
+ * cards leaning north like a crown's so the camera meets them face on. Half
+ * a tile tall: a walker's card stands on the middle of its cell, between the
+ * rows, and the row in front hides its feet as the grass does on the GBA.
+ * Every other row mirrored, so a field does not read as columns.
+ */
+static void EmitTallGrass(VoxelBuilder *builder, int x, int y)
+{
+    /* The tuft in the tree texture (gen_voxel_trees.py): 16x10 at (0, 44). */
+    const float u0 = 0.0f, u1 = 16.0f / VOXEL_TREE_TEXTURE_DIM;
+    const float v0 = 1.0f - 44.0f / VOXEL_TREE_TEXTURE_DIM;
+    const float v1 = 1.0f - 54.0f / VOXEL_TREE_TEXTURE_DIM;
+    /* 10 pixels of card at 60 degrees from the ground, its foot a little
+     * under it so no gap shows below the blades. */
+    const float rise = 0.541266f, run = 0.3125f, baseHeight = -0.04f;
+    float wx = (float)x, wz = (float)y;
+#if CTR_VOXEL_LIGHTING
+    /* Lit as one object, like a sign: a sample a corner for two cards a cell
+     * of a whole field was most of a chunk's build. */
+    float constant = builder->lightingConstant;
+
+    if (builder->lighting && constant < 0.0f)
+        builder->lightingConstant = VoxelLighting_Sample(wx + 0.5f, builder->lift + 0.25f, wz + 0.5f);
+#endif
+    builder->rounded = true;
+    for (int row = 0; row < VOXEL_GRASS_TUFT_ROWS; ++row)
+    {
+        float baseZ = wz + 0.45f + row * 0.5f;
+        bool mirror = ((x + y + row) & 1) != 0;
+        float ua = mirror ? u1 : u0, ub = mirror ? u0 : u1;
+
+        VoxelBuilder_Quad(builder,
+            &(VoxelVertex){wx,        baseHeight + rise, baseZ - run, ua, v0, 1.0f},
+            &(VoxelVertex){wx + 1.0f, baseHeight + rise, baseZ - run, ub, v0, 1.0f},
+            &(VoxelVertex){wx + 1.0f, baseHeight,        baseZ,       ub, v1, 1.0f},
+            &(VoxelVertex){wx,        baseHeight,        baseZ,       ua, v1, 1.0f});
+    }
+    builder->rounded = false;
+#if CTR_VOXEL_LIGHTING
+    builder->lightingConstant = constant;
+#endif
+}
+
 void VoxelTree_EmitInstance(VoxelBuilder *builder, const VoxelMapInstance *inst,
                             int x0, int y0, int x1, int y1)
 {
@@ -111,12 +156,18 @@ void VoxelTree_EmitInstance(VoxelBuilder *builder, const VoxelMapInstance *inst,
     for (int y = y0; y < y1; ++y)
         for (int x = x0; x < x1; ++x)
         {
-            int part = VoxelTree_Part(VoxelWorld_GetMetatileId(x, y));
-            if (part >= 0)
+            int metatile = VoxelWorld_GetMetatileId(x, y);
+            int part = VoxelTree_Part(metatile);
+            bool grass = VoxelTree_GroundMetatile(metatile) == VOXEL_TALL_GRASS_METATILE;
+
+            if (part >= 0 || grass)
             {
                 builder->lift = VoxelRelief_CellLift(inst, x, y);
                 builder->shift = VoxelRelief_CellShift(inst, x, y);
-                EmitCell(builder, x, y, part);
+                if (part >= 0)
+                    EmitCell(builder, x, y, part);
+                else
+                    EmitTallGrass(builder, x, y);
                 builder->lift = 0.0f;
                 builder->shift = 0.0f;
             }

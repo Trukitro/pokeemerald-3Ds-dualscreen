@@ -8,10 +8,13 @@ Original art for the voxel mode's trees, drawn for Pokémon Emerald 3Ds Dual Scr
 - `tree_small_crown.png`: 16×32 RGBA, crown of the small tree on a
   transparent background.
 
+- `grass_tuft.png`: 16×10 RGBA, a row of tall grass blades on a transparent
+  background.
+
 `scripts/gen_voxel_trees.py` packs them, unscaled, into
 `voxel/trees.rgba5551`: a 64×64 RGBA5551 texture in PICA200 order (large
 crown at 0,0; large trunk at 32,0; small crown at 32,32; small trunk at
-48,32). It is an engine file and ships inside the 3DSX. The build regenerates
+48,32; grass tuft at 0,44). It is an engine file and ships inside the 3DSX. The build regenerates
 it whenever a source changes; it needs Pillow like the port's other graphics
 tools.
 
@@ -35,3 +38,8 @@ the old crown and get their background back: `00E–00F` and `040` grass, `01D`
 ledge edge, `025` tall grass, `02D` reflective water, `035`/`193` water, `0CE`
 rock. `1EC–1ED` are the bottom row of a large tree. The secondary tilesets'
 variants keep their art.
+
+Tall grass (`00D`, and the cells above whose ground it is) keeps its drawing
+on the ground and stands two rows of tufts on it: cards 10 pixels long at 60°,
+their feet at 0.45 and 0.95 cells from the north edge, every other one
+mirrored. A walker stands between the rows, feet hidden by the one in front.
