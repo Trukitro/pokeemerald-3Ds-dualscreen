@@ -1070,6 +1070,49 @@ def briney_room():
     ]
 
 
+# ── Rooms with a flight of stairs in the back wall ────────────────────────
+#
+# Rustboro's flats (and whatever else is built like them): the plain room's
+# walls, with a doorway a cell wide in the back wall for every flight. Like
+# Littleroot's: the flight is drawn inside the doorway as the GBA sees it from
+# above, so it lies on the floor of a recess one cell deep, with the doorway's
+# sides and back round it - a way out of the room, not a picture of stairs
+# flat on the floor. Each: its layout, its size in cells, its floor, the
+# wall's cell the sides are dressed with, and the doorways' columns.
+
+STAIR_ROOMS = [
+    ("LAYOUT_RUSTBORO_CITY_FLAT1_1F", 14, 8, 0x32C, 5, (2,)),
+    ("LAYOUT_RUSTBORO_CITY_FLAT1_2F", 14, 8, 0x32C, 5, (2,)),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_1F", 14, 9, 0x32C, 1, (3,)),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_2F", 14, 9, 0x32C, 9, (1, 3)),
+    ("LAYOUT_RUSTBORO_CITY_FLAT2_3F", 14, 9, 0x32C, 3, (1,)),
+    ("LAYOUT_LILYCOVE_CITY_COVE_LILY_MOTEL_1F", 12, 9, 0x229, 4, (2,)),
+    ("LAYOUT_LILYCOVE_CITY_COVE_LILY_MOTEL_2F", 12, 9, 0x229, 4, (2,)),
+    ("LAYOUT_ROUTE114_FOSSIL_MANIACS_HOUSE", 10, 8, 0x229, 2, (4,)),
+    ("LAYOUT_ROUTE110_TRICK_HOUSE_END", 12, 8, 0x229, 6, (2, 10)),
+]
+
+
+def stair_room(width, height, plain_x, doors):
+    w, h = width * 16, height * 16
+    side = (plain_x * 16, 0, plain_x * 16 + 16, 32)
+    wall, pieces, x = [], [], 0
+    for door in sorted(doors):
+        d = door * 16
+        wall += [(x, 0, d, 32), (d, 0, d + 16, 13)]
+        # the doorway: 19 pixels tall under the 13 of wall over it, its
+        # sides the dark of the flight's own well
+        pieces.append(stairwell("stairwell_%d" % door, d, d + 16, 32, 13, 19,
+                                (d + 1, 14, d + 15, 26), 0))
+        x = d + 16
+    wall.append((x, 0, w, 32))
+    return pieces + [
+        piece("wall", wall, 32, fill=16, foot=32, side=side),
+        piece("side_w", [], 32, side=side, walls=[((0, h), (0, 32))]),
+        piece("side_e", [], 32, side=side, walls=[((w, 32), (w, h))]),
+    ]
+
+
 # ── The Pretty Petal flower shop ──────────────────────────────────────────
 #
 # Route 104's shop: planters of flowers and racks of potted plants about the
@@ -1559,6 +1602,14 @@ SPECS = [
         "interior": {"layout": "LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", "ground": [0x229],
                      "pieces": briney_room()},
     },
+] + [
+    {
+        "name": layout[len("LAYOUT_"):].lower(),
+        "interior": {"layout": layout, "ground": [ground],
+                     "pieces": stair_room(width, height, plain_x, doors)},
+    }
+    for layout, width, height, ground, plain_x, doors in STAIR_ROOMS
+] + [
     {
         # The Pretty Petal flower shop on Route 104
         "name": "flower_shop_room",
