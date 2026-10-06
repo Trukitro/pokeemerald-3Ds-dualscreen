@@ -1070,6 +1070,42 @@ def briney_room():
     ]
 
 
+# ── The Pretty Petal flower shop ──────────────────────────────────────────
+#
+# Route 104's shop: planters of flowers and racks of potted plants about the
+# floor, a table of pots and a shelf along the back wall. The counter, the
+# stools and the vases stay drawn on the floor.
+
+SHOP_FLOOR = ("eef6ff", "d5d5e6", "b4acb4")
+SHOP_WALL = ("bdbd94", "e6e68b", "ffffbd", "629c62", "9cd59c", "4a7b41")
+
+
+def flower_shop_room():
+    fl = SHOP_FLOOR
+    side = (48, 0, 64, 32)
+
+    def planter(name, x, y0, y1):
+        return piece(name, [(x, y0, x + 16, y1)], 10, leave=fl, solid=True)
+
+    def rack(name, x):
+        # from under the top plant's leaf tips, which close round two pixels
+        # of floor each side, down to its feet
+        return piece(name, [(x, 87, x + 16, 128)], 20, leave=fl, solid=True)
+
+    return [
+        planter("planter_sw", 0, 112, 144),
+        planter("planter_w", 80, 96, 128), planter("planter_c", 128, 96, 128),
+        planter("planter_e1", 192, 80, 128), planter("planter_e2", 208, 80, 128),
+        rack("rack_1", 96), rack("rack_2", 112), rack("rack_e", 224),
+        planter("planter_n1", 176, 48, 64), planter("planter_n2", 192, 48, 64),
+        piece("shelf", [(112, 24, 152, 56)], 18, leave=SHOP_WALL + fl, back=42),
+        piece("pots", [(162, 18, 209, 48)], 14, leave=SHOP_WALL + fl, back=32),
+        piece("wall", [(0, 0, 240, 32)], 32, fill=16, foot=32, side=side),
+        piece("side_w", [], 32, side=side, walls=[((0, 144), (0, 32))]),
+        piece("side_e", [], 32, side=side, walls=[((240, 32), (240, 144))]),
+    ]
+
+
 # ── Dewford's gym ─────────────────────────────────────────────────────────
 #
 # A maze cut in rock two cells tall: every blocked cell is rock, its top or
@@ -1522,6 +1558,12 @@ SPECS = [
         "name": "briney_room",
         "interior": {"layout": "LAYOUT_ROUTE104_MR_BRINEYS_HOUSE", "ground": [0x229],
                      "pieces": briney_room()},
+    },
+    {
+        # The Pretty Petal flower shop on Route 104
+        "name": "flower_shop_room",
+        "interior": {"layout": "LAYOUT_ROUTE104_PRETTY_PETAL_FLOWER_SHOP", "ground": [0x201],
+                     "pieces": flower_shop_room()},
     },
     {
         # Dewford's gym: Brawly's maze
