@@ -543,7 +543,11 @@ static void EmitBillboard(VoxelBuilder *builder, const VoxelSpriteSlot *slot, un
     /* On relief the sprite stands where its cell was lifted to, and rides
      * the lattice between cells, so a flight of stairs is climbed. */
     float lift = VoxelRelief_LiftAt(cx, cz) + rise, shift = VoxelRelief_ShiftAt(cx, cz);
-    float push = fmaxf(CardPush(cx, cz, halfW, height), ModelPush(cx, cz, halfW));
+    float push = CardPush(cx, cz, halfW, height);
+    float model = ModelPush(cx, cz, halfW);
+
+    if (model > push)
+        push = model;
     /* Towards the camera: the right vector turned a quarter, unit length. */
     float along = push > 0.0f ? push / sqrtf(rightX * rightX + rightZ * rightZ) : 0.0f;
     float px = cx + offX - rightZ * along, pz = cz + offZ + shift + rightX * along;

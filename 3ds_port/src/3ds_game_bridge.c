@@ -54,10 +54,11 @@ u16 Platform_GetKeyInput(void)
 /* AgbMain owns the loop: this is the game's frame boundary. */
 void CtrGame_WaitFrame(void);
 void VBlankIntrWait(void) { CtrGame_WaitFrame(); }
+/* At once, as on the GBA: DoSoftReset expects SoftReset not to return. */
 void SoftReset(u32 flags)
 {
     (void)flags;
-    CtrPlatform_RequestReset();
+    CtrGame_SoftReset();
 }
 
 static u8 Bcd(unsigned value) { return ((value / 10) << 4) | (value % 10); }
@@ -147,11 +148,11 @@ void Platform_ReadFlash(u16 sector, u32 offset, u8 *dest, u32 size)
     memcpy(dest, FLASH_BASE + address, size);
 }
 
-void Platform_QueueAudio(float *samples, s32 count)
+void Platform_QueueAudio(s32 *samples, s32 count)
 {
     /*
      * m4aSoundVSync hands over one mixer frame per VBlank, measured in bytes
-     * because SDL's queue is. Four bytes per float, two floats per frame.
+     * because SDL's queue is. Four bytes per sample, two samples per frame.
      */
-    CtrAudio_Queue(samples, count / (s32)(2 * sizeof(float)));
+    CtrAudio_Queue(samples, count / (s32)(2 * sizeof(s32)));
 }
