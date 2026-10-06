@@ -18,6 +18,7 @@
 #include "port_platform.h"
 
 #include "3ds_video.h"
+#include "voxel_building.h"
 #include "voxel_entities.h"
 #include "voxel_grade.h"
 #include "voxel_relief.h"
@@ -471,6 +472,30 @@ static float CardPush(float cx, float cz, float halfW, float height)
 }
 
 /*
+ * Furniture against a room's back wall is modelled from its drawing, and the
+ * drawing comes forward of the wall by half a cell: to the middle of the cell
+ * before it, where a walker's card stands. Card and model front then share a
+ * depth, and the model, drawn first, hid the walker in front of it. A pixel
+ * along the line of sight puts the card in front again, as on the GBA. Under
+ * either edge of the card, not only its middle: walking along the furniture,
+ * half the card is over a model's cell before its middle is.
+ */
+static float ModelPush(float cx, float cz, float halfW)
+{
+    int y = (int)floorf(cz);
+    int x0 = (int)floorf(cx - halfW + VOXEL_CARD_CLEAR), x1 = (int)floorf(cx + halfW - VOXEL_CARD_CLEAR);
+
+    for (int x = x0; x <= x1; ++x)
+    {
+        const VoxelMapInstance *inst = VoxelWorld_GetInstanceAt(x, y);
+
+        if (inst != NULL && VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
+            return VOXEL_CARD_CLEAR;
+    }
+    return 0.0f;
+}
+
+/*
  * A card standing on the ground at (cx, cz), moved (offX, offZ) from there
  * and raised by `rise`: an object stands on the centre of its tile, feet on
  * the ground; a field effect that belongs to an object is drawn in that
@@ -493,7 +518,7 @@ static void EmitBillboard(VoxelBuilder *builder, const VoxelSpriteSlot *slot, un
     /* On relief the sprite stands where its cell was lifted to, and rides
      * the lattice between cells, so a flight of stairs is climbed. */
     float lift = VoxelRelief_LiftAt(cx, cz) + rise, shift = VoxelRelief_ShiftAt(cx, cz);
-    float push = CardPush(cx, cz, halfW, height);
+    float push = fmaxf(CardPush(cx, cz, halfW, height), ModelPush(cx, cz, halfW));
     /* Towards the camera: the right vector turned a quarter, unit length. */
     float along = push > 0.0f ? push / sqrtf(rightX * rightX + rightZ * rightZ) : 0.0f;
     float px = cx + offX - rightZ * along, pz = cz + offZ + shift + rightX * along;
