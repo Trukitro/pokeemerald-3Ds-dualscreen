@@ -42,9 +42,10 @@
 .constf ctrVoxelConst(0.001953125, 0.00006103515625, 0.0, 1.0)
 .alias  ones  ctrVoxelConst.wwww
 .alias  zeros ctrVoxelConst.zzzz
-; x: water from this shade, y: still water from this one, z: the sea's base,
+; x: water from this shade, y: still water from this one (over the sea's
+; brightest, 1.74, and under still water's darkest, 1.75), z: the sea's base,
 ; w: still water's base over the sea's
-.constf ctrWaterConst(1.45, 1.725, 1.5, 0.25)
+.constf ctrWaterConst(1.45, 1.745, 1.5, 0.25)
 ; x: 1 / 0.24 - 1, y: 0.5, z: -0.5
 .constf ctrWaterScale(3.1666667, 0.5, -0.5, 0.0)
 
