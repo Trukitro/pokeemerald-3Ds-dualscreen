@@ -70,18 +70,17 @@ const uint16_t *VoxelBuildings_Footprint(const VoxelMapInstance *inst, int x, in
 bool VoxelBuildings_Variant(unsigned i, unsigned *layout, unsigned *metatile, unsigned *quarters);
 
 /*
- * The wall a door in world cell (x, y) is drawn on: the southernmost face of
- * the model there that looks south, stands across the middle of the cell and
- * is no further south than its edge. Its z in world tiles; false when no
- * model covers the cell or it has no such face.
- */
-bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z);
-/*
- * The same face for anything standing in the cell: the southernmost upright
- * face of the model there that crosses world x0..x1 at `height` tiles up.
+ * The face of a model a walker in world cell (x, y) of `inst` stands before:
+ * the southernmost upright face, looking south, of any model that reaches
+ * the cell, crossing world x0..x1 at `height` tiles up. Its z in world tiles;
+ * false when there is none. A piece of furniture's front, a building's wall.
  */
 bool VoxelBuildings_FrontAt(const VoxelMapInstance *inst, int x, int y,
                             float x0, float x1, float height, float *z);
+
+/* The wall a door in world cell (x, y) is drawn on: the face across the
+ * middle of the cell, half a tile up. */
+bool VoxelBuildings_DoorWall(const VoxelMapInstance *inst, int x, int y, float *z);
 
 /* Appends every model whose top-left cell lies in [x0,x1) x [y0,y1), with
  * its placement's ground patches. */
