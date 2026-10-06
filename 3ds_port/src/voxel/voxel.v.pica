@@ -19,10 +19,15 @@
 ; position, slid along the sun by its height, rotated and scaled into the
 ; pattern, which the world and sprites sample (and the rays, turned).
 ;   dapple = (dappleU . position, dappleV . position)
+;
+; A vertex whose shade is negative is one the wind moves - the top of a tuft
+; of grass, of a flower (voxel_tree.c): it is displaced by `wind`, this
+; frame's sway in tiles, and lit by the shade without its sign.
 
 .fvec projection[4], modelView[4]
 .fvec shadeTint, tintDiff, grade, fog
 .fvec dappleU, dappleV
+.fvec wind
 
 ; x: position scale, y: shade scale, z: 0, w: 1
 .constf ctrVoxelConst(0.001953125, 0.00006103515625, 0.0, 1.0)
@@ -40,6 +45,11 @@
 .proc main
 	mul r0.xyz, ctrVoxelConst.xxxx, inpos
 	mov r0.w,   ones
+
+	; r7 = 1 where the shade is negative; the wind moves those
+	slt r7, inpos.wwww, zeros
+	mul r8, wind, r7
+	add r0.xyz, r0, r8
 
 	; r1 = modelView * position
 	dp4 r1.x, modelView[0], r0
@@ -62,7 +72,8 @@
 	mov outtc1, r6
 
 	; r2 = shade, r3 = t
-	mul r2, ctrVoxelConst.yyyy, inpos.wwww
+	mul r9, ctrVoxelConst.yyyy, inpos.wwww
+	max r2, r9, -r9
 	mul r3, grade.xxxx, r2
 	add r3, grade.yyyy, r3
 	max r3, zeros, r3

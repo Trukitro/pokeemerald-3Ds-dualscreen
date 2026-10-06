@@ -100,9 +100,13 @@ typedef enum
     VOXEL_GRASS_NONE = 0,
     VOXEL_GRASS_TALL,
     VOXEL_GRASS_LONG,
-    VOXEL_GRASS_ASH
+    VOXEL_GRASS_ASH,
+    /* Not grass: the General tileset's flowers, which stand up the same way. */
+    VOXEL_GRASS_FLOWER
 } VoxelGrass;
 VoxelGrass VoxelWorld_Grass(int worldX, int worldY);
+/* The General tileset's flowers: grass under them, drawn on the upper layer. */
+#define VOXEL_FLOWER_METATILE 0x004
 /* Explicit tileset identity: these tree IDs mean other art in other tilesets. */
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst);
 

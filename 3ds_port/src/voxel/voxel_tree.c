@@ -28,6 +28,8 @@ int VoxelTree_GroundMetatile(int metatileId)
     {
     case 0x1C6: case 0x1C7: return 0x00D; /* tall grass without canopy */
     case 0x1CE: case 0x1CF: return 0x001; /* ordinary grass */
+    /* Flowers stand up as cards (EmitGrass): the grass they grow in. */
+    case VOXEL_FLOWER_METATILE: return 0x001;
     /* A small tree's canopy top, over whatever it stood in front of. The
      * fence feet under 040 have no metatile of their own: grass. */
     case 0x00E: case 0x00F: case 0x040: return 0x001;
@@ -106,7 +108,11 @@ static void EmitCell(VoxelBuilder *builder, int x, int y, int part)
  * is half a tile tall: a walker's card stands on the middle of its cell,
  * between the rows, and the row in front hides its feet as the grass does on
  * the GBA. Long grass is a tile tall and hides them to the waist. Every other
- * row mirrored, so a field does not read as columns.
+ * row mirrored, so a field does not read as columns. Flowers stand the same
+ * way, on plain grass (VoxelTree_GroundMetatile): the drawing's sway is the
+ * tileset's animation, which a card cut from a picture of its own cannot
+ * show, so the wind moves them instead - the top of every card carries a
+ * negative shade, which is what voxel.v.pica sways.
  */
 static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
 {
@@ -119,6 +125,7 @@ static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
         [VOXEL_GRASS_TALL] = {0, 44, 10},
         [VOXEL_GRASS_LONG] = {16, 44, 16},
         [VOXEL_GRASS_ASH] = {48, 50, 10},
+        [VOXEL_GRASS_FLOWER] = {0, 54, 10},
     };
     const float u0 = (float)tufts[kind].x / VOXEL_TREE_TEXTURE_DIM;
     const float u1 = u0 + 16.0f / VOXEL_TREE_TEXTURE_DIM;
@@ -145,8 +152,8 @@ static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
         float ua = mirror ? u1 : u0, ub = mirror ? u0 : u1;
 
         VoxelBuilder_Quad(builder,
-            &(VoxelVertex){wx,        baseHeight + rise, baseZ - run, ua, v0, 1.0f},
-            &(VoxelVertex){wx + 1.0f, baseHeight + rise, baseZ - run, ub, v0, 1.0f},
+            &(VoxelVertex){wx,        baseHeight + rise, baseZ - run, ua, v0, -1.0f},
+            &(VoxelVertex){wx + 1.0f, baseHeight + rise, baseZ - run, ub, v0, -1.0f},
             &(VoxelVertex){wx + 1.0f, baseHeight,        baseZ,       ub, v1, 1.0f},
             &(VoxelVertex){wx,        baseHeight,        baseZ,       ua, v1, 1.0f});
     }

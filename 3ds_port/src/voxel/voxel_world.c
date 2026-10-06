@@ -547,6 +547,8 @@ VoxelGrass VoxelWorld_Grass(int worldX, int worldY)
 
     if (inst == NULL)
         return VOXEL_GRASS_NONE;
+    if ((block & MAPGRID_METATILE_ID_MASK) == VOXEL_FLOWER_METATILE && VoxelWorld_UsesTreeSprites(inst))
+        return VOXEL_GRASS_FLOWER;
     behavior = UNPACK_BEHAVIOR(GetMetatileAttribute(inst, block & MAPGRID_METATILE_ID_MASK));
     if (behavior == MB_TALL_GRASS)
         return VOXEL_GRASS_TALL;

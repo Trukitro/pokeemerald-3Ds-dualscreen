@@ -180,6 +180,7 @@ static bool sReady;
 static DVLB_s *sDvlb;
 static shaderProgram_s sProgram;
 static int sUniProjection = -1, sUniModelView = -1;
+static int sUniWind = -1;
 static int sUniShadeTint = -1, sUniTintDiff = -1, sUniGrade = -1, sUniFog = -1;
 static int sUniDappleU = -1, sUniDappleV = -1;
 /* The tree crowns' brightness against the rest of the art, applied once as
@@ -1589,6 +1590,7 @@ bool CtrVoxel_Init(void)
     sUniFog = shaderInstanceGetUniformLocation(sProgram.vertexShader, "fog");
     sUniDappleU = shaderInstanceGetUniformLocation(sProgram.vertexShader, "dappleU");
     sUniDappleV = shaderInstanceGetUniformLocation(sProgram.vertexShader, "dappleV");
+    sUniWind = shaderInstanceGetUniformLocation(sProgram.vertexShader, "wind");
     if (sUniProjection < 0 || sUniModelView < 0 || sUniShadeTint < 0
      || sUniTintDiff < 0 || sUniGrade < 0 || sUniFog < 0
      || sUniDappleU < 0 || sUniDappleV < 0)
@@ -4796,9 +4798,27 @@ static VoxelLight LightFor(bool indoor)
     return light;
 }
 
+/*
+ * The wind in the grass: how far, in tiles, the top of a tuft or a flower
+ * leans this frame (voxel.v.pica moves the vertices whose shade is negative).
+ * Two slow swings that never quite repeat, a pixel and a half at most, mostly
+ * east and west: across the view, where a lean reads as a lean.
+ */
+static void SetWind(void)
+{
+    float t = (float)sFrame * (1.0f / 60.0f);
+    float gust = sinf(t * 1.9f) + 0.5f * sinf(t * 3.1f + 1.3f);
+
+    if (sUniWind >= 0)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, sUniWind, 0.06f * gust, 0.0f,
+                      0.02f * sinf(t * 1.3f + 0.7f), 0.0f);
+}
+
 static void SetGrade(const VoxelLight *light)
 {
     float eye = sCamera.distance / cosf(C3D_AngleFromDegrees(sCamera.pitch));
+
+    SetWind();
     float fogStart = eye * light->hazeStart;
     float fogScale = light->haze / (eye * light->hazeRamp);
 

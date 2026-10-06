@@ -377,7 +377,7 @@ romfs/voxel/trees.rgba5551: scripts/gen_voxel_trees.py \
 		assets/voxel/trees/tree_crown.png assets/voxel/trees/tree_trunk.png \
 		assets/voxel/trees/tree_small_crown.png assets/voxel/trees/tree_small_trunk.png \
 		assets/voxel/trees/grass_tuft.png assets/voxel/trees/grass_long_tuft.png \
-		assets/voxel/trees/grass_ash_tuft.png
+		assets/voxel/trees/grass_ash_tuft.png assets/voxel/trees/flowers.png
 	@mkdir -p $(@D)
 	"$(PYTHON)" scripts/gen_voxel_trees.py --output $@
 
