@@ -987,6 +987,19 @@ def house_with_bed():
     ]
 
 
+def petalburg_gym():
+    """Petalburg's gym: nine rooms one under another in the black between
+    them, each nine cells wide and eight deep under a back wall two cells
+    tall, its doors and its plate drawn on the wall's face. Back walls only:
+    the drawing has no side walls, and a pair made for every room (as the
+    houses have, to close them from the console's camera) puts the layout's
+    page past the console's 512x512 - four rooms' fit, and four closed rooms
+    of nine would read as a fault."""
+    side = (16, 208, 48, 240)       # a stretch of the second room's panelling
+    return [piece("wall_%d" % room, [(0, y, 144, y + 32)], 32, fill=16, foot=y + 32, side=side)
+            for room, y in ((room, room * 13 * 16) for room in range(9))]
+
+
 # ── Professor Birch's lab ─────────────────────────────────────────────────
 #
 # Desks and a bookcase along the back wall, standing on its row of collision
@@ -1390,6 +1403,14 @@ SPECS = [
         # Petalburg's second house, and two more maps'
         "name": "house_with_bed",
         "interior": {"layout": "LAYOUT_HOUSE_WITH_BED", "ground": [0x223], "pieces": house_with_bed()},
+    },
+    {
+        # Petalburg's gym: Norman's rooms
+        "name": "petalburg_gym",
+        "interior": {"layout": "LAYOUT_PETALBURG_CITY_GYM", "ground": [0x201, 0x22B],
+                     "shade": [0x209, 0x212, 0x213, 0x214, 0x22A, 0x232,
+                               0x216, 0x22C],
+                     "pieces": petalburg_gym()},
     },
     {
         # Rustboro's gym: Roxanne's maze
