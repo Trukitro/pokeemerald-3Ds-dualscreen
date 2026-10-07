@@ -548,10 +548,9 @@ bool VoxelBuildings_EmitSome(VoxelBuilder *builder, const VoxelMapInstance *inst
             continue;
         /* On a lifted plateau the building stands on it: the lift of the
          * cell under its door, the bottom-left of its rectangle. */
-        builder->lift = VoxelRelief_CellLift(inst, inst->originX + p[i].x,
+        builder->lift = VoxelRelief_CellFoot(inst, inst->originX + p[i].x,
                                              inst->originY + p[i].y + m->h - 1);
-        builder->shift = VoxelRelief_CellShift(inst, inst->originX + p[i].x,
-                                             inst->originY + p[i].y + m->h - 1);
+        builder->shift = builder->lift;
         for (; cursor->part < 2; ++cursor->part, cursor->vertex = 0)
         {
             unsigned r = cursor->part;

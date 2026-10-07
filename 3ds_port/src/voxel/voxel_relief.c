@@ -361,6 +361,20 @@ float VoxelRelief_CellShift(const VoxelMapInstance *inst, int x, int y)
     return g ? g[2 * VOXEL_RELIEF_SIDE + 2] / 16.0f : 0.0f;
 }
 
+float VoxelRelief_CellFoot(const VoxelMapInstance *inst, int x, int y)
+{
+    const int16_t *g = VoxelRelief_Cell(inst, x, y);
+    int low;
+
+    if (g == NULL)
+        return 0.0f;
+    low = g[0];
+    for (unsigned i = 1; i < VOXEL_RELIEF_SIDE * VOXEL_RELIEF_SIDE; ++i)
+        if (g[i] < low)
+            low = g[i];
+    return low / 16.0f;
+}
+
 static float Sample(const int16_t *g, float worldX, float worldZ);
 
 float VoxelRelief_LiftAt(float worldX, float worldZ)

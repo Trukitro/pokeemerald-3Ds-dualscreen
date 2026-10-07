@@ -56,6 +56,12 @@ float VoxelRelief_CellLift(const VoxelMapInstance *inst, int x, int y);
 
 /* Its depth, in tiles, at the centre of a cell. */
 float VoxelRelief_CellShift(const VoxelMapInstance *inst, int x, int y);
+/* The cell's lowest point, which is where a model stands and its ground lies:
+ * a rock at sea has a mound for its relief, whose middle is a level over the
+ * water round it - the rock and the water under it floated that level up,
+ * leaving a hole in the sea beside them (Rustboro's west shore). Lift and
+ * shift are one (VoxelRelief_Depth). */
+float VoxelRelief_CellFoot(const VoxelMapInstance *inst, int x, int y);
 
 /* Height in tiles in the world at a world position, interpolated on the
  * lattice: the base of the map there and the relief over it. */
