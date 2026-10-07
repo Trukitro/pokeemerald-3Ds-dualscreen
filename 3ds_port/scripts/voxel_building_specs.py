@@ -1010,8 +1010,14 @@ def petalburg_gym():
     page past the console's 512x512 - four rooms' fit, and four closed rooms
     of nine would read as a fault."""
     side = (16, 208, 48, 240)       # a stretch of the second room's panelling
-    return [piece("wall_%d" % room, [(0, y, 144, y + 32)], 32, fill=16, foot=y + 32, side=side)
-            for room, y in ((room, room * 13 * 16) for room in range(9))]
+    floor = ("e6cd73", "cdb452", "f6e683")
+    # the two statues by the door of the first room (the last of the layout):
+    # an orb on a plinth, a card each
+    statues = only_here([piece("statue_w", [(16, 1744, 32, 1776)], 31, leave=floor, card=True),
+                         piece("statue_e", [(112, 1744, 128, 1776)], 31, leave=floor, card=True)],
+                        "statue_w", "statue_e")     # Rustboro's gym has its own
+    return statues + [piece("wall_%d" % room, [(0, y, 144, y + 32)], 32, fill=16, foot=y + 32, side=side)
+                      for room, y in ((room, room * 13 * 16) for room in range(9))]
 
 
 # ── The other houses of the general indoor tileset ────────────────────────
@@ -1272,6 +1278,8 @@ def flower_shop_room():
         planter("planter_n1", 176, 48, 64), planter("planter_n2", 192, 48, 64),
         piece("shelf", [(112, 24, 152, 56)], 18, leave=SHOP_WALL + fl, back=42),
         piece("pots", [(162, 18, 209, 48)], 14, leave=SHOP_WALL + fl, back=32),
+        # the counter down the west side: nine rows of front at its foot
+        piece("counter", [(16, 47, 32, 96)], 9, leave=fl, solid=True),
         piece("wall", [(0, 0, 240, 32)], 32, fill=16, foot=32, side=side),
         piece("side_w", [], 32, side=side, walls=[((0, 144), (0, 32))]),
         piece("side_e", [], 32, side=side, walls=[((240, 32), (240, 144))]),
@@ -1587,8 +1595,33 @@ SPECS = [
         "components": {
             "secondary": "gTileset_Petalburg",
             "tiles": {0x23c, 0x23d, 0x23e, 0x244, 0x245, 0x246, 0x24c, 0x24d, 0x24e,
-                      0x254, 0x255, 0x256, 0x264, 0x265, 0x266},
+                      0x254, 0x255, 0x256, 0x264, 0x265, 0x266,
+                      # the rounded ends either side of the gym (found by the audit)
+                      0x23f},
             "height": 11,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # The General tileset's picket fence, wherever it has been looked at:
+        # a run of posts and rails, ten rows tall at its foot.
+        "name": "fence",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_ROUTE104", "LAYOUT_PETALBURG_WOODS"],
+            "tiles": {0x149},
+            "height": 10, "block": 4,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # The seed beds beside Petalburg's house: low boxes of earth.
+        "name": "seedbed",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_PETALBURG_CITY"],
+            "tiles": {0x007},
+            "height": 4,
         },
         "ground": [GRASS],
     },
@@ -1807,7 +1840,7 @@ SPECS = [
     {
         # Petalburg's gym: Norman's rooms
         "name": "petalburg_gym",
-        "interior": {"layout": "LAYOUT_PETALBURG_CITY_GYM", "ground": [0x201, 0x22B],
+        "interior": {"layout": "LAYOUT_PETALBURG_CITY_GYM", "ground": [0x22B, 0x201],
                      "shade": [0x209, 0x212, 0x213, 0x214, 0x22A, 0x232,
                                0x216, 0x22C],
                      "pieces": own_shell(petalburg_gym())},

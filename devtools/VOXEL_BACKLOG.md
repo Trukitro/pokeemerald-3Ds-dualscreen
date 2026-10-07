@@ -440,3 +440,123 @@ every reported item is ticked. Work one area to the end before the next.
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:TerraCave -->
+
+<!-- audit:LittlerootTown -->
+### LittlerootTown - audit of 2026-10-07
+
+- [x] **LittlerootTown**: nothing blocked lies flat
+- [x] **LittlerootTown_MaysHouse_1F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 2 cell(s): the moving boxes of the game's first minutes, which a script puts there
+  - [ ] painted on the floor: pixels (67, 91)-(157, 141), 2452 px
+  - [ ] painted on the floor: pixels (17, 129)-(47, 143), 420 px
+- [x] **LittlerootTown_BrendansHouse_1F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 2 cell(s): the moving boxes of the game's first minutes, which a script puts there
+  - [ ] painted on the floor: pixels (19, 91)-(109, 141), 2212 px
+  - [ ] painted on the floor: pixels (129, 129)-(159, 143), 420 px
+- [x] **LittlerootTown_ProfessorBirchsLab**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (96, 192)-(128, 208), 512 px
+  - [ ] painted on the floor: pixels (16, 128)-(64, 136), 90 px
+  - [ ] painted on the floor: pixels (80, 32)-(96, 40), 30 px
+  - [ ] painted on the floor: pixels (160, 32)-(176, 40), 30 px
+- [x] **LittlerootTown_MaysHouse_2F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (19, 51)-(77, 109), 3364 px
+- [x] **LittlerootTown_BrendansHouse_2F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (67, 51)-(125, 109), 3364 px
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:LittlerootTown -->
+
+<!-- audit:PetalburgCity -->
+### PetalburgCity - audit of 2026-10-07
+
+- [x] **PetalburgCity**: nothing blocked lies flat
+- [x] **PetalburgCity_House1**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (19, 51)-(125, 109), 4579 px
+  - [ ] painted on the floor: pixels (48, 128)-(80, 144), 512 px
+  - [ ] painted on the floor: pixels (64, 35)-(128, 40), 320 px
+  - [ ] painted on the floor: pixels (64, 43)-(128, 48), 320 px
+- [x] **PetalburgCity_WallysHouse**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+  - [ ] painted on the floor: pixels (48, 35)-(112, 40), 320 px
+  - [ ] painted on the floor: pixels (48, 43)-(112, 48), 320 px
+- [x] **PetalburgCity_Gym**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 4 cell(s): the leader's mat: the corners of its low border
+  - [ ] painted on the floor: pixels (24, 1504)-(120, 1568), 6144 px
+  - [ ] painted on the floor: pixels (24, 1296)-(120, 1360), 6144 px
+  - [ ] painted on the floor: pixels (24, 256)-(120, 320), 6144 px
+  - [ ] painted on the floor: pixels (24, 672)-(120, 736), 6144 px
+  - [ ] painted on the floor: pixels (24, 1088)-(120, 1152), 6144 px
+  - [ ] painted on the floor: pixels (24, 464)-(120, 528), 6144 px
+  - [ ] painted on the floor: pixels (24, 880)-(120, 944), 6144 px
+  - [ ] painted on the floor: pixels (38, 37)-(106, 53), 1088 px
+  - [ ] painted on the floor: pixels (65, 1777)-(95, 1791), 420 px
+  - [ ] painted on the floor: pixels (49, 58)-(95, 60), 92 px
+  - [ ] painted on the floor: pixels (49, 62)-(95, 64), 92 px
+  - [ ] painted on the floor: pixels (96, 35)-(110, 61), 91 px
+- [x] **PetalburgCity_PokemonCenter_1F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
+  - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
+  - [ ] painted on the floor: pixels (97, 81)-(103, 87), 36 px
+  - [ ] painted on the floor: pixels (97, 89)-(103, 95), 36 px
+  - [ ] painted on the floor: pixels (121, 81)-(127, 87), 36 px
+  - [ ] painted on the floor: pixels (129, 89)-(135, 95), 36 px
+  - [ ] painted on the floor: pixels (113, 81)-(119, 87), 36 px
+  - [ ] painted on the floor: pixels (121, 89)-(127, 95), 36 px
+  - [ ] painted on the floor: pixels (105, 81)-(111, 87), 36 px
+  - [ ] painted on the floor: pixels (113, 73)-(119, 79), 36 px
+  - [ ] painted on the floor: pixels (105, 73)-(111, 79), 36 px
+  - [ ] painted on the floor: pixels (89, 89)-(95, 95), 36 px
+- [x] **PetalburgCity_House2**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+  - [ ] painted on the floor: pixels (32, 43)-(128, 48), 480 px
+  - [ ] painted on the floor: pixels (32, 35)-(128, 40), 480 px
+- [x] **PetalburgCity_Mart**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+- [x] **PetalburgCity_PokemonCenter_2F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (82, 90)-(94, 96), 44 px
+  - [ ] painted on the floor: pixels (155, 84)-(167, 90), 42 px
+  - [ ] painted on the floor: pixels (161, 103)-(173, 109), 42 px
+  - [ ] painted on the floor: pixels (145, 73)-(151, 79), 32 px
+  - [ ] painted on the floor: pixels (65, 65)-(71, 71), 32 px
+  - [ ] painted on the floor: pixels (73, 65)-(79, 71), 32 px
+  - [ ] painted on the floor: pixels (145, 81)-(151, 87), 32 px
+  - [ ] painted on the floor: pixels (65, 73)-(71, 79), 32 px
+  - [ ] painted on the floor: pixels (73, 73)-(79, 79), 32 px
+  - [ ] painted on the floor: pixels (17, 65)-(23, 71), 32 px
+  - [ ] painted on the floor: pixels (25, 65)-(31, 71), 32 px
+  - [ ] painted on the floor: pixels (169, 65)-(175, 71), 32 px
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:PetalburgCity -->
+
+<!-- audit:Route104 -->
+### Route104 - audit of 2026-10-07
+
+- [x] **Route104**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 1 cell(s): a patch of bare soil the cartridge blocks
+  - left flat, 9 cell(s): a small tree's crown top drawn over the fence: the tree south of it stands
+  - left flat, 1 cell(s): a corner of the cliff's foot
+- [x] **Route104_MrBrineysHouse**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (16, 128)-(176, 144), 2248 px
+  - [ ] painted on the floor: pixels (145, 83)-(159, 96), 156 px
+  - [ ] painted on the floor: pixels (48, 32)-(128, 36), 129 px
+  - [ ] painted on the floor: pixels (48, 46)-(128, 48), 120 px
+- [x] **Route104_PrettyPetalFlowerShop**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (32, 128)-(64, 144), 512 px
+  - [ ] painted on the floor: pixels (98, 48)-(110, 62), 136 px
+  - [ ] painted on the floor: pixels (162, 48)-(174, 62), 136 px
+  - [ ] painted on the floor: pixels (80, 32)-(96, 40), 128 px
+  - [ ] painted on the floor: pixels (32, 32)-(48, 39), 108 px
+  - [ ] painted on the floor: pixels (104, 32)-(112, 39), 54 px
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:Route104 -->
+
+<!-- audit:PetalburgWoods -->
+### PetalburgWoods - audit of 2026-10-07
+
+- [x] **PetalburgWoods**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 38 cell(s): grass the cartridge blocks under the wood's canopy: nothing is drawn on it
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:PetalburgWoods -->

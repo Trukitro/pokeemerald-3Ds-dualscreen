@@ -46,7 +46,16 @@ def component_specs(spec, layouts):
                                   encoding="utf-8"))["layouts"]
     out = []
     for entry in layouts_json:
-        if entry.get("secondary_tileset") != comp["secondary"] or "blockdata_filepath" not in entry:
+        # by its secondary tileset, or - a General tileset's object, drawn
+        # under any - by its primary one and the layouts it has been looked
+        # at in (`layouts`)
+        if "blockdata_filepath" not in entry:
+            continue
+        if "secondary" in comp and entry.get("secondary_tileset") != comp["secondary"]:
+            continue
+        if "primary" in comp and entry.get("primary_tileset") != comp["primary"]:
+            continue
+        if "layouts" in comp and entry.get("id") not in comp["layouts"]:
             continue
         blocks = vb.read_u16(os.path.join(vb.ROOT, entry["blockdata_filepath"]))
         w, h = entry["width"], entry["height"]

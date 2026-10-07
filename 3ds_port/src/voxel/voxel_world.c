@@ -37,6 +37,7 @@ extern const struct Tileset gTileset_General;
 extern const struct Tileset gTileset_Fortree;
 extern const struct Tileset gTileset_Fallarbor;
 extern const struct Tileset gTileset_Dewford;
+extern const struct Tileset gTileset_Rustboro;
 extern const struct Tileset gTileset_GenericBuilding;
 
 #include <string.h>
@@ -576,6 +577,12 @@ bool VoxelWorld_IslandTrees(const VoxelMapInstance *inst)
 {
     return inst != NULL && !inst->indoor && inst->primaryTileset == &gTileset_General
         && inst->secondaryTileset == &gTileset_Dewford;
+}
+
+bool VoxelWorld_ShadeTrees(const VoxelMapInstance *inst)
+{
+    return inst != NULL && !inst->indoor && inst->primaryTileset == &gTileset_General
+        && inst->secondaryTileset == &gTileset_Rustboro;
 }
 
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst)

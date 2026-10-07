@@ -14,6 +14,14 @@ int VoxelTree_Part(int metatileId)
     /* A large tree's lower row under a small tree's canopy top. */
     case 0x1EC: return 2;
     case 0x1ED: return 3;
+    /* The same trees where a wood meets a shore or another row of it: the
+     * tops drawn over the bank, and the lower halves in the next row's
+     * shade (Petalburg's north edge and its pond, Petalburg Woods). They
+     * were left out, so those trees were a crown's top half, or none. */
+    case 0x1FC: return 0;
+    case 0x1FD: return 1;
+    case 0x1F3: return 2;
+    case 0x1F2: return 3;
     /* Small trees: the edge of a wood, and inside it where the next crown
      * overlaps the trunk. 1F4-1F5 also carry a neighbour's leaves. */
     case 0x016: case 0x017: case 0x0C6: case 0x0C7:
@@ -54,6 +62,10 @@ int VoxelTree_PartIn(const VoxelMapInstance *inst, int metatileId)
 {
     if (metatileId >= 0x200 && VoxelWorld_IslandTrees(inst))
         return metatileId == 0x23A || metatileId == 0x243 ? VOXEL_TREE_ISLAND : -1;
+    /* Rustboro's tileset draws the small tree in a wood's shade (Route 104,
+     * Petalburg Woods): its trunk, and its trunk under the next crown. */
+    if ((metatileId == 0x307 || metatileId == 0x316) && VoxelWorld_ShadeTrees(inst))
+        return VOXEL_TREE_SMALL;
     return VoxelTree_Part(metatileId);
 }
 

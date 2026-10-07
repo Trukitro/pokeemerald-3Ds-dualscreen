@@ -115,6 +115,8 @@ bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst);
 /* Is it a map of the island's tileset (Dewford's), whose trees are its own
  * (voxel_tree.h's VoxelTree_PartIn)? */
 bool VoxelWorld_IslandTrees(const VoxelMapInstance *inst);
+/* Or of Rustboro's tileset, which has the small tree in a wood's shade? */
+bool VoxelWorld_ShadeTrees(const VoxelMapInstance *inst);
 
 /* The metatile the 2D game tiles outside the map, or -1 if there is none.
  * Without it the view ends in the clear colour past the last map. */

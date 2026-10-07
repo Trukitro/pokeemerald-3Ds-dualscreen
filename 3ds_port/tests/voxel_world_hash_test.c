@@ -11,6 +11,7 @@ struct ObjectEvent gObjectEvents[OBJECT_EVENTS_COUNT];
 struct PlayerAvatar gPlayerAvatar;
 const struct Tileset gTileset_General = {0};
 const struct Tileset gTileset_Dewford = {0};
+const struct Tileset gTileset_Rustboro = {0};
 const struct Tileset gTileset_Fallarbor = {0};
 static u16 sFortreeAttributes[280] = {
     [628 - NUM_METATILES_IN_PRIMARY] = MB_PUDDLE,
