@@ -10,6 +10,8 @@
  *     voxel 0|1              the VOXEL 3D option
  *     flash LEVEL            the dark of a cave at that level, animated as
  *                            the move does it (1 is after Flash, 7 before)
+ *     audit NAME             shots/NAME_audit.txt: what every cell of the
+ *                            map is in the voxel view (Audit, below)
  *     wait FRAMES            let chunks build, animations run
  *     shot NAME              shots/NAME_top.bmp and shots/NAME_bottom.bmp
  *     quit                   write autotest.done and leave
@@ -40,6 +42,13 @@
 #include "port_log.h"
 
 #include "3ds_platform.h"
+#if CTR_VOXEL_ENABLED
+#include "voxel/voxel_world.h"
+#include "voxel/voxel_building.h"
+#include "voxel/voxel_tree.h"
+#include "voxel/voxel_relief.h"
+#include "voxel/voxel_sign.h"
+#endif
 
 #define AUTOTEST_PATH "sdmc:/3ds/emerald3ds/autotest.txt"
 #define AUTOTEST_DONE "sdmc:/3ds/emerald3ds/autotest.done"
@@ -49,7 +58,7 @@
 /* A warp that never reaches the field is skipped, not waited on for ever. */
 #define AUTOTEST_WARP_TIMEOUT 900
 
-enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_WAIT, OP_SHOT, OP_QUIT };
+enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_AUDIT, OP_WAIT, OP_SHOT, OP_QUIT };
 
 typedef struct
 {
@@ -92,6 +101,8 @@ static void Load(void)
             line->op = OP_WAIT;
         else if (!strcmp(op, "shot") && sscanf(text, "%*s %39s", line->name) == 1)
             line->op = OP_SHOT;
+        else if (!strcmp(op, "audit") && sscanf(text, "%*s %39s", line->name) == 1)
+            line->op = OP_AUDIT;
         else if (!strcmp(op, "quit"))
             line->op = OP_QUIT;
         else
@@ -104,6 +115,69 @@ static void Load(void)
     if (sCount != 0)
         sState = 1;
     CtrLog_Write(CTR_LOG_GAME, "autotest: %u lines", sCount);
+}
+
+/*
+ * What stands and what lies flat, cell by cell, asked of the voxel world
+ * itself - not judged from a picture, where a drawing lying on the ground
+ * and a model of it look much alike. A cell the game blocks is something
+ * the player cannot walk through: a wall, a piece of furniture, a tree, a
+ * building. If nothing stands there in the voxel view, it is flat, and
+ * that is what is still to be made. A row of the map a line:
+ *
+ *     .  open ground          M  a model's cell        T  a tree
+ *     R  lifted relief        S  a sign or a lamp      W  water
+ *     F  furniture stood up by its behaviour           V  nothing (void)
+ *     #  BLOCKED AND FLAT: nothing stands on it
+ *
+ * and after the rows, a line for every '#': "x y metatile".
+ */
+static void Audit(const char *name)
+{
+#if CTR_VOXEL_ENABLED
+    const VoxelMapInstance *inst = VoxelWorld_Instance(0);
+    char path[160];
+    FILE *file;
+
+    snprintf(path, sizeof(path), "sdmc:/3ds/emerald3ds/shots/%s_audit.txt", name);
+    file = fopen(path, "w");
+    if (file == NULL || inst == NULL)
+    {
+        if (file != NULL)
+            fclose(file);
+        return;
+    }
+    fprintf(file, "map %d %d size %d %d indoor %d\n", inst->mapGroup, inst->mapNum,
+            inst->width, inst->height, (int)inst->indoor);
+    for (int pass = 0; pass < 2; ++pass)
+        for (int y = inst->originY; y < inst->originY + inst->height; ++y)
+        {
+            for (int x = inst->originX; x < inst->originX + inst->width; ++x)
+            {
+                int metatile = VoxelWorld_GetMetatileId(x, y);
+                VoxelVisualShape shape = VoxelWorld_ClassifyTile(x, y);
+                char c = '.';
+
+                if (shape == VOXEL_SHAPE_VOID) c = 'V';
+                else if (VoxelBuildings_CellAt(inst, x, y, NULL, NULL)) c = 'M';
+                else if (VoxelWorld_UsesTreeSprites(inst) && VoxelTree_PartIn(inst, metatile) >= 0) c = 'T';
+                else if (VoxelSign_IsCell(inst, x, y)) c = 'S';
+                else if (shape == VOXEL_SHAPE_WATER) c = 'W';
+                else if (shape != VOXEL_SHAPE_FLAT && shape != VOXEL_SHAPE_DECAL) c = 'F';
+                else if (VoxelRelief_Cell(inst, x, y) != NULL) c = 'R';
+                else if (VoxelWorld_GetCollision(x, y) != 0) c = '#';
+                if (pass == 0)
+                    fputc(c, file);
+                else if (c == '#')
+                    fprintf(file, "%d %d %03X\n", x - inst->originX, y - inst->originY, metatile);
+            }
+            if (pass == 0)
+                fputc('\n', file);
+        }
+    fclose(file);
+#else
+    (void)name;
+#endif
 }
 
 /* CB2_NewGame without the truck: the new save, and the field wherever the
@@ -179,6 +253,9 @@ void CtrAutotest_Frame(u32 frame)
         case OP_SHOT:
             CtrCapture_Save(line->name);
             return;         /* a frame between captures */
+        case OP_AUDIT:
+            Audit(line->name);
+            break;
         case OP_QUIT:
             sNext = sCount;
             break;
