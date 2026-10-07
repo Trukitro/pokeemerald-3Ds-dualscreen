@@ -13,12 +13,16 @@
  *     audit NAME             shots/NAME_audit.txt: what every cell of the
  *                            map is in the voxel view (Audit, below)
  *     wait FRAMES            let chunks build, animations run
+ *     perf NAME FRAMES       stand there that long and add a line to perf.txt:
+ *                            what the frames took (Perf, below)
  *     shot NAME              shots/NAME_top.bmp and shots/NAME_bottom.bmp
  *     quit                   write autotest.done and leave
  *
  * devtools/autotest.py writes the script from map names and reads the
  * captures back. An emulator is not the console: this is for seeing a change
  * and for comparing a sweep before and after it, not for accepting it.
+ * `perf` is the exception: it is for the console, where the same script run
+ * by two builds says what one costs over the other (devtools/perf_run.py).
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +46,7 @@
 #include "port_log.h"
 
 #include "3ds_platform.h"
+#include "3ds_video.h"
 #if CTR_VOXEL_ENABLED
 #include "voxel/voxel_world.h"
 #include "voxel/voxel_building.h"
@@ -52,13 +57,18 @@
 
 #define AUTOTEST_PATH "sdmc:/3ds/emerald3ds/autotest.txt"
 #define AUTOTEST_DONE "sdmc:/3ds/emerald3ds/autotest.done"
+#define AUTOTEST_PERF "sdmc:/3ds/emerald3ds/perf.txt"
+/* Which build wrote a line of perf.txt: the card is shared by all of them. */
+#ifndef AUTOTEST_BUILD
+#define AUTOTEST_BUILD "fork"
+#endif
 #define AUTOTEST_LINES 600
 /* The copyright screen has set the save blocks up by then. */
 #define AUTOTEST_FIRST_FRAME 240
 /* A warp that never reaches the field is skipped, not waited on for ever. */
 #define AUTOTEST_WARP_TIMEOUT 900
 
-enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_AUDIT, OP_WAIT, OP_SHOT, OP_QUIT };
+enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_AUDIT, OP_WAIT, OP_SHOT, OP_PERF, OP_QUIT };
 
 typedef struct
 {
@@ -103,6 +113,8 @@ static void Load(void)
             line->op = OP_SHOT;
         else if (!strcmp(op, "audit") && sscanf(text, "%*s %39s", line->name) == 1)
             line->op = OP_AUDIT;
+        else if (!strcmp(op, "perf") && sscanf(text, "%*s %39s %d", line->name, &a) == 2)
+            line->op = OP_PERF;
         else if (!strcmp(op, "quit"))
             line->op = OP_QUIT;
         else
@@ -196,6 +208,53 @@ static void Audit(const char *name)
 #endif
 }
 
+/*
+ * What standing in a place costs. The display shows a frame every 16.7 ms or
+ * waits for the next one, so the time between frames is what the player sees
+ * (fps, and how many frames came late); the work in them is how near to that
+ * edge a place is, and whose it is: the CPU's to compose the frame, or the
+ * GPU's to draw it. The file is only written when the frames are over.
+ */
+static struct
+{
+    const char *name;
+    unsigned frames, late;
+    float frameMs, frameMax, workMs, workMax, cpuMs, gpuMs;
+} sPerf;
+
+static void PerfFrame(void)
+{
+    const CtrTiming *timing = CtrPlatform_GetTiming();
+    const CtrVideoStats *video = CtrVideo_GetStats();
+
+    ++sPerf.frames;
+    sPerf.frameMs += timing->frameMs;
+    sPerf.workMs += timing->workMs;
+    sPerf.cpuMs += video->cpuMs;
+    sPerf.gpuMs += video->gpuMs;
+    if (timing->frameMs > sPerf.frameMax) sPerf.frameMax = timing->frameMs;
+    if (timing->workMs > sPerf.workMax) sPerf.workMax = timing->workMs;
+    if (timing->frameMs > 25.0f) ++sPerf.late;
+}
+
+static void PerfEnd(void)
+{
+    FILE *file = fopen(AUTOTEST_PERF, "a");
+    float n = sPerf.frames ? (float)sPerf.frames : 1.0f;
+
+    if (file != NULL)
+    {
+        fprintf(file, "%s %s voxel=%d frames=%u fps=%.2f frame=%.2f frameMax=%.2f late=%u "
+                      "work=%.2f workMax=%.2f cpu=%.2f gpu=%.2f\n",
+                AUTOTEST_BUILD, sPerf.name, (int)CtrSettings_Voxel(), sPerf.frames,
+                sPerf.frameMs > 0.0f ? 1000.0f * n / sPerf.frameMs : 0.0f, sPerf.frameMs / n,
+                sPerf.frameMax, sPerf.late, sPerf.workMs / n, sPerf.workMax,
+                sPerf.cpuMs / n, sPerf.gpuMs / n);
+        fclose(file);
+    }
+    memset(&sPerf, 0, sizeof(sPerf));
+}
+
 /* CB2_NewGame without the truck: the new save, and the field wherever the
  * first warp says. */
 static void StartGame(void)
@@ -235,6 +294,12 @@ void CtrAutotest_Frame(u32 frame)
         return;
     if (sWait != 0)
     {
+        if (sPerf.name != NULL)
+        {
+            PerfFrame();
+            if (sWait == 1)
+                PerfEnd();
+        }
         --sWait;
         if (sState == 2 && CtrGame_IsOverworld() && !gPaletteFade.active)
         {
@@ -264,6 +329,11 @@ void CtrAutotest_Frame(u32 frame)
             SetFlashLevel(line->arg[0]);
             break;
         case OP_WAIT:
+            sWait = line->arg[0] > 0 ? (unsigned)line->arg[0] : 1;
+            return;
+        case OP_PERF:
+            memset(&sPerf, 0, sizeof(sPerf));
+            sPerf.name = line->name;
             sWait = line->arg[0] > 0 ? (unsigned)line->arg[0] : 1;
             return;
         case OP_SHOT:

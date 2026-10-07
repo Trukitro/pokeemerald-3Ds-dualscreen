@@ -476,6 +476,23 @@ def olive_block(width, height, meta):
     return flat_block(width, height, ((8, 40), (8, 16), (0, 8)), (40, 48), 48, unit)
 
 
+def box_building(width, height, facade_top):
+    """Any building as a box: the bottom of its drawing, from `facade_top`
+    down, is its front wall, and everything above is laid back from the
+    wall's top as its roof, row for row. A pitched roof drawn from above
+    lies flat on it - a building that stands, with its roof as it is drawn,
+    until it is given a shape of its own. Its sides are dressed with the
+    facade's own first columns."""
+    wall = height - facade_top
+    front, back = height, height - facade_top
+    side = Tile(0, facade_top, 8, height, top=wall)
+    return [Prism(
+        "body", 0, width,
+        [(front, 0), (front, wall), (back, wall), (back, 0)],
+        edges={0: Proj(facade_top, height), 1: Proj(0, facade_top), 2: side}, skip=(3,),
+        caps=[Band(0, wall + 1, side, front)])]
+
+
 def flat_block_exact(width, height, first_roof_row):
     return [(0, first_roof_row, width, height)]
 
@@ -1596,6 +1613,108 @@ SPECS = [
         "ground": [GRASS],
         "parts": lambda: kit_house(96),
         "exact": kit_house_exact(96),
+    },
+    {
+        # Slateport's large buildings, each a box under its own roof
+        "name": "slateport_fan_club",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (25, 7, 7, 6),
+        "ground": [GRASS],
+        "parts": lambda: box_building(112, 96, 64),
+        "exact": [(0, 0, 112, 96)],
+    },
+    {
+        "name": "slateport_museum",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (28, 22, 6, 6),
+        "ground": [GRASS],
+        "parts": lambda: box_building(96, 96, 64),
+        "exact": [(0, 0, 96, 96)],
+    },
+    {
+        "name": "slateport_harbor",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (24, 32, 8, 7),
+        "ground": [GRASS],
+        "parts": lambda: box_building(128, 112, 72),
+        "exact": [(0, 0, 128, 112)],
+    },
+    {
+        # read column by column, as a hedge is: its outline is not a box's
+        "name": "slateport_battle_tent",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x371, 0x372, 0x373, 0x374, 0x375, 0x379, 0x37A, 0x37B, 0x37C, 0x37D, 0x381, 0x382, 0x383, 0x384, 0x385, 0x389, 0x38A, 0x38B, 0x38C, 0x38D, 0x391, 0x392, 0x393, 0x394, 0x395},
+            "height": 32,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # read column by column, as a hedge is: its outline is not a box's
+        "name": "slateport_shipyard",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x240, 0x241, 0x242, 0x248, 0x249, 0x24A, 0x250, 0x251, 0x252, 0x253, 0x254, 0x258, 0x259, 0x25A, 0x25B, 0x25C, 0x260, 0x261, 0x262},
+            "height": 28,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # read column by column, as a hedge is: its outline is not a box's
+        "name": "slateport_lighthouse",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x246, 0x247, 0x24E, 0x24F, 0x256, 0x257, 0x25E, 0x25F},
+            "height": 32,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # the fence where it runs north and south, and its corners
+        "name": "slateport_posts",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x133, 0x139, 0x13A, 0x140, 0x141, 0x142, 0x148, 0x14A},
+            "height": 10, "block": 2,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # the quay's white kerbs and steps
+        "name": "slateport_quay",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x234, 0x23C, 0x23D, 0x23F, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF},
+            "height": 6, "block": 2,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # the sailing boats moored at the quay
+        "name": "slateport_boats",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x338, 0x339, 0x33A, 0x340, 0x341, 0x342, 0x348, 0x349, 0x34A},
+            "height": 16,
+        },
+        "ground": [GRASS],
+    },
+    {
+        # the market's goods: jars, crates and baskets
+        "name": "slateport_market",
+        "components": {
+            "primary": "gTileset_General",
+            "layouts": ["LAYOUT_SLATEPORT_CITY"],
+            "tiles": {0x20B, 0x20C, 0x213, 0x214, 0x21B, 0x21C, 0x223, 0x22B, 0x26B, 0x26C, 0x28D, 0x28E, 0x32D, 0x32E, 0x32F, 0x336, 0x337, 0x33E, 0x33F, 0x344, 0x27E, 0x2BB},
+            "height": 10, "block": 1,
+        },
+        "ground": [GRASS],
     },
     {
         "name": "gym",

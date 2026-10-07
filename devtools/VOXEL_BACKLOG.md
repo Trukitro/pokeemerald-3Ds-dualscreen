@@ -476,35 +476,18 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:SlateportCity -->
 ### SlateportCity - audit of 2026-10-07
 
-- [ ] **SlateportCity**: 526 flat cell(s) in 28 object(s) - `build/audit/SlateportCity.png`
-  - [ ] (15, 3)-(15, 8), 6 cell(s), tiles 141 142 14A
-  - [ ] (21, 3)-(21, 8), 6 cell(s), tiles 139 140 148
-  - [ ] (25, 7)-(31, 12), 41 cell(s), tiles 268 269 295 296 297 29D 29E 29F 2A5 2A6 2A7 2AD 2AF 2B5 2B6 2B7 2BD 2BE 2BF 2C5 2D7
-  - [ ] (3, 8)-(3, 21), 14 cell(s), tiles 141 142 14A
-  - [ ] (7, 8)-(13, 12), 31 cell(s), tiles 243 371 372 373 374 375 379 37A 37B 37C 37D 381 382 383 384 385 389 38A 38B 38C 38D 391 392 393 394 395
+- [ ] **SlateportCity**: 39 flat cell(s) in 11 object(s) - `build/audit/SlateportCity.png`
   - [ ] (16, 9), 1 cell(s), tiles 263
   - [ ] (20, 9), 1 cell(s), tiles 264
   - [ ] (32, 16)-(37, 16), 6 cell(s), tiles 04E
-  - [ ] (22, 18)-(24, 26), 11 cell(s), tiles 139 140 245
-  - [ ] (1, 21)-(16, 57), 95 cell(s), tiles 045 133 141 142 20B 214 21B 223 22B 23D 240 241 242 248 249 24A 250 251 252 253 254 258 259 25B 25C 27E 28D 2B9 2BA 2BB 32E 32F 336 337 33F 344
-  - [ ] (26, 22)-(35, 26), 36 cell(s), tiles 243 245 24D 255 2FB 303 308 309 30A 30B 30C 310 311 312 313 314 318 319 31A 31B 31C 320 321 322 323 324 328 329 32B 32C
-  - [ ] (25, 23)-(25, 24), 2 cell(s), tiles 234 255
-  - [ ] (25, 23)-(36, 30), 19 cell(s), tiles 23C 24D 25D 2CF 2FE 2FF
-  - [ ] (21, 29)-(38, 42), 94 cell(s), tiles 140 148 220 221 222 228 229 22A 23C 245 24D 25D 298 299 29A 29B 2A0 2A1 2A2 2A8 2A9 2AA 2AB 2B0 2B1 2B2 2FF 300 301 302 32D 338 339 33A 340 341 342 346 347 34E 34F 356 357 35E 35F 368 370 378 380
+  - [ ] (36, 25)-(36, 27), 3 cell(s), tiles 2CF
   - [ ] (8, 32), 1 cell(s), tiles 263
-  - [ ] (10, 32)-(14, 50), 28 cell(s), tiles 133 13A 142 22B 23F 26B 28E 33E 33F
   - [ ] (12, 32), 1 cell(s), tiles 264
-  - [ ] (3, 33)-(7, 39), 21 cell(s), tiles 20B 20C 213 21B 21C 22B 32E 336 33E 344
-  - [ ] (9, 34)-(12, 39), 12 cell(s), tiles 20B 213 21B 22B 32F 337 33F
-  - [ ] (6, 41)-(8, 43), 5 cell(s), tiles 21B 22B 26C 33E 344
-  - [ ] (20, 43)-(32, 51), 28 cell(s), tiles 045 23C 245 25D 2FF 32D
-  - [ ] (34, 44)-(36, 46), 9 cell(s), tiles 338 339 33A 340 341 342 348 349 34A
-  - [ ] (6, 45)-(8, 47), 6 cell(s), tiles 20C 223 26C 33F 344
-  - [ ] (28, 48)-(37, 57), 26 cell(s), tiles 23C 245 24D 255 2B8 2B9 338 339 33A 340 341 342
-  - [ ] (8, 50)-(8, 51), 2 cell(s), tiles 223 22B
-  - [ ] (12, 51)-(13, 51), 2 cell(s), tiles 21C 26C
-  - [ ] (32, 53)-(33, 54), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (20, 54)-(31, 57), 18 cell(s), tiles 047 234 2B8 2B9 2BA
+  - [ ] (21, 35)-(23, 36), 6 cell(s), tiles 220 221 222 228 229 22A
+  - [ ] (33, 35)-(35, 38), 12 cell(s), tiles 346 347 34E 34F 356 357 35E 35F 368 370 378 380
+  - [ ] (20, 48)-(20, 50), 3 cell(s), tiles 045
+  - [ ] (20, 54)-(20, 57), 4 cell(s), tiles 047
+  - [ ] (16, 57), 1 cell(s), tiles 045
 - [x] **SlateportCity_PokemonCenter_1F**: nothing blocked lies flat
   - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
   - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
@@ -630,5 +613,5 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (21, 33)-(27, 39), 24 px
   - [ ] painted on the floor: pixels (197, 33)-(203, 39), 24 px
 
-786 blocked cell(s) still flat in this area.
+299 blocked cell(s) still flat in this area.
 <!-- /audit:SlateportCity -->
