@@ -620,6 +620,7 @@ void CtrGame_WaitFrame(void)
         exit(0);
     }
     CtrPlatform_Diagnostic(sFrames, 0, 0);
+    CtrAutotest_Frame(sFrames);
 #ifdef CTR_TEST_BATTLE
     /* Azahar measurement aid (-DCTR_TEST_BATTLE=frame): a wild battle from
      * wherever the save stands, once the field is up at that frame. */

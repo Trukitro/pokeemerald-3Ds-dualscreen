@@ -109,6 +109,8 @@ uint32_t CtrGame_Checks(void);
 /* The field is on screen (CB2_Overworld), whichever way it is drawn. */
 bool CtrGame_IsOverworld(void);
 bool CtrGame_FieldPoison(void);
+/* The emulator test harness (3ds_autotest.c), once a frame. */
+void CtrAutotest_Frame(uint32_t frame);
 
 /* C identifiers cannot start with '3'. Logs retain the plan's 3DS_STUB tag. */
 #define CTR_STUB(id, message) CtrLog_Write(CTR_LOG_GAME, "[3DS_STUB] %s: %s", id, message)
