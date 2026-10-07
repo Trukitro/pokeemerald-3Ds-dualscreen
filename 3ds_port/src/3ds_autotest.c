@@ -126,12 +126,28 @@ static void Load(void)
  * that is what is still to be made. A row of the map a line:
  *
  *     .  open ground          M  a model's cell        T  a tree
- *     R  lifted relief        S  a sign or a lamp      W  water
+ *     R  relief off the ground S  a sign or a lamp     W  water
  *     F  furniture stood up by its behaviour           V  nothing (void)
  *     #  BLOCKED AND FLAT: nothing stands on it
  *
  * and after the rows, a line for every '#': "x y metatile".
  */
+#if CTR_VOXEL_ENABLED
+/* Is the cell's relief anything but level ground at its map's base? A map
+ * read off its drawing writes every blocked cell, level or not: a building
+ * nobody has modelled has a cell there, flat on the ground, and is not
+ * relief. */
+static bool Lifted(const VoxelMapInstance *inst, int x, int y)
+{
+    const int16_t *g = VoxelRelief_Cell(inst, x, y);
+
+    for (unsigned i = 0; g != NULL && i < VOXEL_RELIEF_SIDE * VOXEL_RELIEF_SIDE; ++i)
+        if (g[i] != 0)
+            return true;
+    return false;
+}
+#endif
+
 static void Audit(const char *name)
 {
 #if CTR_VOXEL_ENABLED
@@ -164,7 +180,7 @@ static void Audit(const char *name)
                 else if (VoxelSign_IsCell(inst, x, y)) c = 'S';
                 else if (shape == VOXEL_SHAPE_WATER) c = 'W';
                 else if (shape != VOXEL_SHAPE_FLAT && shape != VOXEL_SHAPE_DECAL) c = 'F';
-                else if (VoxelRelief_Cell(inst, x, y) != NULL) c = 'R';
+                else if (Lifted(inst, x, y)) c = 'R';
                 else if (VoxelWorld_GetCollision(x, y) != 0) c = '#';
                 if (pass == 0)
                     fputc(c, file);

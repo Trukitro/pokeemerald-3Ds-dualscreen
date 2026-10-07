@@ -1581,6 +1581,23 @@ SPECS = [
         "exact": kit_house_exact(80),
     },
     {
+        # Slateport's houses, under a purple roof: the same kit again
+        "name": "slateport_house_4",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (20, 41, 4, 4),
+        "ground": [GRASS],
+        "parts": lambda: kit_house(64),
+        "exact": kit_house_exact(64),
+    },
+    {
+        "name": "slateport_house_6",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (24, 41, 6, 4),
+        "ground": [GRASS],
+        "parts": lambda: kit_house(96),
+        "exact": kit_house_exact(96),
+    },
+    {
         "name": "gym",
         "layout": "LAYOUT_PETALBURG_CITY",
         "rect": (12, 4, 6, 5),
@@ -1622,7 +1639,7 @@ SPECS = [
         "name": "fence",
         "components": {
             "primary": "gTileset_General",
-            "layouts": ["LAYOUT_ROUTE104", "LAYOUT_PETALBURG_WOODS"],
+            "layouts": ["LAYOUT_ROUTE104", "LAYOUT_PETALBURG_WOODS", "LAYOUT_SLATEPORT_CITY"],
             "tiles": {0x149},
             "height": 10, "block": 4,
         },
@@ -1892,6 +1909,7 @@ def _box(name, rect, height, floor, alone=False, card=False):
 _FLAT = ("8b8b8b", "b4b4a4", "d5d5b4", "ded552", "f6f6a4", "ffcd8b")
 _SCHOOL = ("c5c5bd", "dedede")
 _DEVON = ("bd6252", "cd837b", "deaca4")
+_MUSEUM = ("006a73", "208b94", "4aa4a4", "7bbdb4", "a4d5c5")
 
 EXTRA_PIECES = {
     # Rustboro's flats and houses: their tables
@@ -1915,6 +1933,27 @@ EXTRA_PIECES = {
         # a desk is found again in other rooms, not in its own: each is written
         _box("desk_%d_%d" % (x, y), (x, y, x + 32, y + 24), 10, _DEVON, alone=True)
         for (x, y) in ((96, 56), (224, 56), (96, 104), (160, 104), (224, 104))],
+    # Slateport's Oceanic Museum: the pillars, the glass cases, the two
+    # counters shaped like a U (a box read column by column: its bar ends at
+    # the bar's foot, its arms at theirs), the model tables upstairs
+    "LAYOUT_SLATEPORT_CITY_OCEANIC_MUSEUM_1F": lambda: [
+        _box("counter_w", (80, 94, 152, 144), 10, _MUSEUM, alone=True),
+        _box("counter_e", (168, 94, 240, 144), 10, _MUSEUM, alone=True),
+        _box("pillar_n", (32, 48, 48, 80), 22, _MUSEUM, alone=True),
+        _box("pillar_s", (32, 96, 48, 128), 22, _MUSEUM, alone=True),
+        _box("case_1", (240, 53, 256, 80), 18, _MUSEUM, alone=True),
+        _box("case_2", (288, 53, 304, 80), 18, _MUSEUM, alone=True),
+        _box("case_3", (288, 101, 304, 128), 18, _MUSEUM, alone=True)],
+    "LAYOUT_SLATEPORT_CITY_OCEANIC_MUSEUM_2F": lambda: [
+        _box("table_n", (32, 46, 96, 80), 12, _MUSEUM, alone=True),
+        _box("table_s", (32, 94, 96, 128), 12, _MUSEUM, alone=True),
+        _box("stand_1", (192, 56, 216, 80), 14, _MUSEUM, alone=True),
+        _box("stand_2", (240, 56, 264, 80), 14, _MUSEUM, alone=True),
+        _box("stand_3", (208, 105, 240, 128), 12, _MUSEUM, alone=True),
+        _box("pillar_n", (288, 48, 304, 80), 22, _MUSEUM, alone=True),
+        _box("pillar_s", (288, 96, 304, 128), 22, _MUSEUM, alone=True)],
+    "LAYOUT_SLATEPORT_CITY_POKEMON_FAN_CLUB": lambda: [
+        _box("table", (81, 98, 143, 128), 12, ("cd6a6a", "ded58b", "ee836a", "f6eeb4"), alone=True)],
     "LAYOUT_RUSTBORO_CITY_DEVON_CORP_3F": lambda: [
         _box("table", (112, 61, 192, 112), 12, _DEVON, alone=True),
         _box("side_table", (240, 61, 272, 112), 12, _DEVON, alone=True),

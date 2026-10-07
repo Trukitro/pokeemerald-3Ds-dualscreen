@@ -762,72 +762,35 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:SlateportCity -->
 ### SlateportCity - audit of 2026-10-07
 
-- [ ] **SlateportCity**: 309 flat cell(s) in 65 object(s) - `build/audit/SlateportCity.png`
-  - [ ] (15, 3)-(15, 7), 5 cell(s), tiles 141 142
-  - [ ] (21, 3)-(21, 7), 5 cell(s), tiles 139 140
-  - [ ] (3, 8)-(7, 20), 25 cell(s), tiles 013 020 022 141 142 2C8 2C9 2CA 2D0 2D1 2D2 2D4 2DC
-  - [ ] (7, 8)-(14, 12), 33 cell(s), tiles 149 243 371 372 373 374 375 379 37A 37B 37C 37D 381 382 383 384 385 389 38A 38B 38C 38D 391 392 393 394 395
-  - [ ] (22, 8)-(23, 8), 2 cell(s), tiles 149
+- [ ] **SlateportCity**: 526 flat cell(s) in 28 object(s) - `build/audit/SlateportCity.png`
+  - [ ] (15, 3)-(15, 8), 6 cell(s), tiles 141 142 14A
+  - [ ] (21, 3)-(21, 8), 6 cell(s), tiles 139 140 148
+  - [ ] (25, 7)-(31, 12), 41 cell(s), tiles 268 269 295 296 297 29D 29E 29F 2A5 2A6 2A7 2AD 2AF 2B5 2B6 2B7 2BD 2BE 2BF 2C5 2D7
+  - [ ] (3, 8)-(3, 21), 14 cell(s), tiles 141 142 14A
+  - [ ] (7, 8)-(13, 12), 31 cell(s), tiles 243 371 372 373 374 375 379 37A 37B 37C 37D 381 382 383 384 385 389 38A 38B 38C 38D 391 392 393 394 395
   - [ ] (16, 9), 1 cell(s), tiles 263
   - [ ] (20, 9), 1 cell(s), tiles 264
-  - [ ] (32, 16)-(34, 16), 3 cell(s), tiles 04E
-  - [ ] (37, 16), 1 cell(s), tiles 04E
-  - [ ] (22, 18)-(22, 25), 8 cell(s), tiles 139 140
-  - [ ] (1, 21)-(6, 55), 50 cell(s), tiles 133 141 142 149 23D 240 241 242 248 249 24A
-  - [ ] (26, 22)-(27, 22), 2 cell(s), tiles 245 255
+  - [ ] (32, 16)-(37, 16), 6 cell(s), tiles 04E
+  - [ ] (22, 18)-(24, 26), 11 cell(s), tiles 139 140 245
+  - [ ] (1, 21)-(16, 57), 95 cell(s), tiles 045 133 141 142 20B 214 21B 223 22B 23D 240 241 242 248 249 24A 250 251 252 253 254 258 259 25B 25C 27E 28D 2B9 2BA 2BB 32E 32F 336 337 33F 344
+  - [ ] (26, 22)-(35, 26), 36 cell(s), tiles 243 245 24D 255 2FB 303 308 309 30A 30B 30C 310 311 312 313 314 318 319 31A 31B 31C 320 321 322 323 324 328 329 32B 32C
   - [ ] (25, 23)-(25, 24), 2 cell(s), tiles 234 255
-  - [ ] (36, 23)-(36, 29), 7 cell(s), tiles 23C 24D 2CF
-  - [ ] (27, 25)-(27, 26), 2 cell(s), tiles 243
-  - [ ] (34, 25)-(34, 26), 2 cell(s), tiles 243
-  - [ ] (23, 26)-(24, 26), 2 cell(s), tiles 245
-  - [ ] (23, 29)-(24, 29), 2 cell(s), tiles 25D
-  - [ ] (22, 30)-(22, 33), 4 cell(s), tiles 140
-  - [ ] (25, 30)-(35, 30), 11 cell(s), tiles 25D 2FE
-  - [ ] (5, 32)-(8, 32), 4 cell(s), tiles 149 263
+  - [ ] (25, 23)-(36, 30), 19 cell(s), tiles 23C 24D 25D 2CF 2FE 2FF
+  - [ ] (21, 29)-(38, 42), 94 cell(s), tiles 140 148 220 221 222 228 229 22A 23C 245 24D 25D 298 299 29A 29B 2A0 2A1 2A2 2A8 2A9 2AA 2AB 2B0 2B1 2B2 2FF 300 301 302 32D 338 339 33A 340 341 342 346 347 34E 34F 356 357 35E 35F 368 370 378 380
+  - [ ] (8, 32), 1 cell(s), tiles 263
+  - [ ] (10, 32)-(14, 50), 28 cell(s), tiles 133 13A 142 22B 23F 26B 28E 33E 33F
   - [ ] (12, 32), 1 cell(s), tiles 264
-  - [ ] (4, 33), 1 cell(s), tiles 32E
-  - [ ] (14, 33)-(14, 50), 18 cell(s), tiles 133 142
-  - [ ] (12, 34), 1 cell(s), tiles 32F
-  - [ ] (33, 34), 1 cell(s), tiles 32D
-  - [ ] (7, 36), 1 cell(s), tiles 20B
-  - [ ] (12, 37), 1 cell(s), tiles 21B
-  - [ ] (11, 38), 1 cell(s), tiles 213
-  - [ ] (32, 38), 1 cell(s), tiles 24D
-  - [ ] (9, 39), 1 cell(s), tiles 22B
-  - [ ] (12, 39), 1 cell(s), tiles 20B
-  - [ ] (38, 40)-(38, 41), 2 cell(s), tiles 23C 32D
-  - [ ] (8, 41), 1 cell(s), tiles 344
-  - [ ] (7, 42), 1 cell(s), tiles 33E
-  - [ ] (20, 42)-(26, 44), 21 cell(s), tiles 013 014 020 022 2C8 2C9 2CA 2CB 2D0 2D1 2D2 2D4 2DC
-  - [ ] (33, 42)-(37, 42), 5 cell(s), tiles 25D
-  - [ ] (4, 43), 1 cell(s), tiles 21B
-  - [ ] (6, 43), 1 cell(s), tiles 26C
-  - [ ] (10, 43)-(11, 43), 2 cell(s), tiles 26B 28E
-  - [ ] (32, 43)-(32, 46), 4 cell(s), tiles 23C
-  - [ ] (7, 45), 1 cell(s), tiles 223
-  - [ ] (3, 47), 1 cell(s), tiles 28D
-  - [ ] (6, 47), 1 cell(s), tiles 26C
-  - [ ] (21, 47)-(31, 47), 11 cell(s), tiles 25D 32D
-  - [ ] (20, 48)-(20, 50), 3 cell(s), tiles 045
+  - [ ] (3, 33)-(7, 39), 21 cell(s), tiles 20B 20C 213 21B 21C 22B 32E 336 33E 344
+  - [ ] (9, 34)-(12, 39), 12 cell(s), tiles 20B 213 21B 22B 32F 337 33F
+  - [ ] (6, 41)-(8, 43), 5 cell(s), tiles 21B 22B 26C 33E 344
+  - [ ] (20, 43)-(32, 51), 28 cell(s), tiles 045 23C 245 25D 2FF 32D
+  - [ ] (34, 44)-(36, 46), 9 cell(s), tiles 338 339 33A 340 341 342 348 349 34A
+  - [ ] (6, 45)-(8, 47), 6 cell(s), tiles 20C 223 26C 33F 344
+  - [ ] (28, 48)-(37, 57), 26 cell(s), tiles 23C 245 24D 255 2B8 2B9 338 339 33A 340 341 342
   - [ ] (8, 50)-(8, 51), 2 cell(s), tiles 223 22B
-  - [ ] (28, 50)-(34, 50), 7 cell(s), tiles 245 255
-  - [ ] (4, 51), 1 cell(s), tiles 28D
   - [ ] (12, 51)-(13, 51), 2 cell(s), tiles 21C 26C
-  - [ ] (21, 51)-(27, 51), 7 cell(s), tiles 245
-  - [ ] (37, 51)-(37, 55), 5 cell(s), tiles 23C
-  - [ ] (3, 52), 1 cell(s), tiles 21B
-  - [ ] (4, 53), 1 cell(s), tiles 21B
-  - [ ] (10, 54)-(12, 54), 3 cell(s), tiles 214 344
-  - [ ] (21, 54)-(27, 54), 7 cell(s), tiles 2B8 2B9 2BA
-  - [ ] (20, 55)-(20, 57), 3 cell(s), tiles 047
-  - [ ] (28, 55), 1 cell(s), tiles 234
-  - [ ] (2, 56), 1 cell(s), tiles 27E
-  - [ ] (5, 56), 1 cell(s), tiles 2B9
-  - [ ] (29, 56)-(30, 56), 2 cell(s), tiles 2B9 2BA
-  - [ ] (35, 56)-(36, 56), 2 cell(s), tiles 2B8 2B9
-  - [ ] (10, 57)-(15, 57), 6 cell(s), tiles 2B9 2BA
-  - [ ] (31, 57), 1 cell(s), tiles 234
-  - [ ] (34, 57), 1 cell(s), tiles 23C
+  - [ ] (32, 53)-(33, 54), 4 cell(s), tiles 256 257 25E 25F
+  - [ ] (20, 54)-(31, 57), 18 cell(s), tiles 047 234 2B8 2B9 2BA
 - [x] **SlateportCity_PokemonCenter_1F**: nothing blocked lies flat
   - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
   - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
@@ -876,36 +839,22 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (32, 32)-(96, 104), 2274 px
   - [ ] painted on the floor: pixels (0, 0)-(32, 79), 1751 px
   - [ ] painted on the floor: pixels (96, 144)-(128, 160), 512 px
-- [ ] **SlateportCity_PokemonFanClub**: 8 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_PokemonFanClub.png`
-  - [ ] (5, 6)-(8, 7), 8 cell(s), tiles 25C 25D 25E 25F 260 261 262
-  - [ ] painted on the floor: pixels (32, 64)-(192, 144), 12800 px
+- [x] **SlateportCity_PokemonFanClub**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (32, 64)-(192, 144), 10752 px
   - [ ] painted on the floor: pixels (96, 160)-(128, 176), 512 px
-- [ ] **SlateportCity_OceanicMuseum_1F**: 13 flat cell(s) in 13 object(s) - `build/audit/SlateportCity_OceanicMuseum_1F.png`
-  - [ ] (2, 4), 1 cell(s), tiles 228
-  - [ ] (15, 4), 1 cell(s), tiles 229
-  - [ ] (18, 4), 1 cell(s), tiles 229
-  - [ ] (5, 6), 1 cell(s), tiles 255
-  - [ ] (8, 6), 1 cell(s), tiles 256
-  - [ ] (11, 6), 1 cell(s), tiles 255
-  - [ ] (14, 6), 1 cell(s), tiles 256
-  - [ ] (2, 7), 1 cell(s), tiles 228
-  - [ ] (18, 7), 1 cell(s), tiles 229
-  - [ ] (5, 8), 1 cell(s), tiles 260
-  - [ ] (8, 8), 1 cell(s), tiles 260
-  - [ ] (11, 8), 1 cell(s), tiles 260
-  - [ ] (14, 8), 1 cell(s), tiles 260
-  - [ ] painted on the floor: pixels (80, 94)-(243, 144), 5132 px
-  - [ ] painted on the floor: pixels (32, 45)-(51, 83), 556 px
-  - [ ] painted on the floor: pixels (32, 96)-(51, 131), 532 px
-  - [ ] painted on the floor: pixels (240, 53)-(259, 83), 480 px
-  - [ ] painted on the floor: pixels (288, 101)-(304, 131), 456 px
-  - [ ] painted on the floor: pixels (288, 53)-(304, 83), 456 px
+- [x] **SlateportCity_OceanicMuseum_1F**: nothing blocked lies flat
   - [ ] painted on the floor: pixels (189, 32)-(219, 43), 246 px
   - [ ] painted on the floor: pixels (141, 32)-(171, 43), 246 px
+  - [ ] painted on the floor: pixels (181, 41)-(187, 47), 24 px
   - [ ] painted on the floor: pixels (129, 37)-(135, 43), 24 px
   - [ ] painted on the floor: pixels (169, 37)-(175, 43), 24 px
-  - [ ] painted on the floor: pixels (45, 41)-(51, 47), 24 px
+  - [ ] painted on the floor: pixels (77, 33)-(83, 39), 24 px
+  - [ ] painted on the floor: pixels (253, 33)-(259, 39), 24 px
+  - [ ] painted on the floor: pixels (241, 133)-(247, 139), 24 px
   - [ ] painted on the floor: pixels (81, 37)-(87, 43), 24 px
+  - [ ] painted on the floor: pixels (257, 37)-(263, 43), 24 px
+  - [ ] painted on the floor: pixels (45, 41)-(51, 47), 24 px
+  - [ ] painted on the floor: pixels (37, 41)-(43, 47), 24 px
 - [x] **SlateportCity_NameRatersHouse**: nothing blocked lies flat
   - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
   - [ ] painted on the floor: pixels (32, 43)-(128, 48), 480 px
@@ -952,27 +901,20 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (18, 193)-(30, 207), 128 px
   - [ ] painted on the floor: pixels (130, 65)-(142, 79), 128 px
   - [ ] painted on the floor: pixels (50, 193)-(62, 207), 128 px
-- [ ] **SlateportCity_OceanicMuseum_2F**: 22 flat cell(s) in 8 object(s) - `build/audit/SlateportCity_OceanicMuseum_2F.png`
+- [ ] **SlateportCity_OceanicMuseum_2F**: 2 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_OceanicMuseum_2F.png`
   - [ ] (10, 2)-(10, 3), 2 cell(s), tiles 22D 235
-  - [ ] (2, 3)-(5, 4), 6 cell(s), tiles 22C 232 234 238 239 240
-  - [ ] (12, 4)-(13, 4), 2 cell(s), tiles 25B 25C
-  - [ ] (15, 4)-(16, 4), 2 cell(s), tiles 25B 25C
-  - [ ] (18, 4), 1 cell(s), tiles 228
-  - [ ] (2, 6)-(5, 7), 6 cell(s), tiles 22A 22C 230 231 232 234
-  - [ ] (13, 7)-(14, 7), 2 cell(s), tiles 259 25A
-  - [ ] (18, 7), 1 cell(s), tiles 228
-  - [ ] painted on the floor: pixels (32, 41)-(99, 83), 2467 px
-  - [ ] painted on the floor: pixels (32, 94)-(99, 131), 2288 px
   - [ ] painted on the floor: pixels (128, 32)-(179, 67), 900 px
-  - [ ] painted on the floor: pixels (208, 105)-(243, 131), 724 px
-  - [ ] painted on the floor: pixels (240, 56)-(267, 83), 580 px
-  - [ ] painted on the floor: pixels (192, 56)-(219, 83), 580 px
-  - [ ] painted on the floor: pixels (288, 45)-(304, 83), 532 px
-  - [ ] painted on the floor: pixels (288, 96)-(304, 131), 508 px
   - [ ] painted on the floor: pixels (237, 32)-(275, 43), 328 px
   - [ ] painted on the floor: pixels (285, 32)-(304, 43), 164 px
+  - [ ] painted on the floor: pixels (181, 41)-(187, 47), 24 px
+  - [ ] painted on the floor: pixels (237, 129)-(243, 135), 24 px
+  - [ ] painted on the floor: pixels (61, 129)-(67, 135), 24 px
+  - [ ] painted on the floor: pixels (213, 33)-(219, 39), 24 px
   - [ ] painted on the floor: pixels (205, 33)-(211, 39), 24 px
-  - [ ] painted on the floor: pixels (81, 37)-(87, 43), 24 px
+  - [ ] painted on the floor: pixels (97, 125)-(103, 131), 24 px
+  - [ ] painted on the floor: pixels (53, 129)-(59, 135), 24 px
+  - [ ] painted on the floor: pixels (21, 33)-(27, 39), 24 px
+  - [ ] painted on the floor: pixels (197, 33)-(203, 39), 24 px
 
-610 blocked cell(s) still flat in this area.
+786 blocked cell(s) still flat in this area.
 <!-- /audit:SlateportCity -->
