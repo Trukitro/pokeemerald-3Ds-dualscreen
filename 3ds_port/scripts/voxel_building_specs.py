@@ -1203,6 +1203,12 @@ STAIR_ROOMS = [
     # the Devon Corporation's upper floors
     ("LAYOUT_RUSTBORO_CITY_DEVON_CORP_2F", 19, 9, 0x380, 4, (2, 14)),
     ("LAYOUT_RUSTBORO_CITY_DEVON_CORP_3F", 19, 9, 0x380, 4, (2,)),
+    # Slateport's Oceanic Museum: the stairs' doorway in the back wall
+    ("LAYOUT_SLATEPORT_CITY_OCEANIC_MUSEUM_1F", 20, 9, 0x201, 0, (6,)),
+    ("LAYOUT_SLATEPORT_CITY_OCEANIC_MUSEUM_2F", 20, 9, 0x201, 0, (6,)),
+    # Stern's shipyard
+    ("LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F", 21, 15, 0x202, 5, (3,)),
+    ("LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_2F", 17, 15, 0x202, 0, (3,)),
 ]
 
 
@@ -1905,7 +1911,7 @@ EXTRA_PIECES = {
         _box("board", (35, 64, 64, 95), 12, _DEVON, alone=True),
         _box("bin_w", (16, 64, 34, 80), 16, _DEVON, alone=True, card=True),
         _box("bin_e", (112, 80, 128, 96), 16, _DEVON, alone=True, card=True),
-        _box("desk", (160, 56, 192, 80), 10, _DEVON)] + [
+        _box("desk", (160, 56, 192, 80), 10, _DEVON, alone=True)] + [
         # a desk is found again in other rooms, not in its own: each is written
         _box("desk_%d_%d" % (x, y), (x, y, x + 32, y + 24), 10, _DEVON, alone=True)
         for (x, y) in ((96, 56), (224, 56), (96, 104), (160, 104), (224, 104))],
@@ -1951,6 +1957,48 @@ SPECS.append({
                  "shade": [0x381, 0x383, 0x384, 0x385, 0x386, 0x387, 0x38D],
                  "pieces": own_shell(devon_1f())},
 })
+
+# ── Slateport's rooms that had no model ───────────────────────────────────
+
+def fan_club():
+    """The Pokemon Fan Club: a wall two cells tall under a row of black, its
+    foot 40 rows down, bookcases and plants drawn on it."""
+    side = (96, 8, 112, 40)
+    return [
+        piece("wall", [(0, 8, 224, 40)], 32, fill=16, foot=40, side=side),
+        piece("side_w", [], 32, side=side, walls=[((0, 176), (0, 40))]),
+        piece("side_e", [], 32, side=side, walls=[((224, 40), (224, 176))]),
+    ]
+
+
+def battle_tent_lobby():
+    """A Battle Tent's lobby: the tent's back, two cells tall, between the
+    drapes drawn down its sides, which stay as they are drawn."""
+    return [piece("wall", [(32, 0, 176, 32)], 32, fill=16, foot=32, side=(48, 0, 64, 32))]
+
+
+def harbor():
+    """A harbour's hall: its wall four cells tall along the quay, windows on
+    its face, and the two sides the drawing has no pixel of."""
+    side = (0, 0, 16, 64)
+    return [
+        piece("wall", [(0, 0, 384, 64)], 64, fill=16, foot=64, side=side),
+        piece("side_w", [], 64, side=side, walls=[((0, 240), (0, 64))]),
+        piece("side_e", [], 64, side=side, walls=[((384, 64), (384, 240))]),
+    ]
+
+
+SPECS += [
+    {"name": "harbor",
+     "interior": {"layout": "LAYOUT_HARBOR", "ground": [0x202],
+                  "shade": [0x203, 0x204], "pieces": own_shell(harbor())}},
+    {"name": "fan_club",
+     "interior": {"layout": "LAYOUT_SLATEPORT_CITY_POKEMON_FAN_CLUB", "ground": [0x201],
+                  "shade": [0x202, 0x204], "pieces": own_shell(fan_club())}},
+    {"name": "battle_tent_lobby",
+     "interior": {"layout": "LAYOUT_BATTLE_TENT_LOBBY", "ground": [0x210],
+                  "shade": [0x211, 0x209, 0x208], "pieces": own_shell(battle_tent_lobby())}},
+]
 
 for _spec in SPECS:
     _room = _spec.get("interior")
