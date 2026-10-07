@@ -131,6 +131,18 @@ typedef struct
 bool VoxelAtlas_JobBegin(VoxelAtlasJob *job, const VoxelMapInstance *inst, uint16_t *dest,
                          const VoxelAtlasMap *base);
 bool VoxelAtlas_JobStep(VoxelAtlasJob *job, unsigned metatiles);
+
+/*
+ * Only the current map's atlas is animated (ctr_voxel.c's AnimateTiles); a
+ * neighbour of another tileset pair is composed from the tilesets as they
+ * are stored, where the sea's tiles are a flat blue and its waves are frames
+ * of the animation. Its sea was a dull band beside the current map's along
+ * the whole seam (Route 104's from Route 105). When set, this is called
+ * with a job's primary tiles once they are loaded, to write over them the
+ * animated ones as the screen has them now: the neighbour's sea is the same
+ * sea, a frame of it held still.
+ */
+extern void (*gVoxelAtlasLivePrimary)(const void *primaryTileset, uint8_t *tiles);
 void VoxelAtlas_JobCancel(VoxelAtlasJob *job);
 unsigned VoxelAtlas_PageCount(const VoxelAtlasMap *map);
 /* Call only after the preceding page's upload has completed. */

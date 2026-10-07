@@ -259,14 +259,89 @@ static void AnimForget(VoxelAtlasSlot *slot)
     }
 }
 
+/* The tiles of a primary tileset the animation has ever written, and a copy
+ * of each as it was last written, for gVoxelAtlasLivePrimary. Kept for as
+ * long as the game runs: a neighbour's atlas is composed while its map is
+ * loaded, when the tile memory holds the stored tiles again and the
+ * animation has written nothing yet. */
+#define VOXEL_ANIM_EVER_TILESETS 4u
+static uint32_t sFrame;
+typedef struct
+{
+    const void *tileset;
+    uint8_t *copy;              /* 512 tiles of 32 bytes */
+    uint8_t tiles[512 / 8];
+    uint32_t seen;              /* the frame the tileset was first on the field */
+} AnimEverSet;
+static AnimEverSet sAnimEverOf[VOXEL_ANIM_EVER_TILESETS];
+
+static AnimEverSet *AnimEver(const void *tileset, bool add)
+{
+    for (unsigned i = 0; i < VOXEL_ANIM_EVER_TILESETS; ++i)
+    {
+        if (sAnimEverOf[i].tileset == tileset)
+            return &sAnimEverOf[i];
+        if (sAnimEverOf[i].tileset == NULL && add)
+        {
+            sAnimEverOf[i].copy = calloc(512u, 32u);
+            if (sAnimEverOf[i].copy == NULL)
+                return NULL;
+            sAnimEverOf[i].tileset = tileset;
+            sAnimEverOf[i].seen = sFrame;
+            return &sAnimEverOf[i];
+        }
+    }
+    return NULL;
+}
+
+/*
+ * A full round of a tileset's animations is 16 frames. The first time a
+ * tileset is on the field nothing of it has been written yet, and the atlas
+ * of a neighbour composed then would hold the stored tiles for good: it
+ * waits these frames, once in a session.
+ */
+#define VOXEL_ANIM_WARM_FRAMES 40u
+
+static bool AnimWarm(const void *tileset)
+{
+    const AnimEverSet *ever = tileset != NULL ? AnimEver(tileset, true) : NULL;
+
+    return ever == NULL || sFrame - ever->seen >= VOXEL_ANIM_WARM_FRAMES;
+}
+
 void CtrVoxel_NotifyTilesetAnimWrite(unsigned firstTile, unsigned tileCount)
 {
+    const VoxelMapInstance *inst = VoxelWorld_Instance(0);
+    AnimEverSet *ever = inst != NULL && inst->primaryTileset != NULL && CtrGame_IsOverworld()
+                      ? AnimEver(inst->primaryTileset, true) : NULL;
+    const uint8_t *live = CtrVideo_GetBgVram();
+
     if (firstTile >= 1024) return;
     if (tileCount > 1024 - firstTile) tileCount = 1024 - firstTile;
     for (unsigned t = firstTile; t < firstTile + tileCount; ++t)
+    {
+        if (t < 512 && ever != NULL && live != NULL)
+        {
+            ever->tiles[t >> 3] |= 1u << (t & 7);
+            memcpy(ever->copy + t * 32u, live + t * 32u, 32);
+        }
         for (unsigned page = 0; page < VOXEL_ATLAS_PAGES; ++page)
             sAnimDirty[page][t >> 3] |= 1u << (t & 7);
+    }
     sAnimPending = true;
+}
+
+/* voxel_atlas.h: the animated tiles of a primary tileset, as the field last
+ * had them, over the stored ones of an atlas being composed. */
+static void LivePrimaryTiles(const void *primaryTileset, uint8_t *tiles)
+{
+    const AnimEverSet *ever = primaryTileset != NULL ? AnimEver(primaryTileset, false) : NULL;
+
+    if (ever == NULL)
+        return;
+    for (unsigned t = 0; t < 512; ++t)
+        if (ever->tiles[t >> 3] & (1u << (t & 7)))
+            memcpy(tiles + t * 32u, ever->copy + t * 32u, 32);
 }
 static bool AtlasJobBusy(void);
 static void AtlasJobCancel(void);
@@ -1706,6 +1781,7 @@ bool CtrVoxel_Init(void)
 
     /* Optional: animation only. Failure must not prevent the overworld from
      * loading when homebrew linear memory is tighter than on Azahar. */
+    gVoxelAtlasLivePrimary = LivePrimaryTiles;
     sAnimOut = linearAlloc(VOXEL_ANIM_SLOTS * sizeof(VoxelAnimSlot));
     if (sAnimOut == NULL)
         CtrLog_Write(CTR_LOG_ERROR, "VOXEL: no linear memory for the animated tiles");
@@ -2030,6 +2106,15 @@ static VoxelAtlasSlot *AcquireAtlas(const VoxelMapInstance *inst, bool mayEvict)
     if (AtlasJobBusy() || sAtlasUploadPending || sAtlasStaging == NULL)
         return NULL;
 
+    /* A neighbour of another pair is composed with the animated tiles of the
+     * primary tileset it shares with the current map, once there are any. */
+    {
+        const VoxelMapInstance *here = VoxelWorld_Instance(0);
+
+        if (here != NULL && inst != here && here->primaryTileset == inst->primaryTileset
+         && here->secondaryTileset != inst->secondaryTileset && !AnimWarm(inst->primaryTileset))
+            return NULL;
+    }
     /* An unused slot first, then the least recently used one. The atlas of
      * the current map is stamped every frame, so it is never the victim. */
     for (unsigned i = 0; i < VOXEL_ATLAS_SLOTS; ++i)

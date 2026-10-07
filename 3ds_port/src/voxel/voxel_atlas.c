@@ -478,6 +478,8 @@ bool VoxelAtlas_JobBegin(VoxelAtlasJob *job, const VoxelMapInstance *inst, uint1
     return true;
 }
 
+void (*gVoxelAtlasLivePrimary)(const void *primaryTileset, uint8_t *tiles);
+
 bool VoxelAtlas_JobStep(VoxelAtlasJob *job, unsigned metatiles)
 {
     struct AtlasSource src;
@@ -496,6 +498,8 @@ bool VoxelAtlas_JobStep(VoxelAtlasJob *job, unsigned metatiles)
         if (!Voxel_LoadTilesStep(primary ? job->primary : job->secondary, tiles,
                                 VOXEL_TILE_SCRATCH, &job->tileLoad, 512)) return false;
         if (primary) job->primaryLoaded = job->tileLoad.ok;
+        if (primary && job->primaryLoaded && gVoxelAtlasLivePrimary != NULL)
+            gVoxelAtlasLivePrimary(job->primary, tiles);
         else job->secondaryLoaded = job->tileLoad.ok;
         memset(&job->tileLoad, 0, sizeof(job->tileLoad));
         job->phase = primary ? ATLAS_LOAD_SECONDARY : ATLAS_COMPOSE;
