@@ -44,6 +44,9 @@ const C3D_Tex *CtrVoxel_Gloom(float *x, float *y, float *size, float *amount);
  * the game's is there, for the dark of a Flash cave (3ds_video.c's VoxelDark).
  * False when the world was not drawn this frame. */
 bool CtrVoxel_Dark(float *x, float *y, float *scale);
+/* The colour to clear the frame to before CtrVoxel_Draw: `fallback` (the
+ * game's backdrop) indoors, the map's own tone outdoors. */
+uint32_t CtrVoxel_Backdrop(uint32_t fallback);
 
 /*
  * Stereoscopy (3D slider): the world is drawn once and each eye gets that
