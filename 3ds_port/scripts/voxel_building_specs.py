@@ -929,10 +929,11 @@ def potted_plant(x, y):
     """The potted plant's outline, its crown's top-left at (x, y): the
     lines between the planks are drawn in the pot's own outline colour, so
     the shape follows the crown, the stem and the pot instead of a box."""
-    return [(x, y, x + 16, y + 13), (x + 3, y + 13, x + 13, y + 14),
-            (x + 5, y + 14, x + 11, y + 16), (x + 6, y + 16, x + 10, y + 19),
-            (x + 3, y + 19, x + 13, y + 23), (x + 2, y + 23, x + 14, y + 30),
-            (x + 4, y + 30, x + 5, y + 31), (x + 11, y + 30, x + 12, y + 31)]
+    return [(x, y, x + 16, y + 13), (x + 2, y + 13, x + 14, y + 14),
+            (x + 3, y + 14, x + 13, y + 15), (x + 5, y + 15, x + 11, y + 16),
+            (x + 6, y + 16, x + 10, y + 18), (x + 4, y + 18, x + 12, y + 19),
+            (x + 3, y + 19, x + 13, y + 20), (x + 2, y + 20, x + 14, y + 30),
+            (x + 4, y + 30, x + 12, y + 31)]
 
 
 def house1():
@@ -1433,6 +1434,26 @@ SPECS = [
         "layout": "LAYOUT_PETALBURG_CITY",
         "rect": (5, 2, 5, 4),
         "ground": [GRASS],
+        "parts": lambda: kit_house(80),
+        "exact": kit_house_exact(80),
+    },
+    {
+        # Dewford's blue-roofed houses: the same kit in another tileset's
+        # colours, on sand. The reference is the one with open sand behind
+        # it; the one under the trees, whose roof's back row is other tiles,
+        # is found as a copy of it
+        "name": "dewford_house_4",
+        "layout": "LAYOUT_DEWFORD_TOWN",
+        "rect": (16, 11, 4, 4),
+        "ground": [0x124],
+        "parts": lambda: kit_house(64),
+        "exact": kit_house_exact(64),
+    },
+    {
+        "name": "dewford_house_5",
+        "layout": "LAYOUT_DEWFORD_TOWN",
+        "rect": (1, 0, 5, 4),
+        "ground": [0x124],
         "parts": lambda: kit_house(80),
         "exact": kit_house_exact(80),
     },
