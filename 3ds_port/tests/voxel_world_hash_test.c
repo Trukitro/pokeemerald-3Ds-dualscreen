@@ -10,6 +10,7 @@ struct Main gMain;
 struct ObjectEvent gObjectEvents[OBJECT_EVENTS_COUNT];
 struct PlayerAvatar gPlayerAvatar;
 const struct Tileset gTileset_General = {0};
+const struct Tileset gTileset_Dewford = {0};
 const struct Tileset gTileset_Fallarbor = {0};
 static u16 sFortreeAttributes[280] = {
     [628 - NUM_METATILES_IN_PRIMARY] = MB_PUDDLE,
@@ -47,6 +48,8 @@ unsigned VoxelRegions_RoleAt(unsigned id, int x, int y)
 VoxelVisualShape Voxel_BehaviorShape(unsigned b) { (void)b; return VOXEL_SHAPE_COUNT; }
 int VoxelTree_Part(int id) { (void)id; return -1; }
 int VoxelTree_GroundMetatile(int id) { return id; }
+int VoxelTree_PartIn(const VoxelMapInstance *inst, int id) { (void)inst; (void)id; return -1; }
+int VoxelTree_GroundIn(const VoxelMapInstance *inst, int id) { (void)inst; return id; }
 bool VoxelRelief_IsDrawn(const VoxelMapInstance *inst) { (void)inst; return false; }
 
 static void Check(int x0, int y0, int x1, int y1)

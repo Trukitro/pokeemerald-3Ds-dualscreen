@@ -14,6 +14,7 @@ static int sTiles[] = {0x1D6, 0x1D7, 0x1E6, 0x1E7};
 static VoxelAtlasMap sAtlas;
 static VoxelVertex sWhole[1024], sParts[1024];
 
+bool VoxelWorld_IslandTrees(const VoxelMapInstance *island) { (void)island; return false; }
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst)
 {
     return inst == &sMap && sGeneral;

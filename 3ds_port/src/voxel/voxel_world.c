@@ -36,6 +36,7 @@
 extern const struct Tileset gTileset_General;
 extern const struct Tileset gTileset_Fortree;
 extern const struct Tileset gTileset_Fallarbor;
+extern const struct Tileset gTileset_Dewford;
 extern const struct Tileset gTileset_GenericBuilding;
 
 #include <string.h>
@@ -571,6 +572,12 @@ VoxelGrass VoxelWorld_Grass(int worldX, int worldY)
     return VOXEL_GRASS_NONE;
 }
 
+bool VoxelWorld_IslandTrees(const VoxelMapInstance *inst)
+{
+    return inst != NULL && !inst->indoor && inst->primaryTileset == &gTileset_General
+        && inst->secondaryTileset == &gTileset_Dewford;
+}
+
 bool VoxelWorld_UsesTreeSprites(const VoxelMapInstance *inst)
 {
     return inst != NULL && !inst->indoor && inst->primaryTileset == &gTileset_General;
@@ -627,8 +634,8 @@ VoxelVisualShape VoxelWorld_ClassifyTile(int worldX, int worldY)
 
     metatileId = VoxelWorld_GetMetatileId(worldX, worldY);
     if (VoxelWorld_UsesTreeSprites(inst)
-     && (VoxelTree_Part(metatileId) >= 0
-         || VoxelTree_GroundMetatile(metatileId) != metatileId))
+     && (VoxelTree_PartIn(inst, metatileId) >= 0
+         || VoxelTree_GroundIn(inst, metatileId) != metatileId))
         return VOXEL_SHAPE_FLAT;
     if (VoxelRegions_RoleAt((unsigned)inst->layoutId,
                             worldX - inst->originX, worldY - inst->originY)

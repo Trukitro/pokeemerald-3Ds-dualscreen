@@ -203,7 +203,7 @@ bool VoxelMesh_TileUV(VoxelBuilder *builder, int x, int y,
         return false;
     metatile = VoxelWorld_GetMetatileId(x, y);
     if (VoxelWorld_UsesTreeSprites(VoxelWorld_GetInstanceAt(x, y)))
-        metatile = VoxelTree_GroundMetatile(metatile);
+        metatile = VoxelTree_GroundIn(VoxelWorld_GetInstanceAt(x, y), metatile);
     slot = builder->atlas->slotOf[metatile];
 
     if (slot == 0 || slot == VOXEL_SLOT_PENDING)
@@ -948,7 +948,7 @@ int VoxelMesh_DraftSlot(const VoxelMapInstance *inst, const struct VoxelAtlasMap
     metatile = VoxelWorld_GetMetatileId(x, y);
     /* The trunk's ground, not the card of the crown drawn over it. */
     if (VoxelWorld_UsesTreeSprites(inst))
-        metatile = VoxelTree_GroundMetatile(metatile);
+        metatile = VoxelTree_GroundIn(inst, metatile);
     if (metatile < 0 || metatile >= (int)VOXEL_METATILE_REAL)
         return -1;
     slot = atlas->slotOf[metatile];
@@ -1036,7 +1036,7 @@ static void EmitGroundCells(VoxelBuilder *builder, const VoxelMapInstance *inst,
 
         /* The tree pass supplies both the trunk's ground and its crown. */
         if (VoxelWorld_UsesTreeSprites(inst)
-         && VoxelTree_Part(VoxelWorld_GetMetatileId(x, y)) >= 0)
+         && VoxelTree_PartIn(inst, VoxelWorld_GetMetatileId(x, y)) >= 0)
             continue;
         if (shape == VOXEL_SHAPE_VOID)
             continue;
@@ -1343,7 +1343,7 @@ static void EmitBorderSkirt(VoxelBuilder *builder, int x, int y)
     int own = VoxelWorld_BorderMetatile(x, y);
 
     if (VoxelWorld_UsesTreeSprites(VoxelWorld_Instance(0)))
-        own = VoxelTree_GroundMetatile(own);
+        own = VoxelTree_GroundIn(VoxelWorld_Instance(0), own);
     for (int d = 0; d < 4; ++d)
     {
         int nx = x + kDir[d][0], ny = y + kDir[d][1];
@@ -1359,7 +1359,7 @@ static void EmitBorderSkirt(VoxelBuilder *builder, int x, int y)
             continue;
         theirs = VoxelWorld_GetMetatileId(nx, ny);
         if (VoxelWorld_UsesTreeSprites(inst))
-            theirs = VoxelTree_GroundMetatile(theirs);
+            theirs = VoxelTree_GroundIn(inst, theirs);
         if (d == 0 && MetatileUV(builder, theirs, &u0, &v0, &u1, &v1))
         {
             /* the map's edge, on to the belt: as many rows as it is levels down */
@@ -1404,7 +1404,7 @@ void VoxelMesh_EmitBorder(VoxelBuilder *builder, int x0, int y0, int x1, int y1)
                 continue;
             EmitBorderSkirt(builder, x, y);
             if (VoxelWorld_UsesTreeSprites(VoxelWorld_Instance(0))
-             && VoxelTree_Part(VoxelWorld_BorderMetatile(x, y)) >= 0)
+             && VoxelTree_PartIn(VoxelWorld_Instance(0), VoxelWorld_BorderMetatile(x, y)) >= 0)
                 continue; /* flat trunks and tilted crowns are appended later */
             south = !BorderAt(x, y + 1);
             east = !BorderAt(x + 1, y);

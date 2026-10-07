@@ -393,6 +393,8 @@ romfs/voxel/signposts.bin: scripts/gen_voxel_sign_masks.py scripts/voxel_sign_ma
 	@mkdir -p $(@D)
 	"$(PYTHON)" scripts/gen_voxel_sign_masks.py
 
+# The island's trees are taken from the game's own tileset (gen_voxel_trees.py).
+romfs/voxel/trees.rgba5551: scripts/dump_region_art.py $(VOXEL_GFX_OUTPUTS)
 romfs/voxel/trees.rgba5551: scripts/gen_voxel_trees.py \
 		assets/voxel/trees/tree_crown.png assets/voxel/trees/tree_trunk.png \
 		assets/voxel/trees/tree_small_crown.png assets/voxel/trees/tree_small_trunk.png \

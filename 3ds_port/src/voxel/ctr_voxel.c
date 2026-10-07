@@ -1623,12 +1623,12 @@ static void BrightenCrowns(uint16_t *texels)
     static const struct
     {
         unsigned x, y, w, h;
-    } crowns[] = {{0, 0, 32, 36}, {32, 32, 16, 32}};
+    } crowns[] = {{0, 0, 32, 36}, {32, 32, 16, 32}, {64, 0, 16, 32}};
 
     for (unsigned c = 0; c < sizeof(crowns) / sizeof(crowns[0]); ++c)
         for (unsigned y = crowns[c].y; y < crowns[c].y + crowns[c].h; ++y)
             for (unsigned x = crowns[c].x; x < crowns[c].x + crowns[c].w; ++x)
-                VoxelGrade_Brighten(&texels[CtrVideo_Texel(x, y, VOXEL_TREE_TEXTURE_DIM)], 1,
+                VoxelGrade_Brighten(&texels[CtrVideo_Texel(x, y, VOXEL_TREE_TEXTURE_WIDTH)], 1,
                                     VOXEL_TREE_BRIGHTNESS);
 }
 
@@ -1754,18 +1754,18 @@ bool CtrVoxel_Init(void)
     VoxelEntities_Reset();
 
     step = "tree texture " VOXEL_TREE_TEXTURE_PATH;
-    if (!C3D_TexInit(&sTreeAtlas, VOXEL_TREE_TEXTURE_DIM, VOXEL_TREE_TEXTURE_DIM, GPU_RGBA5551))
+    if (!C3D_TexInit(&sTreeAtlas, VOXEL_TREE_TEXTURE_WIDTH, VOXEL_TREE_TEXTURE_DIM, GPU_RGBA5551))
         goto fail;
     file = fopen(VOXEL_TREE_TEXTURE_PATH, "rb");
     if (file == NULL)
         goto fail;
     {
-        size_t bytes = VOXEL_TREE_TEXTURE_DIM * VOXEL_TREE_TEXTURE_DIM * sizeof(uint16_t);
+        size_t bytes = VOXEL_TREE_TEXTURE_WIDTH * VOXEL_TREE_TEXTURE_DIM * sizeof(uint16_t);
         bool loaded = fread(sTreeAtlas.data, 1, bytes, file) == bytes;
         fclose(file);
         if (!loaded)
             goto fail;
-        VoxelGrade_Texels(sTreeAtlas.data, VOXEL_TREE_TEXTURE_DIM * VOXEL_TREE_TEXTURE_DIM);
+        VoxelGrade_Texels(sTreeAtlas.data, VOXEL_TREE_TEXTURE_WIDTH * VOXEL_TREE_TEXTURE_DIM);
         BrightenCrowns(sTreeAtlas.data);
     }
     C3D_TexSetFilter(&sTreeAtlas, GPU_NEAREST, GPU_NEAREST);
@@ -2622,6 +2622,16 @@ static bool JobPack(void)
 }
 
 /* One slice of the job: a row of one pass, or one of the small passes. */
+/* The tree pass writes u in units of the tree texture's left, square half
+ * (voxel_tree.h): halved here, once, into the texture's own. */
+static void TreeTexels(unsigned first, unsigned end)
+{
+    const float scale = (float)VOXEL_TREE_TEXTURE_DIM / (float)VOXEL_TREE_TEXTURE_WIDTH;
+
+    for (unsigned i = first; i < end && i < sBuilder.count; ++i)
+        sBuilder.vertices[i].u *= scale;
+}
+
 static void JobStep(void)
 {
     const ChunkSite *site = &sJob.site;
@@ -2655,6 +2665,7 @@ static void JobStep(void)
             return;
         sJob.row = site->y0;
         sJob.buildingFirst = sBuilder.count;
+        TreeTexels(sJob.terrainCount, sJob.buildingFirst);
         sJob.phase = sHaveBuildings ? JOB_MODELS : JOB_SORT;
         return;
     case JOB_MODELS:
@@ -2684,6 +2695,7 @@ static void JobStep(void)
             return;
         sJob.row = site->y0;
         sJob.buildingFirst = sBuilder.count;
+        TreeTexels(sJob.terrainCount, sJob.buildingFirst);
         sJob.phase = JOB_SORT;
         return;
     case JOB_SORT:

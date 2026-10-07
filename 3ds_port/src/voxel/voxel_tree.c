@@ -42,10 +42,37 @@ int VoxelTree_GroundMetatile(int metatileId)
     }
 }
 
+/*
+ * The island's trees (Dewford Town, Route 106 and the wood that borders
+ * them): 23A is a trunk on the sand and 243 a trunk with the next tree's
+ * crown over it - a tree each -, and 239 the top of a crown over the sand
+ * behind it. They were left flat inside the map and stood up as a wall of
+ * tree tiles outside it; every one is its own tree now, as the General
+ * tileset's are.
+ */
+int VoxelTree_PartIn(const VoxelMapInstance *inst, int metatileId)
+{
+    if (metatileId >= 0x200 && VoxelWorld_IslandTrees(inst))
+        return metatileId == 0x23A || metatileId == 0x243 ? VOXEL_TREE_ISLAND : -1;
+    return VoxelTree_Part(metatileId);
+}
+
+int VoxelTree_GroundIn(const VoxelMapInstance *inst, int metatileId)
+{
+    if (metatileId >= 0x200 && VoxelWorld_IslandTrees(inst))
+        return metatileId == 0x239 ? 0x124 : metatileId; /* the sand */
+    return VoxelTree_GroundMetatile(metatileId);
+}
+
 /* The small crown is 16:32: width 1, length 2 tiles, at the same 50 degrees
  * and sunk the same way as the large one, standing on its one-cell trunk. */
-static void EmitSmallCell(VoxelBuilder *builder, int x, int y)
+static void EmitSmallCell(VoxelBuilder *builder, int x, int y, bool island)
 {
+    /* where the trunk's cell and the crown are in the texture: the drawn
+     * small tree's, or the island's in the right half (voxel_tree.h) */
+    const float gu = island ? 80.0f / VOXEL_TREE_TEXTURE_DIM : 48.0f / VOXEL_TREE_TEXTURE_DIM;
+    const float gv = island ? 1.0f : 0.5f;
+    const float cu = island ? 1.0f : 0.5f, cv = island ? 1.0f : 0.5f;
     float wx = (float)x, wz = (float)y;
     const float rise = 1.532089f, run = 1.285575f;
     const float baseHeight = -0.10f;
@@ -53,14 +80,13 @@ static void EmitSmallCell(VoxelBuilder *builder, int x, int y)
      * leaves stand through the ground behind the trunk. */
     float baseZ = wz + 0.825f;
 
-    VoxelMesh_Top(builder, wx, wz, 0.0f, 0.0f,
-                  48.0f / VOXEL_TREE_TEXTURE_DIM, 0.5f, 1.0f, 0.25f, 1.0f);
+    VoxelMesh_Top(builder, wx, wz, 0.0f, 0.0f, gu, gv, gu + 0.25f, gv - 0.25f, 1.0f);
     builder->rounded = true;
     VoxelBuilder_Quad(builder,
-        &(VoxelVertex){wx,        baseHeight + rise, baseZ - run, 0.5f,  0.5f, 1.0f},
-        &(VoxelVertex){wx + 1.0f, baseHeight + rise, baseZ - run, 0.75f, 0.5f, 1.0f},
-        &(VoxelVertex){wx + 1.0f, baseHeight,        baseZ,       0.75f, 0.0f, 1.0f},
-        &(VoxelVertex){wx,        baseHeight,        baseZ,       0.5f,  0.0f, 1.0f});
+        &(VoxelVertex){wx,        baseHeight + rise, baseZ - run, cu,         cv,        1.0f},
+        &(VoxelVertex){wx + 1.0f, baseHeight + rise, baseZ - run, cu + 0.25f, cv,        1.0f},
+        &(VoxelVertex){wx + 1.0f, baseHeight,        baseZ,       cu + 0.25f, cv - 0.5f, 1.0f},
+        &(VoxelVertex){wx,        baseHeight,        baseZ,       cu,         cv - 0.5f, 1.0f});
     builder->rounded = false;
 }
 
@@ -81,9 +107,9 @@ static void EmitCell(VoxelBuilder *builder, int x, int y, int part)
     float baseZ = wz - row + 1.35f;
     float top = 1.0f - row * 0.5f, bottom = top - 0.5f;
 
-    if (part == VOXEL_TREE_SMALL)
+    if (part == VOXEL_TREE_SMALL || part == VOXEL_TREE_ISLAND)
     {
-        EmitSmallCell(builder, x, y);
+        EmitSmallCell(builder, x, y, part == VOXEL_TREE_ISLAND);
         return;
     }
     VoxelMesh_Top(builder, wx, wz, 0.0f, 0.0f, u0, v0, u1, v1, 1.0f);
@@ -175,7 +201,7 @@ void VoxelTree_EmitInstance(VoxelBuilder *builder, const VoxelMapInstance *inst,
     for (int y = y0; y < y1; ++y)
         for (int x = x0; x < x1; ++x)
         {
-            int part = VoxelTree_Part(VoxelWorld_GetMetatileId(x, y));
+            int part = VoxelTree_PartIn(inst, VoxelWorld_GetMetatileId(x, y));
             VoxelGrass grass = part >= 0 ? VOXEL_GRASS_NONE : VoxelWorld_Grass(x, y);
 
             if (part >= 0 || grass != VOXEL_GRASS_NONE)
@@ -202,7 +228,7 @@ void VoxelTree_EmitBorder(VoxelBuilder *builder, int x0, int y0, int x1, int y1)
             int part;
             if (VoxelWorld_GetInstanceAt(x, y) != NULL)
                 continue;
-            part = VoxelTree_Part(VoxelWorld_BorderMetatile(x, y));
+            part = VoxelTree_PartIn(VoxelWorld_Instance(0), VoxelWorld_BorderMetatile(x, y));
             if (part >= 0)
                 EmitCell(builder, x, y, part);
         }

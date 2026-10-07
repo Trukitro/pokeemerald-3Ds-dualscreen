@@ -105,6 +105,7 @@ static void EmitCells(bool trees, int x0, int y0, int x1, int y1) {
 #define VoxelTree_EmitInstance(b, inst, x0, y0, x1, y1) ((void)(b), (void)(inst), EmitCells(true, x0, y0, x1, y1))
 #define VoxelMesh_EmitBorder(b, x0, y0, x1, y1) ((void)(b), EmitCells(false, x0, y0, x1, y1))
 #define VoxelTree_EmitBorder(b, x0, y0, x1, y1) ((void)(b), EmitCells(true, x0, y0, x1, y1))
+#define TreeTexels(first, end) ((void)(first), (void)(end))
 #define VoxelBuildings_EmitSome(...) true
 static bool JobPack(void) { return true; }
 '''
