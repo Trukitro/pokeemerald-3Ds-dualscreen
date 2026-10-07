@@ -1098,6 +1098,13 @@ def tatami_posts(width):
             piece("post_e", [(width - 8, 0, width, 35), (width - 7, 35, width - 1, 36)], 32, back=32)]
 
 
+def tatami_edge(width, y):
+    """The front of the tatami's platform, where it ends before the entrance:
+    a board six rows tall across the room, drawn as its face. It stands as a
+    low kerb at the platform's edge."""
+    return [piece("platform_edge", [(0, y, width, y + 6)], 6)]
+
+
 def house3_furniture():
     fl, wall = BRINEY_FLOOR, BRINEY_WALL + BRINEY_FLOOR
     pieces = [
@@ -1108,8 +1115,8 @@ def house3_furniture():
         # its greens are the tatami's own: claimed whole, by its outline
         piece("cabinet", [(130, 16, 142, 17), (129, 17, 143, 18), (128, 18, 144, 39),
                           (129, 39, 143, 40)], 16, back=32),
-    ] + tatami_posts(160)
-    return only_here(pieces, "stove", "bookcase", "cabinet", "post_w", "post_e")
+    ] + tatami_posts(160) + tatami_edge(160, 96)
+    return only_here(pieces, "stove", "bookcase", "cabinet", "post_w", "post_e", "platform_edge")
 
 
 def house4_furniture():
@@ -1119,9 +1126,9 @@ def house4_furniture():
         piece("jar_w", [(49, 33, 62, 48)], 9, leave=fl, solid=True),
         piece("jar_e", [(65, 33, 78, 48)], 9, leave=fl, solid=True),
         piece("chest", [(128, 16, 144, 45)], 16, leave=wall, back=32),
-    ] + tatami_posts(160)
+    ] + tatami_posts(160) + tatami_edge(160, 112)
     # the jars stand against the wall here, and are Mr. Briney's elsewhere
-    return only_here(pieces, "jar_w", "jar_e", "post_w", "post_e")
+    return only_here(pieces, "jar_w", "jar_e", "post_w", "post_e", "platform_edge")
 
 
 def only_here(pieces, *names):
@@ -1133,7 +1140,25 @@ def only_here(pieces, *names):
     return pieces
 
 
+def hall_furniture():
+    """Dewford's Town Hall: a wall that parts the room, running forward from
+    the back wall, seen from above as the white of its top with a face at
+    its end; a low wall across the east half, a desk and a small chest in
+    front of it; a table in the west half."""
+    fl = GENERIC_FLOOR
+    pieces = [
+        piece("hall_table", [(32, 64, 80, 96)], 11, leave=fl, solid=True),
+        # (the small chest by the desk is the second house's cupboard, found here)
+        piece("hall_desk", [(224, 104, 255, 128)], 8, leave=fl, solid=True),
+        piece("divider", [(211, 75, 272, 76), (210, 76, 272, 77), (209, 77, 272, 109),
+                          (210, 109, 272, 110), (211, 110, 272, 111)], 24, solid=True, fill=1),
+        piece("partition", [(161, 4, 175, 111)], 28, solid=True),
+    ]
+    return only_here(pieces, "hall_table", "hall_desk")
+
+
 PLAIN_FURNITURE = {
+    "LAYOUT_DEWFORD_TOWN_HALL": hall_furniture,
     "LAYOUT_HOUSE3": house3_furniture,
     "LAYOUT_HOUSE4": house4_furniture,
 }
@@ -1264,6 +1289,10 @@ DEWFORD_GYM_BLOCKS = [
     (10, 9, 12, 14), (7, 9, 9, 13), (14, 7, 16, 12), (1, 6, 2, 10), (3, 7, 5, 10),
     (16, 0, 17, 9), (13, 0, 15, 6), (7, 0, 10, 5), (12, 0, 13, 5), (11, 0, 12, 4),
     (2, 0, 3, 3), (5, 0, 6, 3), (10, 0, 11, 3), (15, 0, 16, 3),
+    # found flat by the audit (devtools/voxel_audit.py): blocked rock no run
+    # above had taken, and the front wall's ends either side of the door
+    (7, 6, 12, 8), (2, 7, 3, 9), (2, 19, 3, 21), (13, 20, 16, 22),
+    (4, 26, 5, 28), (7, 26, 8, 28), (12, 26, 13, 28),
 ]
 DEWFORD_GYM_FLOOR = [0x201, 0x202, 0x203, 0x205, 0x206, 0x209, 0x20A, 0x20B, 0x20D, 0x211,
                      0x212, 0x213, 0x215, 0x216, 0x218, 0x21A, 0x21B, 0x222, 0x223]
