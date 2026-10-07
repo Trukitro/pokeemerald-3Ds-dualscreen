@@ -1,10 +1,157 @@
 {
-  "_": "Blocked cells the audit finds flat that are left so on purpose: map -> [[x0, y0, x1, y1, why]] (cells, inclusive). devtools/voxel_audit.py lists them apart and does not count them.",
+  "_": "Left flat on purpose. \"<Map>\": [[x0, y0, x1, y1, why]] in cells (inclusive), for blocked cells; \"<Map>#px\": [[x0, y0, x1, y1, why]] in the drawing's pixels, for things painted on a room's floor that belong there. devtools/voxel_audit.py lists neither as to do.",
   "DewfordTown_Gym": [
-    [0, 0, 0, 27, "the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512"],
-    [1, 0, 6, 2, "the rock behind the leader's place: with it the layout's page is past the console's 512x512"],
-    [17, 0, 17, 1, "the corner of the rock east of the edge wall, outside the room"],
-    [2, 3, 2, 4, "the leader's dais: a low platform, its corner posts drawn on it"],
-    [5, 3, 6, 4, "the leader's dais and the shelf's foot beside it"]
+    [
+      0,
+      0,
+      0,
+      27,
+      "the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512"
+    ],
+    [
+      1,
+      0,
+      6,
+      2,
+      "the rock behind the leader's place: with it the layout's page is past the console's 512x512"
+    ],
+    [
+      17,
+      0,
+      17,
+      1,
+      "the corner of the rock east of the edge wall, outside the room"
+    ],
+    [
+      2,
+      3,
+      2,
+      4,
+      "the leader's dais: a low platform, its corner posts drawn on it"
+    ],
+    [
+      5,
+      3,
+      6,
+      4,
+      "the leader's dais and the shelf's foot beside it"
+    ]
+  ],
+  "DewfordTown_House1#px": [
+    [
+      16,
+      112,
+      144,
+      128,
+      "the entrance's own floor and the door mat"
+    ],
+    [
+      48,
+      32,
+      80,
+      48,
+      "the shade at the wall's foot"
+    ],
+    [
+      48,
+      48,
+      112,
+      82,
+      "cushions: they lie on the floor"
+    ]
+  ],
+  "DewfordTown_House2#px": [
+    [
+      16,
+      128,
+      144,
+      144,
+      "the entrance's own floor and the door mat"
+    ],
+    [
+      80,
+      32,
+      128,
+      48,
+      "the shade at the wall's foot"
+    ],
+    [
+      32,
+      48,
+      112,
+      98,
+      "cushions: they lie on the floor"
+    ]
+  ],
+  "DewfordTown_Hall#px": [
+    [
+      80,
+      128,
+      112,
+      144,
+      "the door mat"
+    ],
+    [
+      0,
+      32,
+      272,
+      48,
+      "the shade at the wall's foot"
+    ],
+    [
+      160,
+      112,
+      226,
+      122,
+      "the shade of the partition and the low wall"
+    ]
+  ],
+  "DewfordTown_Gym#px": [
+    [
+      80,
+      432,
+      112,
+      448,
+      "the door mat"
+    ],
+    [
+      0,
+      430,
+      18,
+      446,
+      "the front wall's foot, outside the edge wall"
+    ],
+    [
+      32,
+      30,
+      96,
+      82,
+      "the leader's dais: a low platform, and the emblem's foot on the wall"
+    ]
+  ],
+  "DewfordTown_PokemonCenter_1F#px": [
+    [
+      96,
+      128,
+      128,
+      144,
+      "the door mat"
+    ],
+    [
+      0,
+      0,
+      240,
+      144,
+      "the floor's own pattern of tiles"
+    ]
+  ],
+  "DewfordTown_PokemonCenter_2F#px": [
+    [
+      0,
+      0,
+      240,
+      160,
+      "the floor's own pattern of tiles and the mats"
+    ]
   ]
 }

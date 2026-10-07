@@ -1528,14 +1528,20 @@ def flat_report(layout, layout_id, room, ras, fpx, W, H, out_dir):
     face, a wall's foot nobody has stood up. Touching pixels are one object;
     <layout>_flat.json lists them, largest first, in the drawing's pixels.
     """
-    floors = [layout.cell_image(m).load() for m in room.get("ground", ())]
+    # The floor's colours: those of its metatile and of the shaded copies of
+    # it a room lists (`shade`). By colour and not by place in the cell: a
+    # floor drawn with a dozen tiles of the same planks is all floor.
+    plain = set()
+    for m in list(room.get("ground", ())) + list(room.get("shade", ())):
+        img = layout.cell_image(m).convert("RGB")
+        plain.update(img.getdata())
     marks = set()
     for y in range(H):
         for x in range(W):
             if ras.owner[y * W + x] not in (None, "patch", "terrain"):
                 continue
             c = fpx[x, y]
-            if c == (0, 0, 0) or any(f[x % 16, y % 16][:3] == c for f in floors):
+            if c == (0, 0, 0) or c in plain:
                 continue
             marks.add((x, y))
     total, objects = len(marks), []

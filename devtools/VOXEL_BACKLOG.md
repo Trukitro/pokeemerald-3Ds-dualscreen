@@ -29,63 +29,157 @@ every reported item is ticked. Work one area to the end before the next.
 
 - [x] **DewfordTown**: nothing blocked lies flat
 - [x] **DewfordTown_Hall**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (48, 32)-(144, 48), 1536 px
-  - [ ] painted on the floor: pixels (160, 32)-(211, 120), 1221 px
-  - [ ] painted on the floor: pixels (80, 128)-(112, 144), 512 px
-  - [ ] painted on the floor: pixels (237, 32)-(256, 64), 321 px
-  - [ ] painted on the floor: pixels (208, 112)-(224, 128), 136 px
+  - [ ] painted on the floor: pixels (176, 83)-(184, 88), 40 px
+  - [ ] painted on the floor: pixels (176, 91)-(184, 96), 40 px
+  - [ ] painted on the floor: pixels (176, 99)-(184, 104), 40 px
+  - [ ] painted on the floor: pixels (176, 67)-(184, 72), 40 px
+  - [ ] painted on the floor: pixels (176, 75)-(184, 80), 40 px
+  - [ ] painted on the floor: pixels (176, 51)-(184, 56), 40 px
+  - [ ] painted on the floor: pixels (176, 59)-(184, 64), 40 px
+  - [ ] painted on the floor: pixels (176, 107)-(184, 112), 40 px
 - [x] **DewfordTown_PokemonCenter_1F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (64, 64)-(168, 72), 804 px
-  - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
-  - [ ] painted on the floor: pixels (192, 32)-(208, 40), 84 px
-  - [ ] painted on the floor: pixels (121, 105)-(127, 111), 36 px
-  - [ ] painted on the floor: pixels (97, 81)-(103, 87), 36 px
-  - [ ] painted on the floor: pixels (97, 89)-(103, 95), 36 px
-  - [ ] painted on the floor: pixels (105, 105)-(111, 111), 36 px
-  - [ ] painted on the floor: pixels (121, 81)-(127, 87), 36 px
-  - [ ] painted on the floor: pixels (129, 89)-(135, 95), 36 px
-  - [ ] painted on the floor: pixels (113, 113)-(119, 119), 36 px
-  - [ ] painted on the floor: pixels (129, 97)-(135, 103), 36 px
-  - [ ] painted on the floor: pixels (97, 105)-(103, 111), 36 px
 - [x] **DewfordTown_Gym**: nothing blocked lies flat that is not left so on purpose
   - left flat, 28 cell(s): the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512
   - left flat, 10 cell(s): the rock behind the leader's place: with it the layout's page is past the console's 512x512
   - left flat, 2 cell(s): the corner of the rock east of the edge wall, outside the room
   - left flat, 2 cell(s): the leader's dais: a low platform, its corner posts drawn on it
   - left flat, 2 cell(s): the leader's dais and the shelf's foot beside it
-  - [ ] painted on the floor: pixels (0, 0)-(32, 448), 7680 px
-  - [ ] painted on the floor: pixels (32, 0)-(112, 80), 3712 px
-  - [ ] painted on the floor: pixels (48, 144)-(160, 272), 2568 px
-  - [ ] painted on the floor: pixels (192, 208)-(272, 320), 1800 px
-  - [ ] painted on the floor: pixels (48, 288)-(192, 368), 1764 px
-  - [ ] painted on the floor: pixels (96, 48)-(192, 96), 1508 px
-  - [ ] painted on the floor: pixels (112, 96)-(200, 144), 1444 px
-  - [ ] painted on the floor: pixels (224, 144)-(272, 208), 1024 px
-  - [ ] painted on the floor: pixels (208, 48)-(256, 112), 996 px
-  - [ ] painted on the floor: pixels (144, 256)-(184, 344), 904 px
-  - [ ] painted on the floor: pixels (160, 144)-(200, 232), 904 px
-  - [ ] painted on the floor: pixels (208, 352)-(256, 368), 740 px
 - [x] **DewfordTown_House1**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (16, 112)-(144, 128), 1988 px
-  - [ ] painted on the floor: pixels (48, 32)-(80, 48), 512 px
-  - [ ] painted on the floor: pixels (49, 51)-(63, 64), 165 px
-  - [ ] painted on the floor: pixels (97, 51)-(111, 64), 165 px
-  - [ ] painted on the floor: pixels (97, 67)-(111, 80), 165 px
-  - [ ] painted on the floor: pixels (49, 67)-(63, 80), 165 px
 - [x] **DewfordTown_House2**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (16, 128)-(144, 144), 1988 px
-  - [ ] painted on the floor: pixels (80, 32)-(128, 48), 768 px
-  - [ ] painted on the floor: pixels (97, 83)-(111, 96), 165 px
-  - [ ] painted on the floor: pixels (33, 51)-(47, 64), 165 px
 - [x] **DewfordTown_PokemonCenter_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (64, 64)-(80, 80), 256 px
-  - [ ] painted on the floor: pixels (16, 64)-(48, 72), 256 px
-  - [ ] painted on the floor: pixels (96, 64)-(128, 72), 228 px
-  - [ ] painted on the floor: pixels (160, 64)-(192, 72), 228 px
-  - [ ] painted on the floor: pixels (144, 64)-(152, 88), 192 px
-  - [ ] painted on the floor: pixels (80, 88)-(96, 104), 134 px
-  - [ ] painted on the floor: pixels (160, 96)-(175, 111), 133 px
-  - [ ] painted on the floor: pixels (153, 82)-(168, 96), 126 px
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:DewfordTown -->
+
+<!-- audit:summary -->
+## The whole game - audit of 2026-10-07
+
+`python devtools/voxel_audit.py --all`. An area is a map and those named after it. *Flat cells*: blocked cells nothing stands on. *Rooms without a model*: indoor maps whose walls and furniture are all painted on the floor. *Painted*: things the modelled rooms still have drawn on their floors (rugs and shadows among them). *Not audited*: maps that did not load from a bare warp.
+
+| Area | Maps | Flat cells | Objects | Rooms without a model | Painted | Not audited |
+|---|---:|---:|---:|---:|---:|---:|
+| Underwater | 12 | 29809 | 19 | 0 | 0 | 0 |
+| MagmaHideout | 8 | 6940 | 13 | 0 | 0 | 0 |
+| BattleFrontier | 47 | 3206 | 267 | 39 | 55 | 3 |
+| ShoalCave | 7 | 3929 | 41 | 0 | 0 | 0 |
+| EverGrandeCity | 16 | 3127 | 56 | 12 | 74 | 0 |
+| VictoryRoad | 3 | 3125 | 15 | 0 | 0 | 0 |
+| AquaHideout | 6 | 2895 | 29 | 3 | 0 | 0 |
+| NavelRock | 22 | 2841 | 28 | 2 | 0 | 0 |
+| MeteorFalls | 5 | 2794 | 29 | 0 | 0 | 0 |
+| SeafloorCavern | 10 | 2670 | 20 | 0 | 0 | 0 |
+| SecretBase | 24 | 1689 | 24 | 24 | 0 | 0 |
+| DesertUnderpass | 1 | 2520 | 9 | 0 | 0 | 0 |
+| CaveOfOrigin | 6 | 2328 | 11 | 0 | 0 | 0 |
+| MtPyre | 8 | 2018 | 90 | 6 | 0 | 0 |
+| ArtisanCave | 2 | 2099 | 8 | 0 | 0 | 0 |
+| LilycoveCity | 24 | 1531 | 128 | 13 | 101 | 0 |
+| Route110 | 14 | 1416 | 167 | 9 | 14 | 2 |
+| GraniteCave | 4 | 1611 | 6 | 0 | 0 | 0 |
+| SootopolisCity | 16 | 1276 | 74 | 4 | 92 | 0 |
+| AbandonedShip | 13 | 1424 | 48 | 0 | 0 | 0 |
+| SlateportCity | 15 | 864 | 114 | 9 | 61 | 0 |
+| FarawayIsland | 2 | 1082 | 14 | 2 | 0 | 0 |
+| TrainerHill | 7 | 857 | 33 | 7 | 0 | 0 |
+| NewMauville | 2 | 1103 | 8 | 0 | 0 | 0 |
+| FieryPath | 1 | 1059 | 2 | 0 | 0 | 0 |
+| TerraCave | 2 | 907 | 5 | 0 | 0 | 0 |
+| SkyPillar | 8 | 886 | 59 | 0 | 0 | 0 |
+| MossdeepCity | 14 | 639 | 70 | 5 | 71 | 0 |
+| MarineCave | 2 | 747 | 5 | 0 | 0 | 0 |
+| RusturfTunnel | 1 | 687 | 1 | 0 | 0 | 0 |
+| MirageTower | 4 | 684 | 11 | 0 | 0 | 0 |
+| SealedChamber | 2 | 620 | 10 | 0 | 0 | 0 |
+| FortreeCity | 11 | 553 | 37 | 1 | 69 | 0 |
+| Route122 | 1 | 552 | 3 | 0 | 0 | 0 |
+| MauvilleCity | 9 | 414 | 24 | 3 | 62 | 0 |
+| AlteringCave | 1 | 495 | 1 | 0 | 0 | 0 |
+| LavaridgeTown | 8 | 327 | 12 | 3 | 62 | 0 |
+| Route114 | 4 | 361 | 96 | 2 | 5 | 0 |
+| Route112 | 2 | 327 | 51 | 1 | 0 | 0 |
+| Route119 | 4 | 268 | 47 | 2 | 4 | 0 |
+| FallarborTown | 9 | 221 | 12 | 3 | 62 | 0 |
+| BirthIsland | 2 | 225 | 13 | 2 | 0 | 0 |
+| Route121 | 2 | 237 | 45 | 1 | 0 | 0 |
+| VerdanturfTown | 10 | 152 | 18 | 3 | 74 | 0 |
+| AncientTomb | 1 | 270 | 8 | 0 | 0 | 0 |
+| DesertRuins | 1 | 270 | 8 | 0 | 0 | 0 |
+| IslandCave | 1 | 270 | 8 | 0 | 0 | 0 |
+| SSTidalRooms | 1 | 230 | 13 | 1 | 0 | 0 |
+| SafariZone | 7 | 205 | 56 | 1 | 0 | 0 |
+| Route113 | 2 | 240 | 190 | 0 | 5 | 0 |
+| RustboroCity | 18 | 186 | 64 | 1 | 357 | 0 |
+| ScorchedSlab | 1 | 189 | 1 | 0 | 0 | 0 |
+| BattleColosseum | 2 | 104 | 2 | 2 | 0 | 0 |
+| Route117 | 2 | 118 | 25 | 1 | 0 | 0 |
+| SSTidalCorridor | 1 | 109 | 3 | 1 | 0 | 0 |
+| SSTidalLowerDeck | 1 | 96 | 8 | 1 | 0 | 0 |
+| Route131 | 1 | 116 | 8 | 0 | 0 | 0 |
+| MtChimney | 2 | 72 | 2 | 1 | 0 | 0 |
+| ContestHall | 1 | 67 | 3 | 1 | 0 | 0 |
+| ContestHallBeauty | 1 | 67 | 3 | 1 | 0 | 0 |
+| ContestHallCool | 1 | 67 | 3 | 1 | 0 | 0 |
+| ContestHallCute | 1 | 67 | 3 | 1 | 0 | 0 |
+| ContestHallSmart | 1 | 67 | 3 | 1 | 0 | 0 |
+| ContestHallTough | 1 | 67 | 3 | 1 | 0 | 0 |
+| Route109 | 2 | 59 | 11 | 1 | 0 | 0 |
+| Route123 | 2 | 96 | 16 | 0 | 3 | 0 |
+| RecordCorner | 1 | 54 | 4 | 1 | 0 | 0 |
+| PetalburgWoods | 1 | 88 | 8 | 0 | 0 | 0 |
+| TradeCenter | 1 | 48 | 2 | 1 | 0 | 0 |
+| UnionRoom | 1 | 30 | 1 | 1 | 0 | 0 |
+| Route115 | 1 | 67 | 33 | 0 | 0 | 0 |
+| Route120 | 1 | 63 | 18 | 0 | 0 | 0 |
+| BattlePyramidSquare13 | 1 | 22 | 8 | 1 | 0 | 0 |
+| BattlePyramidSquare07 | 1 | 19 | 5 | 1 | 0 | 0 |
+| BattlePyramidSquare08 | 1 | 19 | 4 | 1 | 0 | 0 |
+| BattlePyramidSquare09 | 1 | 19 | 5 | 1 | 0 | 0 |
+| BattlePyramidSquare12 | 1 | 19 | 5 | 1 | 0 | 0 |
+| BattlePyramidSquare11 | 1 | 18 | 5 | 1 | 0 | 0 |
+| BattlePyramidSquare10 | 1 | 17 | 6 | 1 | 0 | 0 |
+| BattlePyramidSquare02 | 1 | 16 | 4 | 1 | 0 | 0 |
+| BattlePyramidSquare03 | 1 | 16 | 3 | 1 | 0 | 0 |
+| BattlePyramidSquare14 | 1 | 16 | 16 | 1 | 0 | 0 |
+| BattlePyramidSquare15 | 1 | 16 | 16 | 1 | 0 | 0 |
+| InsideOfTruck | 1 | 15 | 1 | 1 | 0 | 0 |
+| BattlePyramidSquare01 | 1 | 14 | 2 | 1 | 0 | 0 |
+| BattlePyramidSquare06 | 1 | 14 | 6 | 1 | 0 | 0 |
+| PacifidlogTown | 8 | 53 | 13 | 0 | 147 | 0 |
+| BattlePyramidSquare05 | 1 | 12 | 2 | 1 | 0 | 0 |
+| JaggedPass | 1 | 52 | 23 | 0 | 0 | 0 |
+| Route124 | 2 | 12 | 2 | 1 | 0 | 0 |
+| BattlePyramidSquare04 | 1 | 10 | 2 | 1 | 0 | 0 |
+| UnusedContestHall1 | 1 | 1 | 1 | 1 | 0 | 0 |
+| UnusedContestHall2 | 1 | 1 | 1 | 1 | 0 | 0 |
+| UnusedContestHall3 | 1 | 1 | 1 | 1 | 0 | 0 |
+| UnusedContestHall4 | 1 | 1 | 1 | 1 | 0 | 0 |
+| UnusedContestHall5 | 1 | 1 | 1 | 1 | 0 | 0 |
+| UnusedContestHall6 | 1 | 1 | 1 | 1 | 0 | 0 |
+| BattlePyramidSquare16 | 1 | 0 | 0 | 1 | 0 | 0 |
+| Route104 | 5 | 38 | 11 | 0 | 16 | 0 |
+| Route111 | 3 | 33 | 20 | 0 | 10 | 0 |
+| Route126 | 1 | 33 | 32 | 0 | 0 | 0 |
+| PetalburgCity | 8 | 32 | 9 | 0 | 82 | 0 |
+| Route127 | 1 | 29 | 6 | 0 | 0 | 0 |
+| SouthernIsland | 2 | 27 | 12 | 0 | 0 | 0 |
+| Route116 | 2 | 17 | 1 | 0 | 5 | 0 |
+| Route108 | 1 | 12 | 1 | 0 | 0 | 0 |
+| LittlerootTown | 6 | 4 | 4 | 0 | 10 | 0 |
+| Route118 | 1 | 4 | 2 | 0 | 0 | 0 |
+| Route106 | 1 | 3 | 3 | 0 | 0 | 0 |
+| Route130 | 1 | 3 | 1 | 0 | 0 | 0 |
+| Route102 | 1 | 2 | 1 | 0 | 0 | 0 |
+| DewfordTown | 7 | 0 | 0 | 0 | 8 | 0 |
+| OldaleTown | 6 | 0 | 0 | 0 | 62 | 0 |
+| Route101 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route103 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route105 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route107 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route125 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route128 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route129 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route132 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route133 | 1 | 0 | 0 | 0 | 0 | 0 |
+| Route134 | 1 | 0 | 0 | 0 | 0 | 0 |
+| **all** | 518 | 97519 | 2517 | 199 | 1511 | 5 |
+<!-- /audit:summary -->

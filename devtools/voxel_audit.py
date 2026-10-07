@@ -71,7 +71,7 @@ def rooms_of(name):
     return out
 
 
-def run(names, wait):
+def run(names, wait, shot=True):
     exe = autotest.azahar()
     card = os.path.join(os.path.dirname(exe), "user", "sdmc", "3ds", "emerald3ds")
     os.makedirs(card, exist_ok=True)
@@ -87,8 +87,9 @@ def run(names, wait):
     lines = ["voxel 1"]
     for name in names:
         tag, (g, n), x, y = autotest.place(name, ids)
-        lines += ["warp %d %d %d %d" % (g, n, x, y), "wait %d" % wait, "audit %s" % name,
-                  "shot %s" % name]
+        lines += ["warp %d %d %d %d" % (g, n, x, y), "wait %d" % wait, "audit %s" % name]
+        if shot:
+            lines.append("shot %s" % name)
     lines.append("quit")
     with open(os.path.join(card, "autotest.txt"), "w", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
@@ -231,14 +232,76 @@ def backlog(area, report):
     return total
 
 
+def sweep(out, wait):
+    """Every map of the game, a batch of them an emulator run, without
+    captures: the audits alone, and a table of the areas (a map's name up to
+    its first underscore: Route104 with Mr. Briney's house, GraniteCave's
+    floors) in devtools/VOXEL_BACKLOG.md, the most to do first."""
+    names = sorted(n for n in os.listdir(MAPS) if os.path.exists(os.path.join(MAPS, n, "map.json")))
+    os.makedirs(out, exist_ok=True)
+    for i in range(0, len(names), 150):
+        batch = names[i:i + 150]
+        shots = run(batch, wait, shot=False)
+        for name in batch:
+            src = os.path.join(shots, name + "_audit.txt")
+            if os.path.exists(src):
+                shutil.copy2(src, os.path.join(out, name + ".txt"))
+        print("maps %d-%d of %d audited" % (i + 1, i + len(batch), len(names)), flush=True)
+    areas = {}
+    for name in names:
+        a = areas.setdefault(name.split("_")[0], dict(maps=0, cells=0, objects=0, bare=0, paint=0, none=0))
+        a["maps"] += 1
+        path = os.path.join(out, name + ".txt")
+        if not os.path.exists(path):
+            a["none"] += 1
+            continue
+        rows, flat, indoor = read(path)
+        flat, left = accepted(name, flat)
+        a["cells"] += len(flat)
+        a["objects"] += len(objects(flat))
+        paint = painted(name, indoor)
+        if paint is None:
+            a["bare"] += 1
+        else:
+            a["paint"] += len(paint)
+    begin, end = "<!-- audit:summary -->", "<!-- /audit:summary -->"
+    body = [begin, "## The whole game - audit of %s" % time.strftime("%Y-%m-%d"), "",
+            "`python devtools/voxel_audit.py --all`. An area is a map and those named after it. "
+            "*Flat cells*: blocked cells nothing stands on. *Rooms without a model*: indoor maps "
+            "whose walls and furniture are all painted on the floor. *Painted*: things the "
+            "modelled rooms still have drawn on their floors (rugs and shadows among them). "
+            "*Not audited*: maps that did not load from a bare warp.", "",
+            "| Area | Maps | Flat cells | Objects | Rooms without a model | Painted | Not audited |",
+            "|---|---:|---:|---:|---:|---:|---:|"]
+    order = sorted(areas.items(), key=lambda kv: -(kv[1]["cells"] + 40 * kv[1]["bare"]))
+    for area, a in order:
+        body.append("| %s | %d | %d | %d | %d | %d | %d |" % (
+            area, a["maps"], a["cells"], a["objects"], a["bare"], a["paint"], a["none"]))
+    tot = {k: sum(a[k] for a in areas.values()) for k in ("maps", "cells", "objects", "bare", "paint", "none")}
+    body += ["| **all** | %(maps)d | %(cells)d | %(objects)d | %(bare)d | %(paint)d | %(none)d |" % tot, end]
+    text = open(BACKLOG, encoding="utf-8").read() if os.path.exists(BACKLOG) else ""
+    block = "\n".join(body)
+    if begin in text:
+        text = re.sub(re.escape(begin) + ".*?" + re.escape(end), lambda m: block, text, flags=re.S)
+    else:
+        text = text.rstrip("\n") + "\n\n" + block + "\n"
+    with open(BACKLOG, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    print("%(maps)d maps: %(cells)d flat cell(s) in %(objects)d object(s), %(bare)d room(s) without a model, "
+          "%(none)d not audited" % tot)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("maps", nargs="+")
+    ap.add_argument("maps", nargs="*")
+    ap.add_argument("--all", action="store_true", help="every map of the game: the summary table")
     ap.add_argument("--no-rooms", action="store_true")
     ap.add_argument("--out", default=os.path.join(REPO, "build", "audit"))
     ap.add_argument("--wait", type=int, default=150)
     args = ap.parse_args()
 
+    if args.all:
+        sweep(os.path.join(args.out, "all"), 40)
     for area in args.maps:
         names = [area] + ([] if args.no_rooms else rooms_of(area))
         shots = run(names, args.wait)
