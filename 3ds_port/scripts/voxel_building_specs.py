@@ -1071,17 +1071,72 @@ def briney_room():
     fl = BRINEY_FLOOR
     side = (48, 0, 64, 32)
     return [
-        piece("table", [(114, 67, 139, 94)], 10, leave=fl, solid=True),
+        # the table, the small chest and the glass case are Dewford's houses'
+        # (house3_furniture, house4_furniture), found here as they are
         piece("jar_s", [(1, 65, 14, 80)], 9, leave=fl, solid=True),
         piece("jar_w", [(1, 49, 14, 64)], 9, leave=fl, solid=True),
         piece("jar_e", [(17, 49, 30, 64)], 9, leave=fl, solid=True),
         piece("drawers", [(17, 10, 45, 45)], 22, leave=BRINEY_WALL + fl, back=32),
-        piece("chest", [(128, 16, 144, 45)], 16, leave=BRINEY_WALL + fl, back=32),
-        piece("case", [(144, 12, 177, 45)], 20, leave=BRINEY_WALL + fl, back=32),
         piece("wall", [(0, 0, 192, 32)], 32, fill=16, foot=32, side=side),
         piece("side_w", [], 32, side=side, walls=[((0, 144), (0, 32))]),
         piece("side_e", [], 32, side=side, walls=[((192, 32), (192, 144))]),
     ]
+
+
+# ── Dewford's two houses ──────────────────────────────────────────────────
+#
+# LAYOUT_HOUSE3 and LAYOUT_HOUSE4: Mr. Briney's tatami and his furniture in
+# other places - the glass case, a stove, a bookcase and a cabinet along the
+# back wall of the first; the case, two jars and the small chest in the
+# second; a low table in each. They were plain rooms: walls, and everything
+# else painted on the floor. Their pieces, added to the plain room's walls.
+
+def tatami_posts(width):
+    """The posts at the back wall's two ends, drawn in the wall's own colours
+    down to a foot three rows into the room: they stand in front of it."""
+    return [piece("post_w", [(0, 0, 8, 35), (1, 35, 7, 36)], 32, back=32),
+            piece("post_e", [(width - 8, 0, width, 35), (width - 7, 35, width - 1, 36)], 32, back=32)]
+
+
+def house3_furniture():
+    fl, wall = BRINEY_FLOOR, BRINEY_WALL + BRINEY_FLOOR
+    pieces = [
+        piece("table", [(66, 51, 91, 78)], 10, leave=fl, solid=True),
+        piece("case", [(16, 12, 49, 45)], 20, leave=wall, back=32),
+        piece("stove", [(80, 12, 96, 45)], 20, leave=wall, back=32),
+        piece("bookcase", [(96, 12, 128, 45)], 20, leave=wall, back=32),
+        # its greens are the tatami's own: claimed whole, by its outline
+        piece("cabinet", [(130, 16, 142, 17), (129, 17, 143, 18), (128, 18, 144, 39),
+                          (129, 39, 143, 40)], 16, back=32),
+    ] + tatami_posts(160)
+    return only_here(pieces, "stove", "bookcase", "cabinet", "post_w", "post_e")
+
+
+def house4_furniture():
+    fl, wall = BRINEY_FLOOR, BRINEY_WALL + BRINEY_FLOOR
+    pieces = [
+        piece("table", [(114, 67, 139, 94)], 10, leave=fl, solid=True),
+        piece("jar_w", [(49, 33, 62, 48)], 9, leave=fl, solid=True),
+        piece("jar_e", [(65, 33, 78, 48)], 9, leave=fl, solid=True),
+        piece("chest", [(128, 16, 144, 45)], 16, leave=wall, back=32),
+    ] + tatami_posts(160)
+    # the jars stand against the wall here, and are Mr. Briney's elsewhere
+    return only_here(pieces, "jar_w", "jar_e", "post_w", "post_e")
+
+
+def only_here(pieces, *names):
+    """Pieces measured on this room's floor alone: not stood wherever their
+    cells are drawn again (`alone`), where another floor shows round them."""
+    for pc in pieces:
+        if pc["name"] in names:
+            pc["alone"] = True
+    return pieces
+
+
+PLAIN_FURNITURE = {
+    "LAYOUT_HOUSE3": house3_furniture,
+    "LAYOUT_HOUSE4": house4_furniture,
+}
 
 
 # ── Rooms with a flight of stairs in the back wall ────────────────────────
@@ -1468,6 +1523,16 @@ SPECS = [
         "exact": GYM_EXACT,
     },
     {
+        # Dewford's gym: the same building under an orange roof, on sand.
+        "name": "gym_dewford",
+        "layout": "LAYOUT_DEWFORD_TOWN",
+        "rect": (5, 13, 6, 5),
+        "match_rows": (0, 4),
+        "ground": [0x124],
+        "parts": gym,
+        "exact": GYM_EXACT,
+    },
+    {
         # Petalburg's hedges. Not a building: a run of metatiles of any shape,
         # so each connected run becomes its own model, read column by column
         # off its drawing. The front, where a run ends to the south, is
@@ -1656,7 +1721,8 @@ SPECS = [
     {
         "name": layout[len("LAYOUT_"):].lower(),
         "interior": {"layout": layout, "ground": [ground],
-                     "pieces": own_shell(plain_room(width, height, plain_x, sides))},
+                     "pieces": own_shell(PLAIN_FURNITURE.get(layout, list)()
+                                         + plain_room(width, height, plain_x, sides))},
     }
     for layout, width, height, ground, plain_x, sides in PLAIN_ROOMS
 ] + [
