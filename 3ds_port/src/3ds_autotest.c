@@ -8,6 +8,8 @@
  *
  *     warp GROUP NUM X Y     put the player there and wait for the field
  *     voxel 0|1              the VOXEL 3D option
+ *     flash LEVEL            the dark of a cave at that level, animated as
+ *                            the move does it (1 is after Flash, 7 before)
  *     wait FRAMES            let chunks build, animations run
  *     shot NAME              shots/NAME_top.bmp and shots/NAME_bottom.bmp
  *     quit                   write autotest.done and leave
@@ -34,6 +36,7 @@
 #include "task.h"
 #include "field_player_avatar.h"
 #include "event_object_lock.h"
+#include "field_screen_effect.h"
 #include "port_log.h"
 
 #include "3ds_platform.h"
@@ -46,7 +49,7 @@
 /* A warp that never reaches the field is skipped, not waited on for ever. */
 #define AUTOTEST_WARP_TIMEOUT 900
 
-enum { OP_WARP, OP_VOXEL, OP_WAIT, OP_SHOT, OP_QUIT };
+enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_WAIT, OP_SHOT, OP_QUIT };
 
 typedef struct
 {
@@ -83,6 +86,8 @@ static void Load(void)
             line->op = OP_WARP;
         else if (!strcmp(op, "voxel") && sscanf(text, "%*s %d", &a) == 1)
             line->op = OP_VOXEL;
+        else if (!strcmp(op, "flash") && sscanf(text, "%*s %d", &a) == 1)
+            line->op = OP_FLASH;
         else if (!strcmp(op, "wait") && sscanf(text, "%*s %d", &a) == 1)
             line->op = OP_WAIT;
         else if (!strcmp(op, "shot") && sscanf(text, "%*s %39s", line->name) == 1)
@@ -163,6 +168,10 @@ void CtrAutotest_Frame(u32 frame)
             return;
         case OP_VOXEL:
             CtrSettings_SetVoxel(line->arg[0] != 0);
+            break;
+        case OP_FLASH:
+            AnimateFlash(line->arg[0]);
+            SetFlashLevel(line->arg[0]);
             break;
         case OP_WAIT:
             sWait = line->arg[0] > 0 ? (unsigned)line->arg[0] : 1;

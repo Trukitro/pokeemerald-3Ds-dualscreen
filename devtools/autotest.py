@@ -72,6 +72,7 @@ def main():
     ap.add_argument("--keep-open", action="store_true")
     ap.add_argument("--rom", default=None, help="another build's 3DSX (to compare with upstream's)")
     ap.add_argument("--suffix", default="", help="added to every capture's name")
+    ap.add_argument("--flash", type=int, default=None, help="flash level set after each warp (1 = after Flash)")
     args = ap.parse_args()
 
     exe = azahar()
@@ -93,8 +94,10 @@ def main():
         tag, (g, n), x, y = place(spec, ids)
         modes = ([] if args.no_2d else [("2d", 0, 90)]) + ([] if args.no_3d else [("3d", 1, args.wait)])
         for mode, voxel, wait in modes:
-            lines += ["voxel %d" % voxel, "warp %d %d %d %d" % (g, n, x, y), "wait %d" % wait,
-                      "shot %s_%s" % (tag, mode)]
+            lines += ["voxel %d" % voxel, "warp %d %d %d %d" % (g, n, x, y), "wait %d" % wait]
+            if args.flash is not None:
+                lines += ["flash %d" % args.flash, "wait 12", "shot %s_%s_mid" % (tag, mode), "wait 120"]
+            lines.append("shot %s_%s" % (tag, mode))
             wanted.append("%s_%s" % (tag, mode))
     lines.append("quit")
     with open(os.path.join(card, "autotest.txt"), "w", newline="\n") as f:
