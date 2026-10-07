@@ -476,20 +476,25 @@ def olive_block(width, height, meta):
     return flat_block(width, height, ((8, 40), (8, 16), (0, 8)), (40, 48), 48, unit)
 
 
-def box_building(width, height, facade_top):
+def box_building(width, foot, facade_top, top=0, side_x=0):
     """Any building as a box: the bottom of its drawing, from `facade_top`
-    down, is its front wall, and everything above is laid back from the
-    wall's top as its roof, row for row. A pitched roof drawn from above
-    lies flat on it - a building that stands, with its roof as it is drawn,
-    until it is given a shape of its own. Its sides are dressed with the
-    facade's own first columns."""
-    wall = height - facade_top
-    front, back = height, height - facade_top
-    side = Tile(0, facade_top, 8, height, top=wall)
+    down to its `foot`, is its front wall, and everything above, from `top`,
+    is laid back from the wall's top as its roof, row for row. A pitched roof
+    drawn from above lies flat on it - a building that stands, with its roof
+    as it is drawn, until it is given a shape of its own. Its sides are
+    dressed with eight columns of the facade from `side_x`.
+
+    `top` and `foot` are the rows the drawing itself begins and ends on, not
+    the rectangle's: a page holds a drawing cropped to what is drawn, and a
+    face laid past it shows whatever the page has beside it (the museum had
+    the market's jars along its foot)."""
+    wall = foot - facade_top
+    front, back = foot, foot - (facade_top - top)
+    side = Tile(side_x, facade_top, side_x + 8, foot, top=wall)
     return [Prism(
         "body", 0, width,
         [(front, 0), (front, wall), (back, wall), (back, 0)],
-        edges={0: Proj(facade_top, height), 1: Proj(0, facade_top), 2: side}, skip=(3,),
+        edges={0: Proj(facade_top, foot), 1: Proj(top, facade_top), 2: side}, skip=(3,),
         caps=[Band(0, wall + 1, side, front)])]
 
 
@@ -1628,8 +1633,8 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (28, 22, 6, 6),
         "ground": [GRASS],
-        "parts": lambda: box_building(96, 96, 64),
-        "exact": [(0, 0, 96, 96)],
+        "parts": lambda: box_building(96, 88, 60),
+        "exact": [(0, 0, 96, 88)],
     },
     {
         "name": "slateport_harbor",
@@ -1640,26 +1645,74 @@ SPECS = [
         "exact": [(0, 0, 128, 112)],
     },
     {
-        # read column by column, as a hedge is: its outline is not a box's
+        # the Battle Tent's dome: a drum under its roof, drawn round
         "name": "slateport_battle_tent",
-        "components": {
-            "primary": "gTileset_General",
-            "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x371, 0x372, 0x373, 0x374, 0x375, 0x379, 0x37A, 0x37B, 0x37C, 0x37D, 0x381, 0x382, 0x383, 0x384, 0x385, 0x389, 0x38A, 0x38B, 0x38C, 0x38D, 0x391, 0x392, 0x393, 0x394, 0x395},
-            "height": 32,
-        },
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (8, 8, 5, 5),
         "ground": [GRASS],
+        "parts": lambda: box_building(80, 80, 48, side_x=36),
+        # its corners are grass: the box may stand where the drawing has ground
+        "exact": [(0, 0, 80, 80, True)],
     },
     {
-        # read column by column, as a hedge is: its outline is not a box's
         "name": "slateport_shipyard",
-        "components": {
-            "primary": "gTileset_General",
-            "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x240, 0x241, 0x242, 0x248, 0x249, 0x24A, 0x250, 0x251, 0x252, 0x253, 0x254, 0x258, 0x259, 0x25A, 0x25B, 0x25C, 0x260, 0x261, 0x262},
-            "height": 28,
-        },
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (2, 22, 5, 5),
         "ground": [GRASS],
+        "parts": lambda: box_building(80, 80, 52, top=8, side_x=36),
+        "exact": [(0, 0, 80, 80, True)],
+    },
+    # The market's stalls: a canopy on four posts. The canopy is the box's
+    # lid and its front the posts, the paving between them left clear, so
+    # whoever stands under it is seen. They lay painted on the paving, which
+    # nobody is blocked by and the audit does not see.
+    {
+        "name": "slateport_stall_0",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (2, 41, 5, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "exact": [(0, 0, 80, 48, True)],
+    },
+    {
+        "name": "slateport_stall_1",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (2, 45, 5, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "exact": [(0, 0, 80, 48, True)],
+    },
+    {
+        "name": "slateport_stall_2",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (2, 49, 5, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "exact": [(0, 0, 80, 48, True)],
+    },
+    {
+        "name": "slateport_stall_3",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (10, 41, 4, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "exact": [(0, 0, 64, 48, True)],
+    },
+    {
+        "name": "slateport_stall_4",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (10, 45, 4, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "exact": [(0, 0, 64, 48, True)],
+    },
+    {
+        "name": "slateport_stall_5",
+        "layout": "LAYOUT_SLATEPORT_CITY",
+        "rect": (10, 49, 4, 3),
+        "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
+        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "exact": [(0, 0, 64, 48, True)],
     },
     {
         # read column by column, as a hedge is: its outline is not a box's
