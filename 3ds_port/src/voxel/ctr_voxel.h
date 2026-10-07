@@ -40,6 +40,10 @@ bool CtrVoxel_DrawsFog(void);
  * black, centred on (x, y) of the logical surface, size pixels across, at
  * amount. NULL when there is none. */
 const C3D_Tex *CtrVoxel_Gloom(float *x, float *y, float *size, float *amount);
+/* Where the player is on the 400x240 view and how many of its pixels one of
+ * the game's is there, for the dark of a Flash cave (3ds_video.c's VoxelDark).
+ * False when the world was not drawn this frame. */
+bool CtrVoxel_Dark(float *x, float *y, float *scale);
 
 /*
  * Stereoscopy (3D slider): the world is drawn once and each eye gets that

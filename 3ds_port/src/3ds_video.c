@@ -3936,6 +3936,124 @@ void CtrVideo_SetLineWindow(const uint16_t *values, unsigned lines, bool both)
     }
 }
 
+/*
+ * The dark of a cave (every map with the Flash flag: Granite Cave's lower
+ * floors, Victory Road's, Dewford's gym). The game opens window 0 line by
+ * line into a circle round the player, 24 pixels before Flash and 72 after,
+ * and shows nothing but the text outside it (field_screen_effect.c). The
+ * field composes no line windows - window 0's register is empty there, so
+ * the whole screen was black in 2D, and the voxel world, which reads no
+ * window, was fully lit.
+ *
+ * Both draw the circle itself instead: black over the frame, under the
+ * text, clear in a disc round the player whose radius is read off the
+ * lines the game wrote - so it grows with the Flash animation as it does on
+ * the GBA. Negative when the field is not dark.
+ */
+static float FieldDarkRadius(void)
+{
+    unsigned lines = 0, widest = 0;
+
+    if (sLineWindows.windows != 1 || !(Reg(0) & 0x2000) || !CtrGame_IsOverworld())
+        return -1.0f;
+    for (unsigned y = 0; y < 160; ++y)
+    {
+        unsigned left = sLineWindows.across[0][y] >> 8, right = sLineWindows.across[0][y] & 255;
+
+        if (right <= left) continue;
+        ++lines;
+        if (right - left > widest) widest = right - left;
+    }
+    /* Past the screen's width the circle is cut on every side: the last
+     * frames of leaving the dark, which the game ends by closing the effect. */
+    if (widest >= 238) return -1.0f;
+    return (float)(widest > lines ? widest : lines) * 0.5f;
+}
+
+static C3D_Tex sDarkTex;
+static bool sHaveDark;
+#define DARK_DIM 64
+
+/* Clear in the middle half, black from there out, a soft edge between. */
+static void MakeDark(void)
+{
+    uint8_t *texels;
+
+    if (!C3D_TexInit(&sDarkTex, DARK_DIM, DARK_DIM, GPU_A8)) return;
+    texels = sDarkTex.data;
+    for (unsigned y = 0; y < DARK_DIM; ++y)
+        for (unsigned x = 0; x < DARK_DIM; ++x)
+        {
+            float dx = ((float)x + 0.5f) / (DARK_DIM * 0.5f) - 1.0f;
+            float dy = ((float)y + 0.5f) / (DARK_DIM * 0.5f) - 1.0f;
+            float t = (sqrtf(dx * dx + dy * dy) - 0.44f) / 0.12f;
+
+            t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+            texels[CtrVideo_Texel(x, y, DARK_DIM)] = (uint8_t)(t * t * (3.0f - 2.0f * t) * 255.0f + 0.5f);
+        }
+    C3D_TexSetFilter(&sDarkTex, GPU_LINEAR, GPU_LINEAR);
+    C3D_TexSetWrap(&sDarkTex, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    C3D_TexFlush(&sDarkTex);
+    sHaveDark = true;
+}
+
+/* In the target's own pixels (C2D_ViewReset): black over [x0,x1) x [y0,y1)
+ * but for a disc of `radius` round (cx, cy). */
+static void DrawDark(float cx, float cy, float radius, float x0, float y0, float x1, float y1)
+{
+    const u32 black = C2D_Color32(0, 0, 0, 255);
+    float half = radius * 2.0f, left = cx - half, top = cy - half, right = cx + half, bottom = cy + half;
+
+    Blend(5, false, false);
+    if (radius < 1.0f || !sHaveDark)
+        C2D_DrawRectSolid(x0, y0, 0, x1 - x0, y1 - y0, black);
+    else
+    {
+        const Tex3DS_SubTexture whole = {sDarkTex.width, sDarkTex.height, 0.0f, 1.0f, 1.0f, 0.0f};
+        C2D_ImageTint tint;
+
+        if (top > y0) C2D_DrawRectSolid(x0, y0, 0, x1 - x0, top - y0, black);
+        if (bottom < y1) C2D_DrawRectSolid(x0, bottom, 0, x1 - x0, y1 - bottom, black);
+        if (left > x0) C2D_DrawRectSolid(x0, top, 0, left - x0, bottom - top, black);
+        if (right < x1) C2D_DrawRectSolid(right, top, 0, x1 - right, bottom - top, black);
+        C2D_PlainImageTint(&tint, black, 1.0f);
+        C2D_DrawImageAt((C2D_Image){&sDarkTex, &whole}, left, top, 0, &tint,
+                        2.0f * half / sDarkTex.width, 2.0f * half / sDarkTex.height);
+    }
+    C2D_Flush();
+    BlendForget();
+}
+
+/* The same for the 2D field, as the GBA draws it: a line at a time, the
+ * circle's chord left clear. The picture is pixels, and so is its dark. */
+static void DrawDarkLines(float cx, float cy, float radius, float x0, float y0, float x1, float y1)
+{
+    const u32 black = C2D_Color32(0, 0, 0, 255);
+    float top = floorf(cy - radius), bottom = ceilf(cy + radius);
+
+    if (top < y0) top = y0;
+    if (bottom > y1) bottom = y1;
+    Blend(5, false, false);
+    if (radius < 1.0f || top >= bottom)
+        C2D_DrawRectSolid(x0, y0, 0, x1 - x0, y1 - y0, black);
+    else
+    {
+        if (top > y0) C2D_DrawRectSolid(x0, y0, 0, x1 - x0, top - y0, black);
+        if (bottom < y1) C2D_DrawRectSolid(x0, bottom, 0, x1 - x0, y1 - bottom, black);
+        for (float y = top; y < bottom; y += 1.0f)
+        {
+            float dy = y + 0.5f - cy, across = radius * radius - dy * dy;
+            float half = across > 0.0f ? floorf(sqrtf(across) + 0.5f) : 0.0f;
+            float left = cx - half, right = cx + half;
+
+            if (left > x0) C2D_DrawRectSolid(x0, y, 0, left - x0, 1.0f, black);
+            if (right < x1) C2D_DrawRectSolid(right, y, 0, x1 - right, 1.0f, black);
+        }
+    }
+    C2D_Flush();
+    BlendForget();
+}
+
 static bool LineWindows(void)
 {
     return sLineWindows.windows && sCentredScreen == CTR_CENTRED_POKENAV && (Reg(0) & 0x6000);
@@ -4306,7 +4424,24 @@ static void Compose(void)
     /* A band of the PokéNav composes only its part of the screen. */
     int top = sNavBand ? sClipY0 : VIEW_TOP, bottom = sNavBand ? sClipY1 : VIEW_BOTTOM;
     int first = top > 0 ? top : 0, end = bottom < 160 ? bottom : 160;
+    float dark = sNavBand || sStage || sCentred || sBattle || sTransitionCompose ? -1.0f : FieldDarkRadius();
 
+    if (dark >= 0.0f)
+    {
+        /* The field in the dark (FieldDarkRadius): everything but the text,
+         * the dark over it, and the text. The game's circle is round the
+         * middle of its screen, where the player stands: the middle of the
+         * field's wider view here. */
+        Layers(63 & ~1u);
+        C2D_Flush();
+        C2D_ViewReset();
+        DrawDarkLines((float)sTargetW * 0.5f, (float)sTargetH * 0.5f, dark * sZoom,
+                 0.0f, 0.0f, (float)sTargetW, (float)sTargetH);
+        ViewBase();
+        Layers(1);
+        C2D_Flush();
+        return;
+    }
     if (!(display & 0x6000)) { Layers(63); return; }
     if (!LineWindows())
         ComposeBand(top, bottom);
@@ -4378,6 +4513,7 @@ bool CtrVideo_Init(void)
     if (!sTopRight) CtrLog_Write(CTR_LOG_VIDEO, "no right eye target: 3D disabled");
     for (unsigned i = 0; i < 64; ++i)
         sMorton[i] = CtrVideo_Texel(i & 7, i / 8, 8);
+    MakeDark();
     for (unsigned i = 0; i < 512; ++i)
         sTexturePalette[i] = CtrVideo_RGBA5551(sPalette[i]);
     C2D_Prepare();
@@ -5842,6 +5978,19 @@ static void VoxelGloom(int eye)
     BlendForget();
 }
 
+/* The dark of a Flash cave over the voxel world (FieldDarkRadius): the disc
+ * round the player where the camera shows them, as many pixels a tile as it
+ * shows there. */
+static void VoxelDark(int eye)
+{
+    float radius = FieldDarkRadius(), x, y, scale;
+
+    if (radius < 0.0f || !CtrVoxel_Dark(&x, &y, &scale)) return;
+    if (eye >= 0) x += CtrVoxel_StereoShift(eye, x, y);
+    C2D_Flush();
+    DrawDark(x, y, radius * scale, 0.0f, 0.0f, (float)CTR_GAME_WIDTH, (float)CTR_GAME_HEIGHT);
+}
+
 static void ComposeVoxelOverlay(void)
 {
     sPriorityMask = SLOTS_ALL;
@@ -5958,6 +6107,7 @@ static void RenderVoxelEye(int eye, float bloom)
     C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);
     BlendForget();
     if (!sStereoTarget) VoxelGloom(eye);
+    if (!sStereoTarget) VoxelDark(eye);
     if (!(Reg(0) & 128)) ComposeVoxelOverlay();
     C2D_Flush();
     C3D_SetScissor(GPU_SCISSOR_DISABLE, 0, 0, 0, 0);
@@ -6023,6 +6173,7 @@ static void RenderVoxel(uint32_t clear, float stereo)
             if (bloom > 0.005f)
                 VoxelBloomCompose(bloom);
             VoxelGloom(-1);
+            VoxelDark(-1);
             C2D_Flush();
             C3D_SetScissor(GPU_SCISSOR_DISABLE, 0, 0, 0, 0);
             GpuSplit();
@@ -6045,6 +6196,7 @@ static void RenderVoxel(uint32_t clear, float stereo)
     if (bloom > 0.005f)
         VoxelBloomCompose(bloom);
     VoxelGloom(-1);
+    VoxelDark(-1);
     if (!(Reg(0) & 128)) ComposeVoxelOverlay();
     C2D_Flush();
     C3D_SetScissor(GPU_SCISSOR_DISABLE, 0, 0, 0, 0);
