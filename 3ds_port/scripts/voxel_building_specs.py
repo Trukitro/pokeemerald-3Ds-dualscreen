@@ -1671,7 +1671,10 @@ SPECS = [
                       0x32C, 0x32D, 0x2BE, 0x2BF, 0x2CD, 0x352, 0x2E9,
                       # the same railings over grass or a building's shade
                       0x2B7, 0x2C6, 0x2C7, 0x2D5, 0x2D7, 0x2DC, 0x2DE, 0x2DF,
-                      0x2E6, 0x2E7, 0x2EC, 0x31B},
+                      0x2E6, 0x2E7, 0x2EC, 0x31B,
+                      # along the city's south edge, over the tops of the
+                      # trees beyond it (found by the audit)
+                      0x337, 0x33E, 0x33F},
             "height": 12, "hull": 12, "bridge": 3, "block": 4,
             # drawn whole on the upper layer; the bottom one is the ground
             # with its grass edges, which the map paints under it
@@ -1861,3 +1864,95 @@ SPECS = [
                      "pieces": rustboro_gym()},
     },
 ]
+
+
+# ── Furniture the audit found flat ────────────────────────────────────────
+#
+# Rooms whose walls stood and whose tables and desks were painted on the
+# floor (devtools/voxel_audit.py), measured on the drawing
+# (devtools/voxel_measure.py): each a box read off its own pixels - its top,
+# and `height` rows of front at its foot - on the room's floor. They are
+# put in front of the room's own pieces. One written here is found again
+# wherever its cells are drawn (the same table in the next flat), unless it
+# is kept to its room (`alone`: the school's desks, each with its own book).
+
+def _box(name, rect, height, floor, alone=False, card=False):
+    pc = piece(name, [rect], height, leave=floor, solid=not card, card=card)
+    if alone:
+        pc["alone"] = True
+    return pc
+
+
+_FLAT = ("8b8b8b", "b4b4a4", "d5d5b4", "ded552", "f6f6a4", "ffcd8b")
+_SCHOOL = ("c5c5bd", "dedede")
+_DEVON = ("bd6252", "cd837b", "deaca4")
+
+EXTRA_PIECES = {
+    # Rustboro's flats and houses: their tables
+    "LAYOUT_RUSTBORO_CITY_FLAT1_1F": lambda: [_box("table_a", (16, 64, 46, 96), 10, _FLAT)],
+    "LAYOUT_RUSTBORO_CITY_FLAT1_2F": lambda: [_box("stand", (140, 80, 164, 108), 12, _FLAT)],
+    "LAYOUT_RUSTBORO_CITY_CUTTERS_HOUSE": lambda: [_box("table_b", (128, 65, 160, 96), 10, _FLAT)],
+    "LAYOUT_RUSTBORO_CITY_HOUSE1": lambda: [_box("table_c", (48, 64, 96, 96), 10, _FLAT)],
+    "LAYOUT_RUSTBORO_CITY_HOUSE": lambda: [_box("table_d", (82, 64, 110, 96), 10, _FLAT, alone=True)],
+    # the school: the teacher's desk and twelve pupils'
+    "LAYOUT_RUSTBORO_CITY_POKEMON_SCHOOL": lambda: (
+        [_box("teachers_desk", (80, 58, 112, 79), 9, _SCHOOL, alone=True)]
+        + [_box("desk_%d_%d" % (x, y), (x, y, x + 16, y + 16), 8, _SCHOOL, alone=True)
+           for y in (80, 112, 144) for x in (16, 48, 128, 160)]),
+    # Devon: the researchers' desks and the drawing board; the president's
+    # tables and the two glass cases
+    "LAYOUT_RUSTBORO_CITY_DEVON_CORP_2F": lambda: [
+        _box("board", (35, 64, 64, 95), 12, _DEVON, alone=True),
+        _box("bin_w", (16, 64, 34, 80), 16, _DEVON, alone=True, card=True),
+        _box("bin_e", (112, 80, 128, 96), 16, _DEVON, alone=True, card=True),
+        _box("desk", (160, 56, 192, 80), 10, _DEVON)] + [
+        # a desk is found again in other rooms, not in its own: each is written
+        _box("desk_%d_%d" % (x, y), (x, y, x + 32, y + 24), 10, _DEVON, alone=True)
+        for (x, y) in ((96, 56), (224, 56), (96, 104), (160, 104), (224, 104))],
+    "LAYOUT_RUSTBORO_CITY_DEVON_CORP_3F": lambda: [
+        _box("table", (112, 61, 192, 112), 12, _DEVON, alone=True),
+        _box("side_table", (240, 61, 272, 112), 12, _DEVON, alone=True),
+        _box("case_n", (16, 67, 32, 96), 20, _DEVON, alone=True),
+        _box("case_s", (16, 99, 32, 128), 20, _DEVON, alone=True)],
+}
+
+# ── Devon's ground floor ──────────────────────────────────────────────────
+#
+# A hall under a wall two cells tall, with two alcoves set back in it: the
+# reception's, with its two glass cases, and the stairs'. Three stretches of
+# the front wall at Z 80, the alcoves' own back walls at Z 32 and their
+# sides between, edge on to the GBA's camera and drawn nowhere. The room had
+# no model at all: every wall of it lay on the floor.
+
+def devon_1f():
+    side = (80, 0, 96, 32)          # a stretch of the reception's bare wall
+    seen = _DEVON + ("ac5a4a", "bd736a")
+    d = 224                          # the stairs' doorway
+    return [
+        _box("case_w", (48, 24, 64, 47), 14, seen, alone=True),
+        _box("case_e", (128, 24, 144, 47), 14, seen, alone=True),
+        stairwell("stairwell_14", d, d + 16, 32, 13, 19, (d + 1, 14, d + 15, 26), 0),
+        piece("wall_reception", [(48, 0, 144, 32)], 32, fill=16, foot=32, side=side,
+              walls=[((48, 80), (48, 32)), ((144, 32), (144, 80))]),
+        piece("wall_stairs", [(208, 0, d, 32), (d, 0, d + 16, 13), (d + 16, 0, 256, 32)], 32,
+              fill=16, foot=32, side=side,
+              walls=[((208, 80), (208, 32)), ((256, 32), (256, 80))]),
+        piece("wall_west", [(0, 48, 48, 80)], 32, fill=16, foot=80, side=side,
+              walls=[((0, 144), (0, 80))]),
+        piece("wall_mid", [(144, 48, 208, 80)], 32, fill=16, foot=80, side=side),
+        piece("wall_east", [(256, 48, 304, 80)], 32, fill=16, foot=80, side=side,
+              walls=[((304, 80), (304, 144))]),
+    ]
+
+
+SPECS.append({
+    "name": "devon_1f",
+    "interior": {"layout": "LAYOUT_RUSTBORO_CITY_DEVON_CORP_1F", "ground": [0x380],
+                 "shade": [0x381, 0x383, 0x384, 0x385, 0x386, 0x387, 0x38D],
+                 "pieces": own_shell(devon_1f())},
+})
+
+for _spec in SPECS:
+    _room = _spec.get("interior")
+    if _room and _room["layout"] in EXTRA_PIECES:
+        _room["pieces"] = EXTRA_PIECES[_room["layout"]]() + list(_room["pieces"])

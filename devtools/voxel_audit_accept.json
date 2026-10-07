@@ -254,5 +254,74 @@
       43,
       "grass the cartridge blocks under the wood's canopy: nothing is drawn on it"
     ]
+  ],
+  "RustboroCity": [
+    [
+      5,
+      6,
+      5,
+      7,
+      "the top of the bank along the sea: the drop is at its edge, in the relief"
+    ],
+    [
+      4,
+      18,
+      4,
+      22,
+      "the top of the bank along the sea: the drop is at its edge, in the relief"
+    ],
+    [
+      3,
+      23,
+      3,
+      25,
+      "the top of the bank along the sea: the drop is at its edge, in the relief"
+    ],
+    [
+      2,
+      27,
+      2,
+      29,
+      "the top of the bank along the sea: the drop is at its edge, in the relief"
+    ],
+    [
+      1,
+      30,
+      1,
+      31,
+      "the top of the bank along the sea: the drop is at its edge, in the relief"
+    ]
+  ],
+  "RustboroCity_Gym": [
+    [
+      3,
+      2,
+      3,
+      3,
+      "the leader's dais: the corners of its low border"
+    ],
+    [
+      7,
+      2,
+      7,
+      3,
+      "the leader's dais: the corners of its low border"
+    ]
+  ],
+  "RustboroCity_DevonCorp_1F": [
+    [
+      2,
+      0,
+      2,
+      2,
+      "an alcove's side wall: its thickness, drawn as a strip beside the wall that stands"
+    ],
+    [
+      12,
+      0,
+      12,
+      2,
+      "an alcove's side wall: its thickness, drawn as a strip beside the wall that stands"
+    ]
   ]
 }
