@@ -28,25 +28,6 @@ every reported item is ticked. Work one area to the end before the next.
 ### DewfordTown - audit of 2026-10-07
 
 - [x] **DewfordTown**: nothing blocked lies flat
-- [x] **DewfordTown_Hall**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (176, 83)-(184, 88), 40 px
-  - [ ] painted on the floor: pixels (176, 91)-(184, 96), 40 px
-  - [ ] painted on the floor: pixels (176, 99)-(184, 104), 40 px
-  - [ ] painted on the floor: pixels (176, 67)-(184, 72), 40 px
-  - [ ] painted on the floor: pixels (176, 75)-(184, 80), 40 px
-  - [ ] painted on the floor: pixels (176, 51)-(184, 56), 40 px
-  - [ ] painted on the floor: pixels (176, 59)-(184, 64), 40 px
-  - [ ] painted on the floor: pixels (176, 107)-(184, 112), 40 px
-- [x] **DewfordTown_PokemonCenter_1F**: nothing blocked lies flat
-- [x] **DewfordTown_Gym**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 28 cell(s): the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512
-  - left flat, 10 cell(s): the rock behind the leader's place: with it the layout's page is past the console's 512x512
-  - left flat, 2 cell(s): the corner of the rock east of the edge wall, outside the room
-  - left flat, 2 cell(s): the leader's dais: a low platform, its corner posts drawn on it
-  - left flat, 2 cell(s): the leader's dais and the shelf's foot beside it
-- [x] **DewfordTown_House1**: nothing blocked lies flat
-- [x] **DewfordTown_House2**: nothing blocked lies flat
-- [x] **DewfordTown_PokemonCenter_2F**: nothing blocked lies flat
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:DewfordTown -->
@@ -445,23 +426,6 @@ every reported item is ticked. Work one area to the end before the next.
 ### LittlerootTown - audit of 2026-10-07
 
 - [x] **LittlerootTown**: nothing blocked lies flat
-- [x] **LittlerootTown_MaysHouse_1F**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 2 cell(s): the moving boxes of the game's first minutes, which a script puts there
-  - [ ] painted on the floor: pixels (67, 91)-(157, 141), 2452 px
-  - [ ] painted on the floor: pixels (17, 129)-(47, 143), 420 px
-- [x] **LittlerootTown_BrendansHouse_1F**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 2 cell(s): the moving boxes of the game's first minutes, which a script puts there
-  - [ ] painted on the floor: pixels (19, 91)-(109, 141), 2212 px
-  - [ ] painted on the floor: pixels (129, 129)-(159, 143), 420 px
-- [x] **LittlerootTown_ProfessorBirchsLab**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (96, 192)-(128, 208), 512 px
-  - [ ] painted on the floor: pixels (16, 128)-(64, 136), 90 px
-  - [ ] painted on the floor: pixels (80, 32)-(96, 40), 30 px
-  - [ ] painted on the floor: pixels (160, 32)-(176, 40), 30 px
-- [x] **LittlerootTown_MaysHouse_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (19, 51)-(77, 109), 3364 px
-- [x] **LittlerootTown_BrendansHouse_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (67, 51)-(125, 109), 3364 px
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:LittlerootTown -->
@@ -470,61 +434,6 @@ every reported item is ticked. Work one area to the end before the next.
 ### PetalburgCity - audit of 2026-10-07
 
 - [x] **PetalburgCity**: nothing blocked lies flat
-- [x] **PetalburgCity_House1**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (19, 51)-(125, 109), 4579 px
-  - [ ] painted on the floor: pixels (48, 128)-(80, 144), 512 px
-  - [ ] painted on the floor: pixels (64, 35)-(128, 40), 320 px
-  - [ ] painted on the floor: pixels (64, 43)-(128, 48), 320 px
-- [x] **PetalburgCity_WallysHouse**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
-  - [ ] painted on the floor: pixels (48, 35)-(112, 40), 320 px
-  - [ ] painted on the floor: pixels (48, 43)-(112, 48), 320 px
-- [x] **PetalburgCity_Gym**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 4 cell(s): the leader's mat: the corners of its low border
-  - [ ] painted on the floor: pixels (24, 1504)-(120, 1568), 6144 px
-  - [ ] painted on the floor: pixels (24, 1296)-(120, 1360), 6144 px
-  - [ ] painted on the floor: pixels (24, 256)-(120, 320), 6144 px
-  - [ ] painted on the floor: pixels (24, 672)-(120, 736), 6144 px
-  - [ ] painted on the floor: pixels (24, 1088)-(120, 1152), 6144 px
-  - [ ] painted on the floor: pixels (24, 464)-(120, 528), 6144 px
-  - [ ] painted on the floor: pixels (24, 880)-(120, 944), 6144 px
-  - [ ] painted on the floor: pixels (38, 37)-(106, 53), 1088 px
-  - [ ] painted on the floor: pixels (65, 1777)-(95, 1791), 420 px
-  - [ ] painted on the floor: pixels (49, 58)-(95, 60), 92 px
-  - [ ] painted on the floor: pixels (49, 62)-(95, 64), 92 px
-  - [ ] painted on the floor: pixels (96, 35)-(110, 61), 91 px
-- [x] **PetalburgCity_PokemonCenter_1F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
-  - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
-  - [ ] painted on the floor: pixels (97, 81)-(103, 87), 36 px
-  - [ ] painted on the floor: pixels (97, 89)-(103, 95), 36 px
-  - [ ] painted on the floor: pixels (121, 81)-(127, 87), 36 px
-  - [ ] painted on the floor: pixels (129, 89)-(135, 95), 36 px
-  - [ ] painted on the floor: pixels (113, 81)-(119, 87), 36 px
-  - [ ] painted on the floor: pixels (121, 89)-(127, 95), 36 px
-  - [ ] painted on the floor: pixels (105, 81)-(111, 87), 36 px
-  - [ ] painted on the floor: pixels (113, 73)-(119, 79), 36 px
-  - [ ] painted on the floor: pixels (105, 73)-(111, 79), 36 px
-  - [ ] painted on the floor: pixels (89, 89)-(95, 95), 36 px
-- [x] **PetalburgCity_House2**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
-  - [ ] painted on the floor: pixels (32, 43)-(128, 48), 480 px
-  - [ ] painted on the floor: pixels (32, 35)-(128, 40), 480 px
-- [x] **PetalburgCity_Mart**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
-- [x] **PetalburgCity_PokemonCenter_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (82, 90)-(94, 96), 44 px
-  - [ ] painted on the floor: pixels (155, 84)-(167, 90), 42 px
-  - [ ] painted on the floor: pixels (161, 103)-(173, 109), 42 px
-  - [ ] painted on the floor: pixels (145, 73)-(151, 79), 32 px
-  - [ ] painted on the floor: pixels (65, 65)-(71, 71), 32 px
-  - [ ] painted on the floor: pixels (73, 65)-(79, 71), 32 px
-  - [ ] painted on the floor: pixels (145, 81)-(151, 87), 32 px
-  - [ ] painted on the floor: pixels (65, 73)-(71, 79), 32 px
-  - [ ] painted on the floor: pixels (73, 73)-(79, 79), 32 px
-  - [ ] painted on the floor: pixels (17, 65)-(23, 71), 32 px
-  - [ ] painted on the floor: pixels (25, 65)-(31, 71), 32 px
-  - [ ] painted on the floor: pixels (169, 65)-(175, 71), 32 px
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:PetalburgCity -->
@@ -532,24 +441,18 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:Route104 -->
 ### Route104 - audit of 2026-10-07
 
-- [x] **Route104**: nothing blocked lies flat that is not left so on purpose
+- [ ] **Route104**: 10 flat cell(s) in 6 object(s) - `build/audit/Route104.png`
+  - [ ] (34, 6)-(36, 6), 3 cell(s), tiles 14C
+  - [ ] (3, 25), 1 cell(s), tiles 10C
+  - [ ] (22, 41)-(24, 41), 3 cell(s), tiles 14C
+  - [ ] (14, 50), 1 cell(s), tiles 32F
+  - [ ] (5, 54), 1 cell(s), tiles 17B
+  - [ ] (5, 68), 1 cell(s), tiles 17B
   - left flat, 1 cell(s): a patch of bare soil the cartridge blocks
   - left flat, 9 cell(s): a small tree's crown top drawn over the fence: the tree south of it stands
   - left flat, 1 cell(s): a corner of the cliff's foot
-- [x] **Route104_MrBrineysHouse**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (16, 128)-(176, 144), 2248 px
-  - [ ] painted on the floor: pixels (145, 83)-(159, 96), 156 px
-  - [ ] painted on the floor: pixels (48, 32)-(128, 36), 129 px
-  - [ ] painted on the floor: pixels (48, 46)-(128, 48), 120 px
-- [x] **Route104_PrettyPetalFlowerShop**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (32, 128)-(64, 144), 512 px
-  - [ ] painted on the floor: pixels (98, 48)-(110, 62), 136 px
-  - [ ] painted on the floor: pixels (162, 48)-(174, 62), 136 px
-  - [ ] painted on the floor: pixels (80, 32)-(96, 40), 128 px
-  - [ ] painted on the floor: pixels (32, 32)-(48, 39), 108 px
-  - [ ] painted on the floor: pixels (104, 32)-(112, 39), 54 px
 
-0 blocked cell(s) still flat in this area.
+10 blocked cell(s) still flat in this area.
 <!-- /audit:Route104 -->
 
 <!-- audit:PetalburgWoods -->
@@ -566,195 +469,6 @@ every reported item is ticked. Work one area to the end before the next.
 
 - [x] **RustboroCity**: nothing blocked lies flat that is not left so on purpose
   - left flat, 15 cell(s): the top of the bank along the sea: the drop is at its edge, in the relief
-- [x] **RustboroCity_Gym**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 4 cell(s): the leader's dais: the corners of its low border
-  - [ ] painted on the floor: pixels (80, 304)-(112, 320), 512 px
-  - [ ] painted on the floor: pixels (111, 39)-(128, 64), 157 px
-  - [ ] painted on the floor: pixels (48, 39)-(65, 64), 139 px
-  - [ ] painted on the floor: pixels (73, 36)-(103, 47), 96 px
-- [x] **RustboroCity_Flat1_1F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (135, 55)-(208, 105), 2022 px
-  - [ ] painted on the floor: pixels (96, 112)-(128, 128), 512 px
-  - [ ] painted on the floor: pixels (153, 32)-(208, 47), 498 px
-  - [ ] painted on the floor: pixels (135, 53)-(208, 54), 73 px
-  - [ ] painted on the floor: pixels (135, 108)-(208, 109), 73 px
-  - [ ] painted on the floor: pixels (135, 106)-(208, 107), 73 px
-  - [ ] painted on the floor: pixels (135, 51)-(208, 52), 73 px
-  - [ ] painted on the floor: pixels (58, 80)-(62, 96), 56 px
-  - [ ] painted on the floor: pixels (18, 48)-(22, 64), 56 px
-  - [ ] painted on the floor: pixels (131, 55)-(132, 105), 50 px
-  - [ ] painted on the floor: pixels (133, 55)-(134, 105), 50 px
-  - [ ] painted on the floor: pixels (73, 32)-(80, 39), 49 px
-- [x] **RustboroCity_Mart**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
-- [x] **RustboroCity_PokemonCenter_1F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
-  - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
-  - [ ] painted on the floor: pixels (97, 81)-(103, 87), 36 px
-  - [ ] painted on the floor: pixels (97, 89)-(103, 95), 36 px
-  - [ ] painted on the floor: pixels (121, 81)-(127, 87), 36 px
-  - [ ] painted on the floor: pixels (129, 89)-(135, 95), 36 px
-  - [ ] painted on the floor: pixels (113, 81)-(119, 87), 36 px
-  - [ ] painted on the floor: pixels (121, 89)-(127, 95), 36 px
-  - [ ] painted on the floor: pixels (105, 81)-(111, 87), 36 px
-  - [ ] painted on the floor: pixels (113, 73)-(119, 79), 36 px
-  - [ ] painted on the floor: pixels (105, 73)-(111, 79), 36 px
-  - [ ] painted on the floor: pixels (89, 89)-(95, 95), 36 px
-- [x] **RustboroCity_PokemonSchool**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (80, 160)-(112, 176), 512 px
-  - [ ] painted on the floor: pixels (112, 48)-(176, 54), 384 px
-  - [ ] painted on the floor: pixels (16, 48)-(80, 54), 384 px
-  - [ ] painted on the floor: pixels (16, 96)-(32, 104), 82 px
-  - [ ] painted on the floor: pixels (48, 160)-(64, 168), 82 px
-  - [ ] painted on the floor: pixels (128, 160)-(144, 168), 82 px
-  - [ ] painted on the floor: pixels (128, 128)-(143, 136), 82 px
-  - [ ] painted on the floor: pixels (48, 128)-(64, 136), 82 px
-  - [ ] painted on the floor: pixels (48, 96)-(64, 104), 82 px
-  - [ ] painted on the floor: pixels (128, 96)-(144, 104), 82 px
-  - [ ] painted on the floor: pixels (160, 128)-(176, 136), 82 px
-  - [ ] painted on the floor: pixels (160, 160)-(176, 168), 82 px
-- [x] **RustboroCity_DevonCorp_1F**: nothing blocked lies flat that is not left so on purpose
-  - left flat, 6 cell(s): an alcove's side wall: its thickness, drawn as a strip beside the wall that stands
-  - [ ] painted on the floor: pixels (81, 129)-(111, 143), 420 px
-  - [ ] painted on the floor: pixels (204, 0)-(208, 48), 192 px
-  - [ ] painted on the floor: pixels (44, 0)-(48, 48), 192 px
-- [x] **RustboroCity_House1**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (135, 55)-(185, 89), 1696 px
-  - [ ] painted on the floor: pixels (80, 112)-(112, 128), 512 px
-  - [ ] painted on the floor: pixels (137, 32)-(192, 48), 378 px
-  - [ ] painted on the floor: pixels (16, 32)-(64, 47), 291 px
-  - [ ] painted on the floor: pixels (149, 33)-(171, 40), 152 px
-  - [ ] painted on the floor: pixels (34, 64)-(38, 96), 112 px
-  - [ ] painted on the floor: pixels (106, 64)-(110, 80), 56 px
-  - [ ] painted on the floor: pixels (135, 53)-(185, 54), 50 px
-  - [ ] painted on the floor: pixels (135, 92)-(185, 93), 50 px
-  - [ ] painted on the floor: pixels (135, 51)-(185, 52), 50 px
-  - [ ] painted on the floor: pixels (135, 90)-(185, 91), 50 px
-  - [ ] painted on the floor: pixels (73, 32)-(80, 39), 49 px
-- [x] **RustboroCity_CuttersHouse**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (23, 55)-(73, 105), 2496 px
-  - [ ] painted on the floor: pixels (80, 128)-(112, 144), 512 px
-  - [ ] painted on the floor: pixels (121, 32)-(160, 47), 323 px
-  - [ ] painted on the floor: pixels (16, 32)-(63, 47), 246 px
-  - [ ] painted on the floor: pixels (114, 80)-(118, 96), 56 px
-  - [ ] painted on the floor: pixels (23, 106)-(73, 107), 50 px
-  - [ ] painted on the floor: pixels (21, 55)-(22, 105), 50 px
-  - [ ] painted on the floor: pixels (23, 51)-(73, 52), 50 px
-  - [ ] painted on the floor: pixels (19, 55)-(20, 105), 50 px
-  - [ ] painted on the floor: pixels (74, 55)-(75, 105), 50 px
-  - [ ] painted on the floor: pixels (23, 108)-(73, 109), 50 px
-  - [ ] painted on the floor: pixels (76, 55)-(77, 105), 50 px
-- [x] **RustboroCity_House2**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (55, 55)-(137, 105), 2382 px
-  - [ ] painted on the floor: pixels (80, 128)-(112, 144), 512 px
-  - [ ] painted on the floor: pixels (89, 32)-(144, 47), 340 px
-  - [ ] painted on the floor: pixels (16, 32)-(48, 47), 286 px
-  - [ ] painted on the floor: pixels (153, 32)-(176, 47), 121 px
-  - [ ] painted on the floor: pixels (55, 108)-(137, 109), 82 px
-  - [ ] painted on the floor: pixels (55, 51)-(137, 52), 82 px
-  - [ ] painted on the floor: pixels (55, 53)-(137, 54), 82 px
-  - [ ] painted on the floor: pixels (55, 106)-(137, 107), 82 px
-  - [ ] painted on the floor: pixels (51, 55)-(52, 105), 50 px
-  - [ ] painted on the floor: pixels (138, 55)-(139, 105), 50 px
-  - [ ] painted on the floor: pixels (53, 55)-(54, 105), 50 px
-- [x] **RustboroCity_Flat2_1F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (32, 128)-(64, 144), 512 px
-  - [ ] painted on the floor: pixels (169, 32)-(208, 47), 323 px
-  - [ ] painted on the floor: pixels (186, 48)-(190, 80), 112 px
-  - [ ] painted on the floor: pixels (130, 48)-(134, 80), 112 px
-  - [ ] painted on the floor: pixels (97, 40)-(104, 47), 49 px
-  - [ ] painted on the floor: pixels (185, 128)-(192, 135), 49 px
-  - [ ] painted on the floor: pixels (25, 32)-(32, 39), 49 px
-  - [ ] painted on the floor: pixels (105, 128)-(112, 135), 49 px
-  - [ ] painted on the floor: pixels (97, 88)-(104, 95), 49 px
-  - [ ] painted on the floor: pixels (137, 128)-(144, 135), 49 px
-  - [ ] painted on the floor: pixels (105, 96)-(112, 103), 49 px
-  - [ ] painted on the floor: pixels (145, 136)-(152, 143), 49 px
-- [x] **RustboroCity_House3**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (55, 55)-(137, 105), 2382 px
-  - [ ] painted on the floor: pixels (80, 128)-(112, 144), 512 px
-  - [ ] painted on the floor: pixels (89, 32)-(144, 47), 340 px
-  - [ ] painted on the floor: pixels (16, 32)-(48, 47), 286 px
-  - [ ] painted on the floor: pixels (153, 32)-(176, 47), 121 px
-  - [ ] painted on the floor: pixels (55, 108)-(137, 109), 82 px
-  - [ ] painted on the floor: pixels (55, 51)-(137, 52), 82 px
-  - [ ] painted on the floor: pixels (55, 53)-(137, 54), 82 px
-  - [ ] painted on the floor: pixels (55, 106)-(137, 107), 82 px
-  - [ ] painted on the floor: pixels (51, 55)-(52, 105), 50 px
-  - [ ] painted on the floor: pixels (138, 55)-(139, 105), 50 px
-  - [ ] painted on the floor: pixels (53, 55)-(54, 105), 50 px
-- [x] **RustboroCity_Flat1_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (119, 71)-(185, 121), 1760 px
-  - [ ] painted on the floor: pixels (137, 32)-(208, 48), 433 px
-  - [ ] painted on the floor: pixels (149, 33)-(187, 40), 264 px
-  - [ ] painted on the floor: pixels (90, 64)-(94, 96), 112 px
-  - [ ] painted on the floor: pixels (119, 67)-(185, 68), 66 px
-  - [ ] painted on the floor: pixels (119, 122)-(185, 123), 66 px
-  - [ ] painted on the floor: pixels (119, 69)-(185, 70), 66 px
-  - [ ] painted on the floor: pixels (119, 124)-(185, 125), 66 px
-  - [ ] painted on the floor: pixels (18, 64)-(22, 80), 56 px
-  - [ ] painted on the floor: pixels (115, 71)-(116, 121), 50 px
-  - [ ] painted on the floor: pixels (188, 71)-(189, 121), 50 px
-  - [ ] painted on the floor: pixels (186, 71)-(187, 121), 50 px
-- [x] **RustboroCity_PokemonCenter_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (82, 90)-(94, 96), 44 px
-  - [ ] painted on the floor: pixels (155, 84)-(167, 90), 42 px
-  - [ ] painted on the floor: pixels (161, 103)-(173, 109), 42 px
-  - [ ] painted on the floor: pixels (145, 73)-(151, 79), 32 px
-  - [ ] painted on the floor: pixels (65, 65)-(71, 71), 32 px
-  - [ ] painted on the floor: pixels (73, 65)-(79, 71), 32 px
-  - [ ] painted on the floor: pixels (145, 81)-(151, 87), 32 px
-  - [ ] painted on the floor: pixels (65, 73)-(71, 79), 32 px
-  - [ ] painted on the floor: pixels (73, 73)-(79, 79), 32 px
-  - [ ] painted on the floor: pixels (17, 65)-(23, 71), 32 px
-  - [ ] painted on the floor: pixels (25, 65)-(31, 71), 32 px
-  - [ ] painted on the floor: pixels (169, 65)-(175, 71), 32 px
-- [x] **RustboroCity_DevonCorp_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (64, 32)-(224, 48), 2160 px
-  - [ ] painted on the floor: pixels (256, 32)-(288, 48), 432 px
-  - [ ] painted on the floor: pixels (16, 32)-(32, 64), 432 px
-  - [ ] painted on the floor: pixels (226, 81)-(238, 95), 98 px
-  - [ ] painted on the floor: pixels (34, 97)-(46, 111), 98 px
-  - [ ] painted on the floor: pixels (98, 129)-(110, 143), 98 px
-  - [ ] painted on the floor: pixels (98, 81)-(110, 95), 98 px
-  - [ ] painted on the floor: pixels (50, 97)-(62, 111), 98 px
-  - [ ] painted on the floor: pixels (226, 129)-(238, 143), 98 px
-  - [ ] painted on the floor: pixels (162, 81)-(174, 95), 98 px
-  - [ ] painted on the floor: pixels (162, 129)-(174, 143), 98 px
-  - [ ] painted on the floor: pixels (18, 81)-(30, 95), 98 px
-- [x] **RustboroCity_Flat2_2F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (96, 32)-(127, 47), 136 px
-  - [ ] painted on the floor: pixels (178, 64)-(182, 80), 56 px
-  - [ ] painted on the floor: pixels (177, 40)-(184, 47), 49 px
-  - [ ] painted on the floor: pixels (185, 128)-(192, 135), 49 px
-  - [ ] painted on the floor: pixels (105, 128)-(112, 135), 49 px
-  - [ ] painted on the floor: pixels (97, 88)-(104, 95), 49 px
-  - [ ] painted on the floor: pixels (137, 128)-(144, 135), 49 px
-  - [ ] painted on the floor: pixels (105, 96)-(112, 103), 49 px
-  - [ ] painted on the floor: pixels (145, 136)-(152, 143), 49 px
-  - [ ] painted on the floor: pixels (153, 32)-(160, 39), 49 px
-  - [ ] painted on the floor: pixels (193, 136)-(200, 143), 49 px
-  - [ ] painted on the floor: pixels (89, 128)-(96, 135), 49 px
-- [x] **RustboroCity_DevonCorp_3F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (64, 32)-(288, 48), 3128 px
-  - [ ] painted on the floor: pixels (112, 112)-(192, 120), 616 px
-  - [ ] painted on the floor: pixels (80, 72)-(96, 104), 476 px
-  - [ ] painted on the floor: pixels (272, 72)-(288, 104), 468 px
-  - [ ] painted on the floor: pixels (240, 112)-(272, 120), 250 px
-  - [ ] painted on the floor: pixels (16, 32)-(32, 48), 216 px
-- [x] **RustboroCity_Flat2_3F**: nothing blocked lies flat
-  - [ ] painted on the floor: pixels (119, 55)-(185, 73), 1184 px
-  - [ ] painted on the floor: pixels (80, 32)-(128, 47), 444 px
-  - [ ] painted on the floor: pixels (181, 33)-(208, 40), 188 px
-  - [ ] painted on the floor: pixels (169, 32)-(208, 48), 178 px
-  - [ ] painted on the floor: pixels (119, 76)-(185, 77), 66 px
-  - [ ] painted on the floor: pixels (119, 53)-(185, 54), 66 px
-  - [ ] painted on the floor: pixels (119, 74)-(185, 75), 66 px
-  - [ ] painted on the floor: pixels (119, 51)-(185, 52), 66 px
-  - [ ] painted on the floor: pixels (81, 72)-(88, 79), 49 px
-  - [ ] painted on the floor: pixels (97, 40)-(104, 47), 49 px
-  - [ ] painted on the floor: pixels (185, 128)-(192, 135), 49 px
-  - [ ] painted on the floor: pixels (137, 128)-(144, 135), 49 px
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:RustboroCity -->
