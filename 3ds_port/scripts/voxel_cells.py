@@ -294,6 +294,15 @@ class Layout:
             return True
         if self.free_post(x, y):
             return True
+        # A sign event's post standing beside a building, open in front, on
+        # one side and behind (its board is drawn in the open cell north of
+        # it): Dewford's gym sign, at the gym's corner. It was left on the
+        # sand because the gym closes its west side. A sign on a building's
+        # own face (a Center's) has the building behind it.
+        if ((x, y) in self.signs and not self.blocked(x, y + 1) and not self.off_map(x, y + 1)
+                and not self.blocked(x, y - 1) and not self.off_map(x, y - 1)
+                and (not self.blocked(x - 1, y) or not self.blocked(x + 1, y))):
+            return True
         # A lamp drawn like the map's free-standing ones is one against a
         # house's wall too, walkable to its south and on its other side:
         # Rustboro's lamps beside the Center and the Mart.

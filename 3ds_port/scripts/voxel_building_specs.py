@@ -1293,7 +1293,10 @@ DEWFORD_GYM_BLOCKS = [
     # above had taken, and the front wall's ends either side of the door
     (7, 6, 12, 8), (2, 7, 3, 9), (2, 19, 3, 21), (13, 20, 16, 22),
     (4, 26, 5, 28), (7, 26, 8, 28), (12, 26, 13, 28),
+    # (the rock behind the leader's place - x 1, 3-4 and 6, rows 0-2 - stays
+    # flat: with it the layout's page is past the console's 512x512)
 ]
+DEWFORD_GYM_GROUND = ("838362", "737352")       # the floor, and its shade
 DEWFORD_GYM_FLOOR = [0x201, 0x202, 0x203, 0x205, 0x206, 0x209, 0x20A, 0x20B, 0x20D, 0x211,
                      0x212, 0x213, 0x215, 0x216, 0x218, 0x21A, 0x21B, 0x222, 0x223]
 
@@ -1304,7 +1307,16 @@ def dewford_gym():
     # face each side and not a block: a block's art is its drawing three times
     # over (its hidden top and sides), and those two columns' would put the
     # layout's page past the console's 512x512.
-    return [piece("block_%d" % i, [(x0 * 16, y0 * 16, x1 * 16, y1 * 16)], 32)
+    fl = DEWFORD_GYM_GROUND
+    return only_here([
+        # the two statues by the door, an orb on a plinth: a card each, kept
+        # to this room (Rustboro's gym has its own, in two pieces)
+        piece("statue_w", [(64, 368, 80, 400)], 31, leave=fl, card=True),
+        piece("statue_e", [(112, 368, 128, 400)], 31, leave=fl, card=True),
+        # the shelves either side of the leader, standing before the rock
+        piece("shelf_w", [(17, 29, 32, 65)], 31, leave=fl, solid=True),
+        piece("shelf_e", [(97, 29, 112, 65)], 31, leave=fl, solid=True),
+    ], "statue_w", "statue_e") + [piece("block_%d" % i, [(x0 * 16, y0 * 16, x1 * 16, y1 * 16)], 32)
             for i, (x0, y0, x1, y1) in enumerate(DEWFORD_GYM_BLOCKS)
             if x0 not in (0, 17)] + [
         piece("edge_w", [], 32, side=side, walls=[((16, 448), (16, 32))]),

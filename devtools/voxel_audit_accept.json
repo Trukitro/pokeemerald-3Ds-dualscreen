@@ -1,0 +1,10 @@
+{
+  "_": "Blocked cells the audit finds flat that are left so on purpose: map -> [[x0, y0, x1, y1, why]] (cells, inclusive). devtools/voxel_audit.py lists them apart and does not count them.",
+  "DewfordTown_Gym": [
+    [0, 0, 0, 27, "the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512"],
+    [1, 0, 6, 2, "the rock behind the leader's place: with it the layout's page is past the console's 512x512"],
+    [17, 0, 17, 1, "the corner of the rock east of the edge wall, outside the room"],
+    [2, 3, 2, 4, "the leader's dais: a low platform, its corner posts drawn on it"],
+    [5, 3, 6, 4, "the leader's dais and the shelf's foot beside it"]
+  ]
+}

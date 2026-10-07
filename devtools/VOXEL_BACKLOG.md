@@ -18,26 +18,27 @@ every reported item is ticked. Work one area to the end before the next.
 - [x] The trees inside the town lie flat, and the wood round it is blocks of tree tiles
 - [x] The gym is its drawing on the sand
 - [x] Houses: jars, furniture, low tables and the corner posts are painted on the floor
-- [ ] Houses: the front edge of the tatami platform (the yellow band by the door) lies flat
-- [ ] Town Hall: only its walls stand
+- [x] Houses: the front edge of the tatami platform (the yellow band by the door) lies flat
+- [x] Town Hall: only its walls stand
+- [x] The gym's sign lies on the sand beside it (found by the audit)
+- [x] Gym interior: rock blocks, the front wall's ends, the statues and the shelves lie flat (found by the audit)
+- [ ] Not blocked, so not seen by the audit, and still flat: cushions and chairs in the houses and the hall, the gym leader's dais
 
 <!-- audit:DewfordTown -->
 ### DewfordTown - audit of 2026-10-07
 
-- [ ] **DewfordTown**: 1 flat cell(s) in 1 object(s) - `build/audit/DewfordTown.png`
-  - [ ] (11, 16), 1 cell(s), tiles 210
+- [x] **DewfordTown**: nothing blocked lies flat
 - [x] **DewfordTown_Hall**: nothing blocked lies flat
 - [x] **DewfordTown_PokemonCenter_1F**: nothing blocked lies flat
-- [ ] **DewfordTown_Gym**: 48 flat cell(s) in 7 object(s) - `build/audit/DewfordTown_Gym.png`
-  - [ ] (0, 0)-(1, 27), 30 cell(s), tiles 20F 21C 21E 221 226 229 231 238 239
-  - [ ] (3, 0)-(4, 2), 6 cell(s), tiles 239 23B 23C 243 244
-  - [ ] (5, 0)-(6, 4), 6 cell(s), tiles 21C 22D 22E 235 236 239
-  - [ ] (17, 0)-(17, 1), 2 cell(s), tiles 20C 23A
-  - [ ] (2, 3)-(2, 4), 2 cell(s), tiles 22A 232
-  - [ ] (4, 24), 1 cell(s), tiles 227
-  - [ ] (7, 24), 1 cell(s), tiles 227
+- [x] **DewfordTown_Gym**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 28 cell(s): the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512
+  - left flat, 10 cell(s): the rock behind the leader's place: with it the layout's page is past the console's 512x512
+  - left flat, 2 cell(s): the corner of the rock east of the edge wall, outside the room
+  - left flat, 2 cell(s): the leader's dais: a low platform, its corner posts drawn on it
+  - left flat, 2 cell(s): the leader's dais and the shelf's foot beside it
 - [x] **DewfordTown_House1**: nothing blocked lies flat
 - [x] **DewfordTown_House2**: nothing blocked lies flat
+- [x] **DewfordTown_PokemonCenter_2F**: nothing blocked lies flat
 
-49 blocked cell(s) still flat in this area.
+0 blocked cell(s) still flat in this area.
 <!-- /audit:DewfordTown -->

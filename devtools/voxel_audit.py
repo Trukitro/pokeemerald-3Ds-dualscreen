@@ -38,6 +38,7 @@ import autotest  # noqa: E402
 REPO = autotest.REPO
 MAPS = autotest.MAPS
 BACKLOG = os.path.join(REPO, "devtools", "VOXEL_BACKLOG.md")
+ACCEPT = os.path.join(REPO, "devtools", "voxel_audit_accept.json")
 COLOURS = {".": (214, 204, 160), "M": (90, 140, 220), "T": (60, 150, 70), "R": (150, 110, 80),
            "S": (240, 200, 60), "W": (120, 180, 240), "F": (170, 120, 200), "V": (20, 20, 20),
            "#": (230, 40, 40)}
@@ -55,12 +56,18 @@ def map_name(const):
 
 
 def rooms_of(name):
-    data = json.load(open(os.path.join(MAPS, name, "map.json")))
-    out = []
-    for w in data.get("warp_events") or []:
-        room = map_name(w["dest_map"])
-        if room and room != name and room not in out:
-            out.append(room)
+    """Every map the area's doors lead to, and theirs in turn while they are
+    the area's own (DewfordTown_PokemonCenter_2F from its 1F): a stair's far
+    end in another town is that town's."""
+    out, todo = [], [name]
+    while todo:
+        here = todo.pop(0)
+        data = json.load(open(os.path.join(MAPS, here, "map.json")))
+        for w in data.get("warp_events") or []:
+            room = map_name(w["dest_map"])
+            if room and room != name and room not in out and room.startswith(name + "_"):
+                out.append(room)
+                todo.append(room)
     return out
 
 
@@ -112,6 +119,20 @@ def objects(flat):
     return sorted(out, key=lambda o: (o[1], o[0]))
 
 
+def accepted(name, flat):
+    """Split the flat cells: (those still to do, {why: count} of those left
+    flat on purpose - devtools/voxel_audit_accept.json)."""
+    rules = json.load(open(ACCEPT, encoding="utf-8")).get(name, []) if os.path.exists(ACCEPT) else []
+    todo, left = {}, {}
+    for (x, y), tile in flat.items():
+        why = next((r[4] for r in rules if r[0] <= x <= r[2] and r[1] <= y <= r[3]), None)
+        if why is None:
+            todo[(x, y)] = tile
+        else:
+            left[why] = left.get(why, 0) + 1
+    return todo, left
+
+
 def read(path):
     rows, flat = [], {}
     with open(path) as f:
@@ -149,12 +170,15 @@ def backlog(area, report):
     begin, end = "<!-- audit:%s -->" % area, "<!-- /audit:%s -->" % area
     body = [begin, "### %s - audit of %s" % (area, time.strftime("%Y-%m-%d")), ""]
     total = 0
-    for name, objs, indoor in report:
+    for name, objs, left in report:
         if objs is None:
             body.append("- [ ] **%s**: no audit written (the map did not load?)" % name)
             continue
         if not objs:
-            body.append("- [x] **%s**: nothing blocked lies flat" % name)
+            body.append("- [x] **%s**: nothing blocked lies flat%s" %
+                        (name, " that is not left so on purpose" if left else ""))
+            for why, n in left.items():
+                body.append("  - left flat, %d cell(s): %s" % (n, why))
             continue
         cells = sum(o[4] for o in objs)
         total += cells
@@ -163,6 +187,8 @@ def backlog(area, report):
         for x0, y0, x1, y1, n, tiles in objs:
             where = "(%d, %d)" % (x0, y0) if n == 1 else "(%d, %d)-(%d, %d)" % (x0, y0, x1, y1)
             body.append("  - [ ] %s, %d cell(s), tiles %s" % (where, n, " ".join(tiles)))
+        for why, n in left.items():
+            body.append("  - left flat, %d cell(s): %s" % (n, why))
     body += ["", "%d blocked cell(s) still flat in this area." % total, end]
     text = open(BACKLOG, encoding="utf-8").read() if os.path.exists(BACKLOG) else ""
     block = "\n".join(body)
@@ -191,15 +217,17 @@ def main():
         for name in names:
             src = os.path.join(shots, name + "_audit.txt")
             if not os.path.exists(src):
-                report.append((name, None, False))
+                report.append((name, None, {}))
                 print("%-40s no audit" % name)
                 continue
             shutil.copy2(src, os.path.join(args.out, name + ".txt"))
             rows, flat, indoor = read(src)
+            flat, left = accepted(name, flat)
             objs = objects(flat)
             picture(rows, os.path.join(shots, name + "_top.bmp"), os.path.join(args.out, name + ".png"))
-            report.append((name, objs, indoor))
-            print("%-40s %3d flat cell(s) in %d object(s)" % (name, len(flat), len(objs)))
+            report.append((name, objs, left))
+            print("%-40s %3d flat cell(s) in %d object(s)%s" % (
+                name, len(flat), len(objs), ", %d left on purpose" % sum(left.values()) if left else ""))
         total = backlog(area, report)
         print("%s: %d blocked cell(s) still flat; devtools/VOXEL_BACKLOG.md updated" % (area, total))
     return 0
