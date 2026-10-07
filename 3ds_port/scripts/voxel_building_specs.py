@@ -1098,11 +1098,16 @@ def tatami_posts(width):
             piece("post_e", [(width - 8, 0, width, 35), (width - 7, 35, width - 1, 36)], 32, back=32)]
 
 
-def tatami_edge(width, y):
+def tatami_edge(y, cells=1):
     """The front of the tatami's platform, where it ends before the entrance:
-    a board six rows tall across the room, drawn as its face. It stands as a
-    low kerb at the platform's edge."""
-    return [piece("platform_edge", [(0, y, width, y + 6)], 6)]
+    eleven rows of face across the room - a board, the dark line under it and
+    the grey of the platform's side - and, in the west corner, the same grey
+    running forward to the room's front as a block. Left on the floor it read
+    as a wall lying at the door. A cell of the face a piece, so that it is
+    found again in every room with a platform, whatever its width."""
+    return ([piece("platform_corner", [(0, y, 16, y + 32)], 11, solid=True)]
+            + [piece("platform_face_%d" % i, [(16 + 16 * i, y, 32 + 16 * i, y + 11)], 11)
+               for i in range(cells)])
 
 
 def house3_furniture():
@@ -1115,8 +1120,8 @@ def house3_furniture():
         # its greens are the tatami's own: claimed whole, by its outline
         piece("cabinet", [(130, 16, 142, 17), (129, 17, 143, 18), (128, 18, 144, 39),
                           (129, 39, 143, 40)], 16, back=32),
-    ] + tatami_posts(160) + tatami_edge(160, 96)
-    return only_here(pieces, "stove", "bookcase", "cabinet", "post_w", "post_e", "platform_edge")
+    ] + tatami_posts(160) + tatami_edge(96, 9)
+    return only_here(pieces, "stove", "bookcase", "cabinet", "post_w", "post_e")
 
 
 def house4_furniture():
@@ -1126,9 +1131,9 @@ def house4_furniture():
         piece("jar_w", [(49, 33, 62, 48)], 9, leave=fl, solid=True),
         piece("jar_e", [(65, 33, 78, 48)], 9, leave=fl, solid=True),
         piece("chest", [(128, 16, 144, 45)], 16, leave=wall, back=32),
-    ] + tatami_posts(160) + tatami_edge(160, 112)
+    ] + tatami_posts(160)
     # the jars stand against the wall here, and are Mr. Briney's elsewhere
-    return only_here(pieces, "jar_w", "jar_e", "post_w", "post_e", "platform_edge")
+    return only_here(pieces, "jar_w", "jar_e", "post_w", "post_e")
 
 
 def only_here(pieces, *names):

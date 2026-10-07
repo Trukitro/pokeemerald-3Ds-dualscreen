@@ -1519,6 +1519,46 @@ def town_preview(models, layout_id, out_dir):
     return shots
 
 
+def flat_report(layout, layout_id, room, ras, fpx, W, H, out_dir):
+    """What of a room is still painted on its floor, for devtools/voxel_audit.py.
+
+    Every pixel the console lays flat (the terrain's, a placement's patch)
+    that is not the room's plain floor there is something drawn on the
+    floor: a rug or a shadow, which belong there - or a table, a step's
+    face, a wall's foot nobody has stood up. Touching pixels are one object;
+    <layout>_flat.json lists them, largest first, in the drawing's pixels.
+    """
+    floors = [layout.cell_image(m).load() for m in room.get("ground", ())]
+    marks = set()
+    for y in range(H):
+        for x in range(W):
+            if ras.owner[y * W + x] not in (None, "patch", "terrain"):
+                continue
+            c = fpx[x, y]
+            if c == (0, 0, 0) or any(f[x % 16, y % 16][:3] == c for f in floors):
+                continue
+            marks.add((x, y))
+    total, objects = len(marks), []
+    while marks:
+        start = marks.pop()
+        stack, n = [start], 1
+        x0 = x1 = start[0]
+        y0 = y1 = start[1]
+        while stack:
+            x, y = stack.pop()
+            for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if q in marks:
+                    marks.discard(q)
+                    stack.append(q)
+                    n += 1
+                    x0, x1, y0, y1 = min(x0, q[0]), max(x1, q[0]), min(y0, q[1]), max(y1, q[1])
+        if n >= 24:
+            objects.append([x0, y0, x1 + 1, y1 + 1, n])
+    objects.sort(key=lambda o: -o[4])
+    with open(os.path.join(out_dir, layout_id.lower() + "_flat.json"), "w", encoding="utf-8") as f:
+        json.dump({"layout": layout_id, "size": [W, H], "pixels": total, "objects": objects}, f)
+
+
 def room_check(models, layout_id, out_dir):
     """A whole room as the console composes it, against its drawing.
 
@@ -1589,6 +1629,7 @@ def room_check(models, layout_id, out_dir):
                 culprits.setdefault(tag, []).append((x, y))
     for tag, pts in sorted(culprits.items(), key=lambda kv: -len(kv[1])):
         print("    %-34s %4d px, e.g. %s" % (tag, len(pts), pts[:3]))
+    flat_report(layout, layout_id, room, ras, fpx, W, H, out_dir)
     sheet = Image.new("RGB", (W * 2 + 4, H))
     sheet.paste(full, (0, 0))
     sheet.paste(diff, (W + 4, 0))

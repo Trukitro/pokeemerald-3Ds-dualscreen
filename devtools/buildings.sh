@@ -24,6 +24,8 @@ if [ "$1" = preview ]; then
 fi
 python3 scripts/gen_voxel_buildings.py --output /tmp/buildings.bin > /tmp/buildings.log 2>&1
 echo "EXIT=$?"
+# what each room still has painted on its floor, for devtools/voxel_audit.py
+mkdir -p "$REPO/build/audit/flat" && cp build/buildings/*_flat.json "$REPO/build/audit/flat/" 2>/dev/null
 grep 'pixel(s) differ' /tmp/buildings.log | grep -v ' 0 pixel' | cut -c1-150
 grep -B2 'does not reproduce\|claims no pixel\|exceeds\|does not fit' /tmp/buildings.log | cut -c1-170 | tail -6
 grep 'exact:' /tmp/buildings.log | grep -v 'wrong=0 missing=0 extra=0' | cut -c1-150 | head

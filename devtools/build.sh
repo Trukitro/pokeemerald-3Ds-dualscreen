@@ -9,6 +9,8 @@ cd "$REPO" && python3 tools/bootstrap.py --dir "$TREE" 2>&1 | tail -1
 cd "$TREE/3ds_port" || exit 1
 make -j"$(nproc)" PYTHON=python3 > "$LOG" 2>&1
 echo "BUILD EXIT=$?"
+# what each room still has painted on its floor, for devtools/voxel_audit.py
+mkdir -p "$REPO/build/audit/flat" && cp build/buildings/*_flat.json "$REPO/build/audit/flat/" 2>/dev/null
 grep -n -E '(error:|\*\*\* )' "$LOG" | cut -c1-260 | head -8
 make -k verify PYTHON=python3 > "$HOME/verify.log" 2>&1
 echo "host tests passed: $(grep -c '^PASS' "$HOME/verify.log"); failed: $(grep -E '^make: \*\*\*' "$HOME/verify.log" | grep -v 'not remade' | sed 's/.*\[//; s/\].*//' | tr '\n' ' ')"

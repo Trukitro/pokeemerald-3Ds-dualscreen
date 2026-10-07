@@ -133,6 +133,28 @@ def accepted(name, flat):
     return todo, left
 
 
+def painted(name, indoor):
+    """What the room still has painted on its floor, from the building
+    generator's own composition of it (build/audit/flat, written by
+    devtools/build.sh and buildings.sh): [(x0, y0, x1, y1, pixels)] in the
+    drawing's pixels, less what voxel_audit_accept.json leaves under
+    "<Map>#px"; None when the room has no model at all. This sees what the
+    blocked-cell check cannot: a step's face, a low table, a rug - anything
+    drawn on cells the player can walk on."""
+    if not indoor:
+        return []
+    layout = json.load(open(os.path.join(MAPS, name, "map.json")))["layout"]
+    path = os.path.join(REPO, "build", "audit", "flat", layout.lower() + "_flat.json")
+    if not os.path.exists(path):
+        return None
+    rules = json.load(open(ACCEPT, encoding="utf-8")).get(name + "#px", []) if os.path.exists(ACCEPT) else []
+    out = []
+    for x0, y0, x1, y1, n in json.load(open(path))["objects"]:
+        if not any(r[0] <= x0 and r[1] <= y0 and x1 <= r[2] and y1 <= r[3] for r in rules):
+            out.append((x0, y0, x1, y1, n))
+    return out
+
+
 def read(path):
     rows, flat = [], {}
     with open(path) as f:
@@ -165,12 +187,18 @@ def picture(rows, capture, path):
     sheet.save(path)
 
 
+def paint_lines(paint):
+    if paint is None:
+        return ["  - [ ] the room has no model: everything in it is painted on its floor"]
+    return ["  - [ ] painted on the floor: pixels (%d, %d)-(%d, %d), %d px" % o for o in paint[:12]]
+
+
 def backlog(area, report):
     """Rewrite the area's audited section, keeping everything else."""
     begin, end = "<!-- audit:%s -->" % area, "<!-- /audit:%s -->" % area
     body = [begin, "### %s - audit of %s" % (area, time.strftime("%Y-%m-%d")), ""]
     total = 0
-    for name, objs, left in report:
+    for name, objs, left, paint in report:
         if objs is None:
             body.append("- [ ] **%s**: no audit written (the map did not load?)" % name)
             continue
@@ -179,6 +207,7 @@ def backlog(area, report):
                         (name, " that is not left so on purpose" if left else ""))
             for why, n in left.items():
                 body.append("  - left flat, %d cell(s): %s" % (n, why))
+            body += paint_lines(paint)
             continue
         cells = sum(o[4] for o in objs)
         total += cells
@@ -189,6 +218,7 @@ def backlog(area, report):
             body.append("  - [ ] %s, %d cell(s), tiles %s" % (where, n, " ".join(tiles)))
         for why, n in left.items():
             body.append("  - left flat, %d cell(s): %s" % (n, why))
+        body += paint_lines(paint)
     body += ["", "%d blocked cell(s) still flat in this area." % total, end]
     text = open(BACKLOG, encoding="utf-8").read() if os.path.exists(BACKLOG) else ""
     block = "\n".join(body)
@@ -217,7 +247,7 @@ def main():
         for name in names:
             src = os.path.join(shots, name + "_audit.txt")
             if not os.path.exists(src):
-                report.append((name, None, {}))
+                report.append((name, None, {}, []))
                 print("%-40s no audit" % name)
                 continue
             shutil.copy2(src, os.path.join(args.out, name + ".txt"))
@@ -225,9 +255,11 @@ def main():
             flat, left = accepted(name, flat)
             objs = objects(flat)
             picture(rows, os.path.join(shots, name + "_top.bmp"), os.path.join(args.out, name + ".png"))
-            report.append((name, objs, left))
-            print("%-40s %3d flat cell(s) in %d object(s)%s" % (
-                name, len(flat), len(objs), ", %d left on purpose" % sum(left.values()) if left else ""))
+            paint = painted(name, indoor)
+            report.append((name, objs, left, paint))
+            print("%-40s %3d flat cell(s) in %d object(s)%s; %s" % (
+                name, len(flat), len(objs), ", %d left on purpose" % sum(left.values()) if left else "",
+                "no room model" if paint is None else "%d thing(s) painted on the floor" % len(paint)))
         total = backlog(area, report)
         print("%s: %d blocked cell(s) still flat; devtools/VOXEL_BACKLOG.md updated" % (area, total))
     return 0
