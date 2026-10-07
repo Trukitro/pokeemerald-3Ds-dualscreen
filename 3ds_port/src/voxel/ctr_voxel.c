@@ -205,6 +205,10 @@ static bool sHaveFog, sHaveGloom, sOwnsFog;
 static float sGloomAmount;
 #if CTR_VOXEL_LIGHTING
 static float sGloomX, sGloomY;
+/* The dark of a Flash cave (CtrVoxel_Dark): screen pixels to one of the game's
+ * at the player, and whether this frame placed them. */
+static float sDarkScale;
+static bool sDarkPlaced;
 #endif
 #if CTR_VOXEL_LIGHTING
 static void MakeDapple(void);
@@ -5589,6 +5593,23 @@ bool CtrVoxel_DrawsFog(void)
     return sReady && sOwnsFog;
 }
 
+bool CtrVoxel_Dark(float *x, float *y, float *scale)
+{
+#if CTR_VOXEL_LIGHTING
+    if (!sReady || !sDarkPlaced)
+        return false;
+    *x = sGloomX;
+    *y = sGloomY;
+    *scale = sDarkScale;
+    return true;
+#else
+    (void)x;
+    (void)y;
+    (void)scale;
+    return false;
+#endif
+}
+
 const C3D_Tex *CtrVoxel_Gloom(float *x, float *y, float *size, float *amount)
 {
 #if CTR_VOXEL_LIGHTING
@@ -5683,11 +5704,19 @@ static void PlaceGloom(const C3D_Mtx *projection, const C3D_Mtx *view)
 
     sGloomX = CTR_GAME_WIDTH * 0.5f;
     sGloomY = CTR_GAME_HEIGHT * 0.5f;
+    sDarkScale = 1.0f;
     if (clip.w > 0.0001f)
     {
+        /* a tile to the east of them, for the pixels a tile is there */
+        C3D_FVec beside = Mtx_MultiplyFVec4(projection, Mtx_MultiplyFVec4(view,
+            FVec4_New(sCamera.targetX + 1.0f, sCamera.ground + 1.0f, sCamera.targetZ, 1.0f)));
+
         sGloomX = (clip.x / clip.w + 1.0f) * 0.5f * CTR_GAME_WIDTH;
         sGloomY = (1.0f - clip.y / clip.w) * 0.5f * CTR_GAME_HEIGHT;
+        if (beside.w > 0.0001f)
+            sDarkScale = fabsf((beside.x / beside.w + 1.0f) * 0.5f * CTR_GAME_WIDTH - sGloomX) / 16.0f;
     }
+    sDarkPlaced = true;
 }
 #endif
 
@@ -5711,6 +5740,9 @@ void CtrVoxel_Draw(C3D_RenderTarget *target, float eyeOffset)
      * (CtrVoxel_StereoDraw), at a fraction of drawing the world twice. */
     (void)eyeOffset;
     sGloomAmount = 0.0f;
+#if CTR_VOXEL_LIGHTING
+    sDarkPlaced = false;
+#endif
     sOwnsFog = false;
     if (!sReady || sDrawCount == 0)
         return;
@@ -5726,12 +5758,10 @@ void CtrVoxel_Draw(C3D_RenderTarget *target, float eyeOffset)
     /* The camera the frustum was cut from in the update (UpdateFrustum).
      * The gloom is placed on the logical surface, before the fit to it. */
 #if CTR_VOXEL_LIGHTING
+    CameraMatrices(&projection, &view, false);
+    PlaceGloom(&projection, &view);
     if (cave && sHaveGloom)
-    {
-        CameraMatrices(&projection, &view, false);
-        PlaceGloom(&projection, &view);
         sGloomAmount = VOXEL_GLOOM_MAX * fog;
-    }
 #endif
     CameraMatrices(&projection, &view, true);
 
