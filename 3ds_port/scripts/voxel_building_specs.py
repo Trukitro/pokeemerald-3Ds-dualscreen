@@ -1266,15 +1266,23 @@ def flower_shop_room():
         return piece(name, [(x, y0, x + 16, y1)], 10, leave=fl, solid=True)
 
     def rack(name, x):
-        # from under the top plant's leaf tips, which close round two pixels
-        # of floor each side, down to its feet
-        return piece(name, [(x, 87, x + 16, 128)], 20, leave=fl, solid=True)
+        # A low table of green slats on four legs, three potted plants in a
+        # row down it. It was one box as tall as the plants: a crate with
+        # plants painted on its lid. Now each pot stands, a card of its own
+        # (the nearest first, as the drawing overlaps them), and the table's
+        # front - its apron and legs, seven rows - stands at its foot; the
+        # slats between stay drawn, the floor showing through them.
+        slats = fl + ("9cd59c",)
+        return [piece("%s_pot%d" % (name, k), [(x + 2, y0, x + 14, y1)], y1 - y0,
+                      leave=slats, card=True)
+                for k, (y0, y1) in ((3, (106, 120)), (2, (94, 109)), (1, (80, 97)))] + [
+            piece(name, [(x, 121, x + 16, 128)], 7, leave=fl)]
 
     return [
         planter("planter_sw", 0, 112, 144),
         planter("planter_w", 80, 96, 128), planter("planter_c", 128, 96, 128),
         planter("planter_e1", 192, 80, 128), planter("planter_e2", 208, 80, 128),
-        rack("rack_1", 96), rack("rack_2", 112), rack("rack_e", 224),
+        *rack("rack_1", 96), *rack("rack_2", 112), *rack("rack_e", 224),
         planter("planter_n1", 176, 48, 64), planter("planter_n2", 192, 48, 64),
         piece("shelf", [(112, 24, 152, 56)], 18, leave=SHOP_WALL + fl, back=42),
         piece("pots", [(162, 18, 209, 48)], 14, leave=SHOP_WALL + fl, back=32),
