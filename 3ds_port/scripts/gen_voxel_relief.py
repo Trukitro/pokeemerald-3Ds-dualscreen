@@ -179,8 +179,29 @@ RELIEF_ROLES = {"cliff", "shelf", "stair"}
 # Caves (cave_lattice): the Cave tileset's rock is its own drawing, which the
 # mountains' reading does not know, and a cave was all floor - its walls a
 # picture of walls on the ground. Listed as each is looked at.
-CAVES = ["LAYOUT_GRANITE_CAVE_1F", "LAYOUT_GRANITE_CAVE_B1F", "LAYOUT_GRANITE_CAVE_B2F",
-         "LAYOUT_GRANITE_CAVE_STEVENS_ROOM"]
+CAVE_TILESETS = {"gTileset_Cave", "gTileset_MeteorFalls", "gTileset_RusturfTunnel"}
+
+
+def cave_layouts():
+    """The layouts of the maps that are caves: underground, and drawn with a
+    cave's tileset over the General one."""
+    layouts = {e["id"]: e for e in json.load(open(os.path.join(vb.ROOT, "data", "layouts", "layouts.json"),
+                                                  encoding="utf-8"))["layouts"] if e.get("id")}
+    maps_dir, out = os.path.join(vb.ROOT, "data", "maps"), []
+    for name in sorted(os.listdir(maps_dir)):
+        path = os.path.join(maps_dir, name, "map.json")
+        if not os.path.exists(path):
+            continue
+        m = json.load(open(path, encoding="utf-8"))
+        e = layouts.get(m.get("layout"))
+        if (e and m.get("map_type") == "MAP_TYPE_UNDERGROUND"
+                and e.get("primary_tileset") == "gTileset_General"
+                and e.get("secondary_tileset") in CAVE_TILESETS and e["id"] not in out):
+            out.append(e["id"])
+    return out
+
+
+CAVES = cave_layouts()
 CAVE_RISE = 16      # a mass of rock stands a level: its south face is drawn a cell tall
 
 # Ledges. The cartridge names each ledge cell's jump by its behaviour; the
@@ -2667,6 +2688,27 @@ def cave_lattice(layout):
                 top = max(h[y * n][x * n + i], float(CAVE_RISE))
                 for j in range(n + 1):
                     h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], top * (1 - j / n))
+    # What is still on the floor: a wall one cell wide running north-south, a
+    # rock a cell across. Its middle is stood up, its edges left where the
+    # floor beside it has them - a ridge, a boulder -, and where two such
+    # cells touch, or one touches rock already up, the edge between them is
+    # up too, so a wall is one wall down its length.
+    low = {(x, y) for y in range(H) for x in range(W) if rock(x, y)
+           and max(h[y * n + j][x * n + i] for j in range(n + 1) for i in range(n + 1)) < 1.0}
+    rise = float(CAVE_RISE)
+    for (x, y) in low:
+        for j in range(1, n):
+            for i in range(1, n):
+                h[y * n + j][x * n + i] = rise
+    for (x, y) in low:
+        for (dx, dy) in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+            if not (0 <= x + dx < W and 0 <= y + dy < H) or not rock(x + dx, y + dy):
+                continue
+            for k in range(1, n):
+                if dy:
+                    h[(y + (dy > 0)) * n][x * n + k] = rise
+                else:
+                    h[y * n + k][(x + (dx > 0)) * n] = rise
     return h
 
 

@@ -187,27 +187,256 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:GraniteCave -->
 ### GraniteCave - audit of 2026-10-07
 
-- [ ] **GraniteCave_1F**: 7 flat cell(s) in 4 object(s) - `build/audit/GraniteCave_1F.png`
-  - [ ] (19, 5)-(19, 6), 2 cell(s), tiles 21A 21B
-  - [ ] (28, 5)-(28, 6), 2 cell(s), tiles 218 21C
-  - [ ] (35, 6)-(35, 7), 2 cell(s), tiles 218 21C
-  - [ ] (4, 10), 1 cell(s), tiles 202
-- [ ] **GraniteCave_B1F**: 7 flat cell(s) in 3 object(s) - `build/audit/GraniteCave_B1F.png`
-  - [ ] (27, 11), 1 cell(s), tiles 203
-  - [ ] (23, 13)-(23, 15), 3 cell(s), tiles 210 218
-  - [ ] (26, 17)-(26, 19), 3 cell(s), tiles 210 218
-- [ ] **GraniteCave_B2F**: 19 flat cell(s) in 9 object(s) - `build/audit/GraniteCave_B2F.png`
-  - [ ] (8, 1)-(8, 2), 2 cell(s), tiles 210 253
-  - [ ] (10, 1)-(10, 2), 2 cell(s), tiles 212 21A
-  - [ ] (12, 11)-(12, 13), 3 cell(s), tiles 210 218 220
-  - [ ] (15, 11), 1 cell(s), tiles 262
-  - [ ] (18, 12)-(18, 13), 2 cell(s), tiles 212 21A
-  - [ ] (22, 15)-(22, 16), 2 cell(s), tiles 21A 21B
-  - [ ] (12, 16)-(12, 17), 2 cell(s), tiles 21A 21B
-  - [ ] (7, 17)-(7, 19), 3 cell(s), tiles 212 21A 21B
-  - [ ] (11, 20)-(11, 21), 2 cell(s), tiles 21F 227
-- [ ] **GraniteCave_StevensRoom**: 1 flat cell(s) in 1 object(s) - `build/audit/GraniteCave_StevensRoom.png`
-  - [ ] (7, 10), 1 cell(s), tiles 202
+- [x] **GraniteCave_1F**: nothing blocked lies flat
+- [x] **GraniteCave_B1F**: nothing blocked lies flat
+- [x] **GraniteCave_B2F**: nothing blocked lies flat
+- [x] **GraniteCave_StevensRoom**: nothing blocked lies flat
 
-34 blocked cell(s) still flat in this area.
+0 blocked cell(s) still flat in this area.
 <!-- /audit:GraniteCave -->
+
+<!-- audit:RusturfTunnel -->
+### RusturfTunnel - audit of 2026-10-07
+
+- [x] **RusturfTunnel**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:RusturfTunnel -->
+
+<!-- audit:MeteorFalls -->
+### MeteorFalls - audit of 2026-10-07
+
+- [x] **MeteorFalls_1F_1R**: nothing blocked lies flat
+- [x] **MeteorFalls_1F_2R**: nothing blocked lies flat
+- [x] **MeteorFalls_B1F_1R**: nothing blocked lies flat
+- [x] **MeteorFalls_B1F_2R**: nothing blocked lies flat
+- [x] **MeteorFalls_StevensCave**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:MeteorFalls -->
+
+<!-- audit:VictoryRoad -->
+### VictoryRoad - audit of 2026-10-07
+
+- [x] **VictoryRoad_1F**: nothing blocked lies flat
+- [x] **VictoryRoad_B1F**: nothing blocked lies flat
+- [x] **VictoryRoad_B2F**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:VictoryRoad -->
+
+<!-- audit:ShoalCave -->
+### ShoalCave - audit of 2026-10-07
+
+- [x] **ShoalCave_HighTideEntranceRoom**: nothing blocked lies flat
+- [x] **ShoalCave_HighTideInnerRoom**: nothing blocked lies flat
+- [x] **ShoalCave_LowTideEntranceRoom**: nothing blocked lies flat
+- [x] **ShoalCave_LowTideIceRoom**: nothing blocked lies flat
+- [ ] **ShoalCave_LowTideInnerRoom**: 6 flat cell(s) in 6 object(s) - `build/audit/ShoalCave_LowTideInnerRoom.png`
+  - [ ] (31, 8), 1 cell(s), tiles 358
+  - [ ] (6, 9), 1 cell(s), tiles 359
+  - [ ] (41, 10), 1 cell(s), tiles 359
+  - [ ] (16, 13), 1 cell(s), tiles 359
+  - [ ] (41, 20), 1 cell(s), tiles 359
+  - [ ] (14, 26), 1 cell(s), tiles 358
+- [ ] **ShoalCave_LowTideLowerRoom**: 1 flat cell(s) in 1 object(s) - `build/audit/ShoalCave_LowTideLowerRoom.png`
+  - [ ] (18, 2), 1 cell(s), tiles 358
+- [ ] **ShoalCave_LowTideStairsRoom**: 1 flat cell(s) in 1 object(s) - `build/audit/ShoalCave_LowTideStairsRoom.png`
+  - [ ] (11, 11), 1 cell(s), tiles 358
+
+8 blocked cell(s) still flat in this area.
+<!-- /audit:ShoalCave -->
+
+<!-- audit:SeafloorCavern -->
+### SeafloorCavern - audit of 2026-10-07
+
+- [x] **SeafloorCavern_Entrance**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room1**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room2**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room3**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room4**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room5**: nothing blocked lies flat
+- [ ] **SeafloorCavern_Room6**: 206 flat cell(s) in 2 object(s) - `build/audit/SeafloorCavern_Room6.png`
+  - [ ] (0, 0)-(23, 22), 181 cell(s), tiles 276 278 27A 27E 281 289 28A 28D 28E 290 292 293 294 298 299 29A 29B 29C 2C3 2C5
+  - [ ] (11, 5)-(17, 8), 25 cell(s), tiles 275 276 277 27D 27E 27F 280 282 285 286 287 288 289 28A 28F 297 2C3 2C5
+- [ ] **SeafloorCavern_Room7**: 180 flat cell(s) in 1 object(s) - `build/audit/SeafloorCavern_Room7.png`
+  - [ ] (0, 0)-(22, 24), 180 cell(s), tiles 273 274 276 278 279 27A 27E 280 281 282 288 289 28A 28D 28E 290 292 293 294 298 299 29A 29C
+- [x] **SeafloorCavern_Room8**: nothing blocked lies flat
+- [x] **SeafloorCavern_Room9**: nothing blocked lies flat
+
+386 blocked cell(s) still flat in this area.
+<!-- /audit:SeafloorCavern -->
+
+<!-- audit:CaveOfOrigin -->
+### CaveOfOrigin - audit of 2026-10-07
+
+- [x] **CaveOfOrigin_1F**: nothing blocked lies flat
+- [x] **CaveOfOrigin_B1F**: nothing blocked lies flat
+- [x] **CaveOfOrigin_Entrance**: nothing blocked lies flat
+- [x] **CaveOfOrigin_UnusedRubySapphireMap1**: nothing blocked lies flat
+- [x] **CaveOfOrigin_UnusedRubySapphireMap2**: nothing blocked lies flat
+- [x] **CaveOfOrigin_UnusedRubySapphireMap3**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:CaveOfOrigin -->
+
+<!-- audit:AlteringCave -->
+### AlteringCave - audit of 2026-10-07
+
+- [x] **AlteringCave**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:AlteringCave -->
+
+<!-- audit:AncientTomb -->
+### AncientTomb - audit of 2026-10-07
+
+- [ ] **AncientTomb**: 1 flat cell(s) in 1 object(s) - `build/audit/AncientTomb.png`
+  - [ ] (8, 20), 1 cell(s), tiles 235
+
+1 blocked cell(s) still flat in this area.
+<!-- /audit:AncientTomb -->
+
+<!-- audit:ArtisanCave -->
+### ArtisanCave - audit of 2026-10-07
+
+- [x] **ArtisanCave_1F**: nothing blocked lies flat
+- [x] **ArtisanCave_B1F**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:ArtisanCave -->
+
+<!-- audit:DesertRuins -->
+### DesertRuins - audit of 2026-10-07
+
+- [ ] **DesertRuins**: 1 flat cell(s) in 1 object(s) - `build/audit/DesertRuins.png`
+  - [ ] (8, 20), 1 cell(s), tiles 235
+
+1 blocked cell(s) still flat in this area.
+<!-- /audit:DesertRuins -->
+
+<!-- audit:DesertUnderpass -->
+### DesertUnderpass - audit of 2026-10-07
+
+- [x] **DesertUnderpass**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:DesertUnderpass -->
+
+<!-- audit:IslandCave -->
+### IslandCave - audit of 2026-10-07
+
+- [ ] **IslandCave**: 1 flat cell(s) in 1 object(s) - `build/audit/IslandCave.png`
+  - [ ] (8, 20), 1 cell(s), tiles 235
+
+1 blocked cell(s) still flat in this area.
+<!-- /audit:IslandCave -->
+
+<!-- audit:MarineCave -->
+### MarineCave - audit of 2026-10-07
+
+- [x] **MarineCave_End**: nothing blocked lies flat
+- [x] **MarineCave_Entrance**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:MarineCave -->
+
+<!-- audit:ScorchedSlab -->
+### ScorchedSlab - audit of 2026-10-07
+
+- [x] **ScorchedSlab**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:ScorchedSlab -->
+
+<!-- audit:SealedChamber -->
+### SealedChamber - audit of 2026-10-07
+
+- [x] **SealedChamber_InnerRoom**: nothing blocked lies flat
+- [ ] **SealedChamber_OuterRoom**: 1 flat cell(s) in 1 object(s) - `build/audit/SealedChamber_OuterRoom.png`
+  - [ ] (10, 2), 1 cell(s), tiles 235
+
+1 blocked cell(s) still flat in this area.
+<!-- /audit:SealedChamber -->
+
+<!-- audit:SkyPillar -->
+### SkyPillar - audit of 2026-10-07
+
+- [ ] **SkyPillar_1F**: 63 flat cell(s) in 2 object(s) - `build/audit/SkyPillar_1F.png`
+  - [ ] (0, 0)-(13, 1), 27 cell(s), tiles 227 22F 23B 23C 23D 243 245
+  - [ ] (4, 5)-(9, 10), 36 cell(s), tiles 238 239 23A 240 241 242 249 24A 24D
+- [ ] **SkyPillar_2F**: 62 flat cell(s) in 2 object(s) - `build/audit/SkyPillar_2F.png`
+  - [ ] (0, 0)-(13, 1), 26 cell(s), tiles 227 22F 23B 23C 23D 243 245
+  - [ ] (4, 5)-(9, 10), 36 cell(s), tiles 238 239 23A 240 241 242 249 24A 24D
+- [ ] **SkyPillar_3F**: 67 flat cell(s) in 3 object(s) - `build/audit/SkyPillar_3F.png`
+  - [ ] (0, 0)-(13, 2), 27 cell(s), tiles 217 227 22F 23B 23C 23D 243 245
+  - [ ] (4, 3)-(9, 10), 39 cell(s), tiles 20F 21F 238 239 23A 240 241 249 24A 24D
+  - [ ] (9, 3), 1 cell(s), tiles 20F
+- [ ] **SkyPillar_4F**: 73 flat cell(s) in 4 object(s) - `build/audit/SkyPillar_4F.png`
+  - [ ] (0, 0)-(13, 3), 34 cell(s), tiles 207 20F 21F 227 22F 23B 23C 23D 243 245
+  - [ ] (0, 4)-(1, 4), 2 cell(s), tiles 217 21F
+  - [ ] (10, 4), 1 cell(s), tiles 20F
+  - [ ] (4, 5)-(9, 10), 36 cell(s), tiles 238 239 23A 240 241 242 249 24A 24D
+- [ ] **SkyPillar_5F**: 92 flat cell(s) in 2 object(s) - `build/audit/SkyPillar_5F.png`
+  - [ ] (0, 0)-(13, 2), 27 cell(s), tiles 217 227 22F 23B 23C 23D 243 245
+  - [ ] (3, 3)-(10, 11), 65 cell(s), tiles 21F 238 239 23A 240 241 242 249 24A 24D
+- [x] **SkyPillar_Entrance**: nothing blocked lies flat
+- [ ] **SkyPillar_Outside**: 4 flat cell(s) in 3 object(s) - `build/audit/SkyPillar_Outside.png`
+  - [ ] (9, 1), 1 cell(s), tiles 2B7
+  - [ ] (21, 1)-(22, 1), 2 cell(s), tiles 2B7
+  - [ ] (7, 2), 1 cell(s), tiles 2B7
+- [ ] **SkyPillar_Top**: 272 flat cell(s) in 42 object(s) - `build/audit/SkyPillar_Top.png`
+  - [ ] (11, 3)-(17, 3), 7 cell(s), tiles 2AD
+  - [ ] (20, 4), 1 cell(s), tiles 20F
+  - [ ] (24, 4), 1 cell(s), tiles 20F
+  - [ ] (1, 5), 1 cell(s), tiles 20F
+  - [ ] (5, 5), 1 cell(s), tiles 20F
+  - [ ] (19, 5), 1 cell(s), tiles 20F
+  - [ ] (23, 5), 1 cell(s), tiles 20F
+  - [ ] (2, 6), 1 cell(s), tiles 20F
+  - [ ] (6, 6), 1 cell(s), tiles 20F
+  - [ ] (8, 6), 1 cell(s), tiles 20F
+  - [ ] (18, 6), 1 cell(s), tiles 20F
+  - [ ] (20, 6), 1 cell(s), tiles 20F
+  - [ ] (3, 7), 1 cell(s), tiles 20F
+  - [ ] (7, 7), 1 cell(s), tiles 20F
+  - [ ] (17, 7), 1 cell(s), tiles 20F
+  - [ ] (25, 7), 1 cell(s), tiles 20F
+  - [ ] (0, 8), 1 cell(s), tiles 20F
+  - [ ] (6, 8), 1 cell(s), tiles 20F
+  - [ ] (8, 8), 1 cell(s), tiles 20F
+  - [ ] (12, 8)-(12, 9), 2 cell(s), tiles 20F
+  - [ ] (16, 8)-(16, 9), 2 cell(s), tiles 20F
+  - [ ] (20, 8), 1 cell(s), tiles 20F
+  - [ ] (24, 8), 1 cell(s), tiles 20F
+  - [ ] (1, 9), 1 cell(s), tiles 20F
+  - [ ] (9, 9), 1 cell(s), tiles 20F
+  - [ ] (23, 9), 1 cell(s), tiles 20F
+  - [ ] (2, 10), 1 cell(s), tiles 20F
+  - [ ] (4, 10), 1 cell(s), tiles 20F
+  - [ ] (6, 10), 1 cell(s), tiles 20F
+  - [ ] (13, 10), 1 cell(s), tiles 20F
+  - [ ] (24, 10), 1 cell(s), tiles 20F
+  - [ ] (3, 11), 1 cell(s), tiles 20F
+  - [ ] (21, 11), 1 cell(s), tiles 20F
+  - [ ] (25, 11), 1 cell(s), tiles 20F
+  - [ ] (0, 12)-(10, 14), 25 cell(s), tiles 20F 227 22F 26A 26D
+  - [ ] (13, 12)-(26, 15), 30 cell(s), tiles 207 20F 227 22F 23B 23C 23D 243 245 26B 26E
+  - [ ] (2, 16), 1 cell(s), tiles 20F
+  - [ ] (4, 16), 1 cell(s), tiles 20F
+  - [ ] (21, 16), 1 cell(s), tiles 20F
+  - [ ] (23, 16), 1 cell(s), tiles 20F
+  - [ ] (25, 16), 1 cell(s), tiles 20F
+  - [ ] (0, 17)-(26, 23), 170 cell(s), tiles 20F 25B 2A2
+
+633 blocked cell(s) still flat in this area.
+<!-- /audit:SkyPillar -->
+
+<!-- audit:TerraCave -->
+### TerraCave - audit of 2026-10-07
+
+- [x] **TerraCave_End**: nothing blocked lies flat
+- [x] **TerraCave_Entrance**: nothing blocked lies flat
+
+0 blocked cell(s) still flat in this area.
+<!-- /audit:TerraCave -->
