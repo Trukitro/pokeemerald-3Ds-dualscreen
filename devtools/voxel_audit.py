@@ -303,7 +303,13 @@ def main():
     if args.all:
         sweep(os.path.join(args.out, "all"), 40)
     for area in args.maps:
-        names = [area] + ([] if args.no_rooms else rooms_of(area))
+        if os.path.exists(os.path.join(MAPS, area, "map.json")):
+            names = [area] + ([] if args.no_rooms else rooms_of(area))
+        else:
+            # an area with no map of its own name: GraniteCave's floors
+            names = sorted(n for n in os.listdir(MAPS) if n.startswith(area + "_"))
+            if not names:
+                sys.exit("no map or area %s (folder names of data/maps)" % area)
         shots = run(names, args.wait)
         os.makedirs(args.out, exist_ok=True)
         report = []

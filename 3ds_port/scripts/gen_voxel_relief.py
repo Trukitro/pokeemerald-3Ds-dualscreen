@@ -176,6 +176,13 @@ ENABLED = ["LAYOUT_ROUTE104", "LAYOUT_RUSTBORO_CITY"]
 
 RELIEF_ROLES = {"cliff", "shelf", "stair"}
 
+# Caves (cave_lattice): the Cave tileset's rock is its own drawing, which the
+# mountains' reading does not know, and a cave was all floor - its walls a
+# picture of walls on the ground. Listed as each is looked at.
+CAVES = ["LAYOUT_GRANITE_CAVE_1F", "LAYOUT_GRANITE_CAVE_B1F", "LAYOUT_GRANITE_CAVE_B2F",
+         "LAYOUT_GRANITE_CAVE_STEVENS_ROOM"]
+CAVE_RISE = 16      # a mass of rock stands a level: its south face is drawn a cell tall
+
 # Ledges. The cartridge names each ledge cell's jump by its behaviour; the
 # drawing gives its lip, the half of the cell on the jump side painted in the
 # colours no ground round it has.
@@ -2609,6 +2616,60 @@ def raise_pits(h):
     return raised
 
 
+def cave_lattice(layout):
+    """A cave's rock, stood up from the cells the cartridge blocks.
+
+    A cave is drawn as the mountains are: a mass of rock is its top, with a
+    band a cell tall along its south edge that is its face, and its flanks
+    drawn in the cells down its sides. Every corner of the grid with rock in
+    all four cells round it (past the map's edge is rock) is up a level, and
+    every other on the floor; a cell's lattice runs between its corners. So
+    a mass's inner cells are its top, level; its south row falls from the top
+    to the floor in the cell's own depth, which at a point's depth = its
+    height is a wall standing at the cell's foot; its side rows are flanks;
+    and its north row is the back, which the camera does not see. A rock one
+    cell across has no inner corner and stays on the floor.
+    """
+    W, H = layout.w, layout.h
+
+    def rock(x, y):
+        if x < 0 or y < 0 or x >= W or y >= H:
+            return True
+        return layout.blocked(x, y) and layout.role_at(x, y) != "water"
+
+    corner = [[float(CAVE_RISE) if all(rock(cx, cy) for cx in (x - 1, x) for cy in (y - 1, y)) else 0.0
+               for x in range(W + 1)] for y in range(H + 1)]
+    h = flat_lattice(layout)
+    n = PER_CELL
+    for y in range(H):
+        for x in range(W):
+            a, b, c, d = corner[y][x], corner[y][x + 1], corner[y + 1][x], corner[y + 1][x + 1]
+            if not (a or b or c or d):
+                continue
+            for j in range(n + 1):
+                for i in range(n + 1):
+                    u, v = i / n, j / n
+                    h[y * n + j][x * n + i] = ((a * (1 - u) + b * u) * (1 - v)
+                                               + (c * (1 - u) + d * u) * v)
+    # A band one cell deep with floor north and south of it - the face of a
+    # step in the floor, a low wall across a passage - has no inner corner.
+    # Its top edge is stood up a level all the same: the band falls from it to
+    # its foot, a wall, and the floor behind climbs to it over its last
+    # quarter cell, a berm as a ledge's has. Where the band begins and ends,
+    # the corner it shares with the cells beside it stays where they put it.
+    for y in range(1, H - 1):
+        for x in range(W):
+            if not (rock(x, y) and not rock(x, y - 1) and not rock(x, y + 1)):
+                continue
+            first = 0 if x > 0 and rock(x - 1, y) and not rock(x - 1, y - 1) and not rock(x - 1, y + 1) else 1
+            last = n if x + 1 < W and rock(x + 1, y) and not rock(x + 1, y - 1) and not rock(x + 1, y + 1) else n - 1
+            for i in range(first, last + 1):
+                top = max(h[y * n][x * n + i], float(CAVE_RISE))
+                for j in range(n + 1):
+                    h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], top * (1 - j / n))
+    return h
+
+
 def layout_heights(layout_id):
     """The lattice of a layout: its relief where it is solved, its ledges."""
     roles_layout = open_roles(layout_id)
@@ -2621,6 +2682,8 @@ def layout_heights(layout_id):
     elif layout_id in ENABLED:
         role, cell, h = solve(roles_layout)
         ledges_on_ground(roles_layout, h)
+    elif layout_id in CAVES:
+        h = cave_lattice(roles_layout)
     else:
         h = flat_lattice(roles_layout)
     art = _ART.get(layout_id)
@@ -3892,6 +3955,7 @@ def main():
     else:
         drawn = [l for members in DRAWN.values() for l in members]
         lids = list(ENABLED) + [l for l in drawn if l not in ENABLED]
+        lids += [l for l in CAVES if l not in lids]
         lids += [l for l in ledge_layouts() if l not in lids]
         lids = list(dict.fromkeys(lids))   # a neighbour is in its alternate's group too
     if args.preview:

@@ -183,3 +183,31 @@ every reported item is ticked. Work one area to the end before the next.
 | Route134 | 1 | 0 | 0 | 0 | 0 | 0 |
 | **all** | 518 | 97519 | 2517 | 199 | 1511 | 5 |
 <!-- /audit:summary -->
+
+<!-- audit:GraniteCave -->
+### GraniteCave - audit of 2026-10-07
+
+- [ ] **GraniteCave_1F**: 7 flat cell(s) in 4 object(s) - `build/audit/GraniteCave_1F.png`
+  - [ ] (19, 5)-(19, 6), 2 cell(s), tiles 21A 21B
+  - [ ] (28, 5)-(28, 6), 2 cell(s), tiles 218 21C
+  - [ ] (35, 6)-(35, 7), 2 cell(s), tiles 218 21C
+  - [ ] (4, 10), 1 cell(s), tiles 202
+- [ ] **GraniteCave_B1F**: 7 flat cell(s) in 3 object(s) - `build/audit/GraniteCave_B1F.png`
+  - [ ] (27, 11), 1 cell(s), tiles 203
+  - [ ] (23, 13)-(23, 15), 3 cell(s), tiles 210 218
+  - [ ] (26, 17)-(26, 19), 3 cell(s), tiles 210 218
+- [ ] **GraniteCave_B2F**: 19 flat cell(s) in 9 object(s) - `build/audit/GraniteCave_B2F.png`
+  - [ ] (8, 1)-(8, 2), 2 cell(s), tiles 210 253
+  - [ ] (10, 1)-(10, 2), 2 cell(s), tiles 212 21A
+  - [ ] (12, 11)-(12, 13), 3 cell(s), tiles 210 218 220
+  - [ ] (15, 11), 1 cell(s), tiles 262
+  - [ ] (18, 12)-(18, 13), 2 cell(s), tiles 212 21A
+  - [ ] (22, 15)-(22, 16), 2 cell(s), tiles 21A 21B
+  - [ ] (12, 16)-(12, 17), 2 cell(s), tiles 21A 21B
+  - [ ] (7, 17)-(7, 19), 3 cell(s), tiles 212 21A 21B
+  - [ ] (11, 20)-(11, 21), 2 cell(s), tiles 21F 227
+- [ ] **GraniteCave_StevensRoom**: 1 flat cell(s) in 1 object(s) - `build/audit/GraniteCave_StevensRoom.png`
+  - [ ] (7, 10), 1 cell(s), tiles 202
+
+34 blocked cell(s) still flat in this area.
+<!-- /audit:GraniteCave -->
