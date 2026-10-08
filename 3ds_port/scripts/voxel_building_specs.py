@@ -530,8 +530,9 @@ def market_stall(width):
     second pair of posts on its sides and a skirt before the sellers."""
     x0, x1, front, high = 8, width - 8, 48, 26
 
-    def post(name, x):
-        return Prism(name, x, x + 4, [(front, 0), (front, high), (front - 2, high), (front - 2, 0)],
+    def post(name, x, z=None):
+        z = front if z is None else z
+        return Prism(name, x, x + 4, [(z, 0), (z, high), (z - 2, high), (z - 2, 0)],
                      edges={0: Tile(x, 34, x + 4, 44, top=high)}, skip=(1, 2, 3),
                      caps=None, west=False, east=False)
 
@@ -539,7 +540,26 @@ def market_stall(width):
                 [(front, high - 3), (front, high), (front - 28, high), (front - 28, high - 3)],
                 edges={0: Tile(x0, 26, x1, 29, top=high), 1: Strip((1, 26))}, skip=(2, 3),
                 caps=None, west=False, east=False)
-    return [lid, post("post_w", x0 + 1), post("post_e", x1 - 5)]
+    return [lid, post("post_w", x0 + 1), post("post_e", x1 - 5),
+            # and the two behind, which the drawing's camera does not show
+            post("post_nw", x0 + 1, front - 26), post("post_ne", x1 - 5, front - 26)]
+
+
+def standing_card(width=16, height=16):
+    """An object a cell across as a card: its drawing stood up at the cell's
+    foot, the ground round it cleared (a spec's `clear`). A jar, a bowl, a
+    bunch of flowers: drawn as seen from in front, and round - a box of it
+    is a block with a jar painted on its lid."""
+    return [Prism("card", 0, width, [(height, 0), (height, height), (height - 1, height), (height - 1, 0)],
+                  edges={0: Proj(0, height)}, skip=(1, 2, 3), caps=None, west=False, east=False)]
+
+
+SLATEPORT_PAVING = ("73c5a4", "a49ca4", "c5b4de", "cdcdde", "e6e6ee")
+# the market's goods that are round, and the quay's bollard: a tile, and a
+# cell that draws it (the others are found by their tile)
+SLATEPORT_CARDS = [(0x20B, 7, 36), (0x20C, 6, 34), (0x213, 6, 36), (0x214, 10, 54), (0x21B, 5, 36),
+                   (0x21C, 5, 35), (0x223, 7, 45), (0x22B, 3, 36), (0x28D, 3, 47), (0x28E, 11, 43),
+                   (0x344, 4, 38), (0x32D, 36, 39)]
 
 
 def slateport_tent():
@@ -1795,7 +1815,7 @@ SPECS = [
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x234, 0x23C, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF},
+            "tiles": {0x234, 0x23C, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF, 0x27E, 0x2BB},
             "height": 6, "block": 2,
         },
         "ground": [GRASS],
@@ -1812,12 +1832,12 @@ SPECS = [
         "ground": [GRASS],
     },
     {
-        # the market's goods: jars, crates and baskets
+        # the market's crates, which are boxes (its jars, bowls and flowers are cards)
         "name": "slateport_market",
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x20B, 0x20C, 0x213, 0x214, 0x21B, 0x21C, 0x223, 0x22B, 0x28D, 0x28E, 0x32D, 0x32E, 0x32F, 0x336, 0x337, 0x33E, 0x33F, 0x344, 0x27E, 0x2BB},
+            "tiles": {0x32E, 0x32F, 0x336, 0x337, 0x33E, 0x33F},
             "height": 10, "block": 1,
         },
         "ground": [GRASS],
@@ -2263,6 +2283,16 @@ SPECS += [
      "interior": {"layout": "LAYOUT_BATTLE_TENT_LOBBY", "ground": [0x210],
                   "shade": [0x211, 0x209, 0x208], "pieces": own_shell(battle_tent_lobby())}},
 ]
+
+SPECS += [
+    {"name": "slateport_card_%03x" % tile,
+     "layout": "LAYOUT_SLATEPORT_CITY",
+     "rect": (x, y, 1, 1),
+     "ground": [0x211],
+     "clear": SLATEPORT_PAVING,
+     "parts": standing_card,
+     "exact": []}
+    for (tile, x, y) in SLATEPORT_CARDS]
 
 for _spec in SPECS:
     _room = _spec.get("interior")

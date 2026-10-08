@@ -36,6 +36,30 @@ OWN_GROUND = 0xFFFF
 MAX_VARIANTS = 128      # voxel_atlas.h VOXEL_VARIANTS
 
 
+def clear_round(art, colours):
+    """The art with the ground round the object cleared: every pixel of one of
+    `colours` (hex) that the art's edge reaches through such pixels. An
+    object drawn on paving of many tiles - a jar in a market - has no one
+    ground metatile to be cut from; its paving is known by its colours, and
+    what of them the object's outline closes off is the object's."""
+    art = art.copy()
+    px = art.load()
+    w, h = art.size
+    want = {tuple(int(c[i:i + 2], 16) for i in (0, 2, 4)) for c in colours}
+    ok = lambda x, y: px[x, y][3] < 128 or px[x, y][:3] in want
+    todo = [(x, y) for x in range(w) for y in (0, h - 1) if ok(x, y)]
+    todo += [(x, y) for y in range(h) for x in (0, w - 1) if ok(x, y)]
+    seen = set(todo)
+    while todo:
+        x, y = todo.pop()
+        px[x, y] = (0, 0, 0, 0)
+        for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= q[0] < w and 0 <= q[1] < h and q not in seen and ok(*q):
+                seen.add(q)
+                todo.append(q)
+    return art
+
+
 def component_specs(spec, layouts):
     """Expand a `components` spec - hedges, walls: objects with no fixed
     shape - into one ordinary spec per connected run of its metatiles, in
@@ -918,6 +942,8 @@ def build_models(only=None):
             art = layout.building_art(x, y, w, h, layout.ground_tiles(spec["ground"]), cells=owned,
                                       ground_px=layout.ground_pixels(spec["ground"]) if owned else None,
                                       upper=spec.get("relief", {}).get("upper", False))
+        if spec.get("clear"):
+            art = clear_round(art, spec["clear"])
         if "relief" in spec:
             height = spec["relief"]["height"]
             relief = spec["relief"]
