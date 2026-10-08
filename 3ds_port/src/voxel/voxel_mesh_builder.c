@@ -1006,10 +1006,29 @@ void VoxelMesh_EmitGroundRow(VoxelBuilder *builder, const VoxelMapInstance *inst
     {
         unsigned first = builder->count;
 
+        int wx = x, wy = y, ground;
+        bool water;
+
         EmitGroundCells(builder, inst, x, x + 1, y);
-        if (builder->count != first && VoxelMesh_Classify(x, y) == VOXEL_SHAPE_WATER)
+        water = VoxelMesh_Classify(x, y) == VOXEL_SHAPE_WATER;
+        /* A model that stands in the water - a moored boat - has the sea for
+         * its ground, and its own cells are not water by their behaviour:
+         * the sea under it lay flat and still, a square in the waves. It is
+         * water where a cell of that same sea is within two of it. */
+        if (!water && builder->count != first && VoxelBuildings_CellAt(inst, x, y, &ground, NULL))
+            for (int dy = -2; dy <= 2 && !water; ++dy)
+                for (int dx = -2; dx <= 2 && !water; ++dx)
+                    if (VoxelWorld_GetInstanceAt(x + dx, y + dy) == inst
+                     && VoxelWorld_GetMetatileId(x + dx, y + dy) == ground
+                     && VoxelMesh_Classify(x + dx, y + dy) == VOXEL_SHAPE_WATER)
+                    {
+                        water = true;
+                        wx = x + dx;
+                        wy = y + dy;
+                    }
+        if (builder->count != first && water)
         {
-            float base = VoxelWorld_IsStillWater(x, y) ? VOXEL_WATER_STILL : VOXEL_WATER_SEA;
+            float base = VoxelWorld_IsStillWater(wx, wy) ? VOXEL_WATER_STILL : VOXEL_WATER_SEA;
 
             for (unsigned i = first; i < builder->count; ++i)
             {

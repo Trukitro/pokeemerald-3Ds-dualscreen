@@ -2297,7 +2297,7 @@ SPECS += [
      "rect": (x, y, 1, 1),
      "ground": [0x211],
      "clear": SLATEPORT_PAVING,
-     "parts": standing_card,
+     "card": True,
      "exact": []}
     for (tile, x, y) in SLATEPORT_CARDS]
 
@@ -2404,11 +2404,14 @@ SPECS += [
      "repeat_at": at,
      "ground": [0x170],
      "clear": SEA_COLOURS,
+     # and the sea between the dots of the shadow under its hull
+     "drop": SEA_COLOURS,
      "card": True,
      "exact": []}
+    # the bow the map's edge cuts (39, 44) lies as drawn: a card of one
+    # tile of a boat was a brown bar standing in the sea
     for (name, x, y, w, h, at) in (("whole", 34, 44, 3, 3, [(34, 44)]),
-                                   ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]),
-                                   ("bow", 39, 44, 1, 1, [(39, 44)]))
+                                   ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]))
 ]
 
 # ── Route 108: the Abandoned Ship ─────────────────────────────────────────
@@ -2446,6 +2449,7 @@ SPECS += [
      "owned": {(i, j) for j in range(4) for i in range(6)} - {(0, 0), (5, 0), (0, 3), (4, 3), (5, 3)},
      "ground": [0x19E],
      "clear": ("9ca4bd", "acc5e6", "6a83d5"),
+     "drop": ("9ca4bd", "acc5e6", "6a83d5"),
      "parts": abandoned_ship,
      "exact": []},
 ]
@@ -2592,6 +2596,22 @@ def ship_cabins(layout_id):
                         a, b = (wx, r * 16), (wx, r0 * 16)
                         pieces.append(piece("side_%d_%s_%d" % (k, tag, r0), [], 32, side=side,
                                             walls=[(a, b) if tag == "w" else (b, a)]))
+            # A passage between two cabins crosses the black between them:
+            # nothing is drawn there, and from the console's camera it was a
+            # hole to the void on either hand. A wall closes it - across the
+            # gap between the two side walls where a door goes east, and
+            # down both sides of a passage that comes through the back wall.
+            for r in range(y, y2):
+                if not blocked(x2, r) and x2 + 1 < lay.w and not blocked(x2 + 1, r):
+                    pieces.append(piece("lintel_%d_%d" % (k, r), [], 32, side=side,
+                                        walls=[((XE + 6, r * 16), (XE + 26, r * 16))]))
+                    pieces[-1]["added"] = True
+            for c in range(x + 1, x2):
+                if not blocked(c, y + 1):
+                    top = (y - 1) * 16 if y > 0 and not blocked(c, y - 1) else Y
+                    pieces.append(piece("pass_%d_%d" % (k, c), [], 32, side=side,
+                                        walls=[((c * 16, Y + 32), (c * 16, top)),
+                                               ((c * 16 + 16, top), (c * 16 + 16, Y + 32))]))
             k += 1
     # and what stands in them, each found by its tile: a bed on its cream
     # platform (its first row seven rows up the cell above), a table, a bin,

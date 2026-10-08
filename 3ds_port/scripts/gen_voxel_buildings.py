@@ -36,6 +36,61 @@ OWN_GROUND = 0xFFFF
 MAX_VARIANTS = 128      # voxel_atlas.h VOXEL_VARIANTS
 
 
+# What a drawing paints round a thing and a model must not carry: the sea, the
+# lawn, the sand, the shoal. A model whose art holds much of them stands as a
+# square of its background (model_lint).
+BACKGROUNDS = {"526ad5", "6a83d5", "73c5a4", "a4d5c5", "41b483", "decd83", "d5b46a", "eee6a4",
+               "9ca4bd", "acc5e6"}
+
+
+def drop_colours(art, colours):
+    """The art without any pixel of `colours` (a spec's `drop`) - the sea
+    between the dots of a dithered shadow, which no flood from the edge
+    reaches - and then without the dots: pixels left with no neighbour."""
+    art = art.copy()
+    px = art.load()
+    w, h = art.size
+    want = {tuple(int(c[i:i + 2], 16) for i in (0, 2, 4)) for c in colours}
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] >= 128 and px[x, y][:3] in want:
+                px[x, y] = (0, 0, 0, 0)
+    lone = [(x, y) for y in range(h) for x in range(w) if px[x, y][3] >= 128
+            and not any(0 <= i < w and 0 <= j < h and px[i, j][3] >= 128
+                        for (i, j) in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))]
+    for (x, y) in lone:
+        px[x, y] = (0, 0, 0, 0)
+    return art
+
+
+def model_lint(model, drawing):
+    """What is wrong with a model that the proof does not see, as words:
+    faces textured from past the drawing's edge (they show whatever the page
+    holds beside it - lines round a boat), background carried into the model
+    (a square of sea), a dithered shadow's dots."""
+    out = []
+    box = drawing.getbbox()
+    if box:
+        past = sum(1 for (pts, shade, tag) in model.mesh.tris
+                   if any(p[3] < box[0] - 1.51 or p[3] > box[2] + 1.51 for p in pts)
+                   or (drawing.size[1] == model.cells[1] * 16
+                       and any(p[4] < box[1] - 1.51 or p[4] > box[3] + 1.51 for p in pts)))
+        if past:
+            out.append("%d face(s) textured past the drawing's edge" % past)
+    px = drawing.load()
+    w, h = drawing.size
+    solid = [(x, y) for y in range(h) for x in range(w) if px[x, y][3] >= 128]
+    back = sum(1 for (x, y) in solid if "%02x%02x%02x" % px[x, y][:3] in BACKGROUNDS)
+    if back > 40 and back * 20 > len(solid):
+        out.append("%d of %d pixels are background colours" % (back, len(solid)))
+    lone = sum(1 for (x, y) in solid
+               if not any(0 <= i < w and 0 <= j < h and px[i, j][3] >= 128
+                          for (i, j) in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))))
+    if lone > 8:
+        out.append("%d lone pixels (a dithered shadow?)" % lone)
+    return out
+
+
 def clear_round(art, colours):
     """The art with the ground round the object cleared: every pixel of one of
     `colours` (hex) that the art's edge reaches through such pixels. An
@@ -881,6 +936,8 @@ def interior_specs(spec):
             # front of it has its doorway: the room's check judges it, not
             # its own model's
             behind = "" if mine else "~behind"
+            if pc.get("added"):
+                behind += "~added"
             parts.append(vb.PlainWall("%s_side%d%s" % (pc["name"], n, behind),
                                       (wa[0] - ox, wa[1] - oz),
                                       (wb[0] - ox, wb[1] - oz), -1, tall, side))
@@ -944,6 +1001,8 @@ def build_models(only=None):
                                       upper=spec.get("relief", {}).get("upper", False))
         if spec.get("clear"):
             art = clear_round(art, spec["clear"])
+        if spec.get("drop"):
+            art = drop_colours(art, spec["drop"])
         if "relief" in spec:
             height = spec["relief"]["height"]
             relief = spec["relief"]
@@ -966,7 +1025,15 @@ def build_models(only=None):
             # its drawing stood up at its foot, no wider or taller than what
             # is drawn: a card past the drawing's edge showed lines of
             # whatever the page holds beside it
-            parts = [vb.Card("card", art, h * 16)]
+            # (a front wall one pixel thick, as the market's goods are: lit
+            # as a wall that faces the sun. vb.Card, made for rooms, came
+            # out dark out of doors.)
+            bx0, by0, bx1, by1 = art.getbbox() or (0, 0, w * 16, h * 16)
+            tall = by1 - by0
+            parts = [vb.Lit(vb.Prism("card", bx0, bx1,
+                                     [(by1, 0), (by1, tall), (by1 - 1, tall), (by1 - 1, 0)],
+                                     edges={0: vb.Proj(by0, by1)}, skip=(1, 2, 3), caps=None,
+                                     west=False, east=False))]
         elif "parasol" in spec:
             # a beach parasol: its canopy a dome held up on its pole. The
             # shadow drawn on the sand is left out: the light casts its own
@@ -987,6 +1054,11 @@ def build_models(only=None):
         else:
             parts = spec["parts"]()
         model = vb.Model(spec["name"], art, parts, (w, h), spec["ground"][0])
+        # (not a relief or a mound: their textures hold bands of their own
+        # below the drawing, and a run's block reaches into the next)
+        if not any(k in spec for k in ("interior", "relief", "mound", "drawing", "at")):
+            for line in model_lint(model, spec.get("drawing", art)):
+                print("lint %-28s %s" % (spec["name"], line))
         model.owned = owned if owned is not None else {(i, j) for i in range(w) for j in range(h)}
         model.spec = spec
         model.layout = layout
@@ -1415,7 +1487,11 @@ def export(models, path):
         records.append(struct.pack("<BBHIII", w, h, m.ground_metatile, first, count, len(heights)))
         # 255: a cell of the rectangle the object does not own (a hedge's
         # rectangle holds the house it runs round)
-        heights += bytes(t if (i % w, i // w) in m.owned else 255
+        # A card has no plan: as boxes its cells cast a block's shadow, on
+        # the sea round a boat and on the boat itself, which stood dark in
+        # it. It casts none.
+        flat = bool(m.spec.get("card"))
+        heights += bytes((0 if flat else t) if (i % w, i // w) in m.owned else 255
                          for i, t in enumerate(cell_heights(m)))
         quads = m.spec.get("quads", {})
         quarters += bytes(quads.get((i % w, i // w), 0) for i in range(w * h))
@@ -1675,6 +1751,8 @@ def room_check(models, layout_id, out_dir):
                      "patch")
     for (m, px, py) in items:
         for (tri, shade, tag) in m.mesh.tris:
+            if "~added" in tag:
+                continue    # a wall the drawing has not: closing a hole to the void
             if "~depth" in tag:
                 continue  # real depth rising behind the drawing
             vs = [(x + px * 16, z + py * 16 - y, y + z + py * 16, 1.0, u, v)

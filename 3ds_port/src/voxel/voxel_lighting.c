@@ -710,6 +710,9 @@ void VoxelLighting_Quad(VoxelBuilder *builder, const VoxelVertex *a,
 /* A face wound with its outside first (a rock's back, turned every way):
  * its normal is its winding's, no side's rule (voxel_building.py SHADE_WOUND). */
 #define MODEL_SHADE_WOUND 0.90f
+/* A card - a thing drawn from above, stood up (voxel_building.py SHADE_CARD):
+ * its drawing has its light in it, and it is lit as open ground is. */
+#define MODEL_SHADE_CARD 0.95f
 
 void VoxelLighting_ModelTri(VoxelBuilder *builder, const VoxelVertex *a,
                             const VoxelVertex *b, const VoxelVertex *c, float drawnShade)
@@ -721,7 +724,15 @@ void VoxelLighting_ModelTri(VoxelBuilder *builder, const VoxelVertex *a,
     float nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
     bool flip;
 
-    if (fabsf(drawnShade - MODEL_SHADE_WOUND) < 0.02f)
+    if (fabsf(drawnShade - MODEL_SHADE_CARD) < 0.02f)
+    {
+        /* lit as the open ground it stands on, whichever way it faces */
+        nx = 0.0f;
+        ny = 1.0f;
+        nz = 0.0f;
+        flip = false;
+    }
+    else if (fabsf(drawnShade - MODEL_SHADE_WOUND) < 0.02f)
         flip = false;
     else if (fabsf(drawnShade - MODEL_SHADE_WEST) < 0.02f)
         flip = nx > 0.0f;

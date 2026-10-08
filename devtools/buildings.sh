@@ -29,4 +29,7 @@ mkdir -p "$REPO/build/audit/flat" && cp build/buildings/*_flat.json "$REPO/build
 grep 'pixel(s) differ' /tmp/buildings.log | grep -v ' 0 pixel' | cut -c1-150
 grep -B2 'does not reproduce\|claims no pixel\|exceeds\|does not fit' /tmp/buildings.log | cut -c1-170 | tail -6
 grep 'exact:' /tmp/buildings.log | grep -v 'wrong=0 missing=0 extra=0' | cut -c1-150 | head
+# what the proof does not see (gen_voxel_buildings.py's model_lint)
+grep '^lint ' /tmp/buildings.log > "$REPO/build/audit/model_lint.txt"
+echo "lint: $(wc -l < "$REPO/build/audit/model_lint.txt") model(s) flagged -> build/audit/model_lint.txt"
 grep '^voxel buildings: [0-9]* models' /tmp/buildings.log | cut -c1-150

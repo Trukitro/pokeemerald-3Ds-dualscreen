@@ -77,6 +77,11 @@ SHADE_BACK = 0.66
 # A face the drawing never shows whose winding is its outside (a rock's back,
 # turned every way): the console lights it as wound, not by a side's rule.
 SHADE_WOUND = 0.90
+# A card: a thing drawn from above, stood up. Its drawing carries its own
+# light; lit as the wall it is made of, it stood in the shade of nothing -
+# a cream sailing boat came out olive. The console lights it as open ground
+# (voxel_lighting.c's MODEL_SHADE_CARD).
+SHADE_CARD = 0.95
 
 
 # ── Art ─────────────────────────────────────────────────────────────────────
@@ -1399,6 +1404,22 @@ class Mound:
     def _quad(self, mesh, p, q, r, s, shade, tag, outward=None):
         self._tri(mesh, p, q, r, shade, tag, outward)
         self._tri(mesh, p, r, s, shade, tag, outward)
+
+
+class Lit:
+    """A part whose every face is a card's (SHADE_CARD)."""
+
+    def __init__(self, part):
+        self.name, self.part = part.name, part
+
+    def emit(self, mesh):
+        own = Mesh()
+        if isinstance(self.part, Prism):
+            emit_prism(own, self.part)
+        else:
+            self.part.emit(own)
+        for (pts, shade, tag) in own.tris:
+            mesh.tri(pts[0], pts[1], pts[2], SHADE_CARD, tag)
 
 
 class Scaled:
