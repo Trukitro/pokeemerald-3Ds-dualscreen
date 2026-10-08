@@ -2506,17 +2506,22 @@ def ship_corridors(layout_id):
                         cells.add(q)
                         todo.append(q)
             seen |= cells
-            if not any(lay.metatile(*c) in front for c in cells):
-                continue
             x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells) + 1
             y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells) + 1
+            # A block the layout's bottom edge cuts has no front drawn: it
+            # stands all the same, its roof's last rows its front - a white
+            # slab lying on the floor was no block of cabins. (One too
+            # shallow for that stays flat.)
+            if not any(lay.metatile(*c) in front for c in cells) and (
+                    y1 < lay.h or y1 * 16 - max(0, y0 * 16 - 7) < 36):
+                continue
             pieces.append(piece("cabins_%d_%d" % (x0, y0),
                                 [(x0 * 16, max(0, y0 * 16 - 7), x1 * 16, y1 * 16)], 28,
                                 leave=SHIP_FLOOR, solid=True))
     run = None
     for c in range(lay.w + 1):
         wall = (c < lay.w and blocked(c, 0) and blocked(c, 1)
-                and lay.metatile(c, 0) not in roof | {0x201} and lay.metatile(c, 0) in (0x208, 0x209, 0x2A8, 0x2A9))
+                and lay.metatile(c, 0) not in roof | {0x201} and lay.metatile(c, 0) in (0x208, 0x209, 0x2A8, 0x2A9, 0x221))
         if wall and run is None:
             run = c
         if not wall and run is not None:

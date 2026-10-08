@@ -2712,6 +2712,84 @@ def cave_lattice(layout):
     return h
 
 
+# A ship's deck drawn as terraces: decks one over another, each the roof of
+# the cabins under it, with the cabins' fronts, the hull's side, pillars,
+# doors and stairs drawn standing between them. The tiles that stand:
+TERRACES = {
+    "LAYOUT_ABANDONED_SHIP_DECK": {0x3C9, 0x3CB, 0x3CA, 0x35D, 0x2C3, 0x2C4, 0x2C5, 0x2CB, 0x2CC,
+                                   0x2CD, 0x218, 0x220, 0x210, 0x3B3, 0x3CC, 0x3CD, 0x0AF, 0x0CF,
+                                   0x2CE, 0x2CF},
+}
+
+
+TERRACE_RAILS_EW = {0x269, 0x265, 0x266, 0x268, 0x26A}
+TERRACE_RAILS_NS = {0x260, 0x262}
+TERRACE_LOW = {0x21F, 0x227, 0x22F, 0x2A1}
+
+
+def terrace_lattice(layout, standing):
+    """Decks at their heights, read up each column of cells from the map's
+    foot: a standing cell - a wall's, a stair's - rises its own sixteen rows
+    from its south edge to its north (at a point's depth = its height that is
+    a face standing upright at the cell's foot), and every other cell lies
+    level at the height the cell south of it ends on. The drawing is a
+    projection that agrees with itself, so the columns agree with each other
+    wherever a deck runs across them; where two cells side by side stand at
+    different heights the lower keeps its level and the higher comes down to it
+    along their edge."""
+    W, H, n = layout.w, layout.h, PER_CELL
+    south = [[0.0] * W for _ in range(H)]
+    north = [[0.0] * W for _ in range(H)]
+    for x in range(W):
+        level = 0.0
+        for y in range(H - 1, -1, -1):
+            south[y][x] = level
+            if layout.metatile(x, y) in standing:
+                level += 16.0
+            north[y][x] = level
+    # (the lower of the two along a shared edge: the face between two decks
+    # is then drawn with the higher one's own edge - a railing, a pillar -
+    # and not with a sun lounger of the deck below stretched up it)
+    h = [[1e9] * (W * n + 1) for _ in range(H * n + 1)]
+    for y in range(H):
+        for x in range(W):
+            for j in range(n + 1):
+                v = north[y][x] + (south[y][x] - north[y][x]) * j / n
+                for i in range(n + 1):
+                    row = h[y * n + j]
+                    row[x * n + i] = min(row[x * n + i], v)
+    # What stands on a deck: its railings, a ridge eight rows tall along the
+    # line they are drawn on (a cell's own edge rows are its neighbours' too,
+    # and stay level unless the railing runs on into them), and the sun
+    # loungers, four rows off it.
+    across, along, low = TERRACE_RAILS_EW, TERRACE_RAILS_NS, TERRACE_LOW
+    tile = lambda cx, cy: layout.metatile(cx, cy) if 0 <= cx < W and 0 <= cy < H else -1
+    add = {}
+    for y in range(H):
+        for x in range(W):
+            m = tile(x, y)
+            if m in across:
+                i0 = 0 if tile(x - 1, y) in across else 1
+                i1 = n if tile(x + 1, y) in across else n - 1
+                for i in range(i0, i1 + 1):
+                    add[(y * n + 1, x * n + i)] = 8.0
+                    add[(y * n + 2, x * n + i)] = max(add.get((y * n + 2, x * n + i), 0.0), 4.0)
+            if m in along:
+                j0 = 0 if tile(x, y - 1) in along | across else 1
+                j1 = n if tile(x, y + 1) in along | across else n - 1
+                for j in range(j0, j1 + 1):
+                    add[(y * n + j, x * n + 2)] = 8.0
+            if m in low:
+                j0 = 0 if tile(x, y - 1) in low else 1
+                j1 = n if tile(x, y + 1) in low else n - 1
+                for j in range(j0, j1 + 1):
+                    for i in range(1, n):
+                        add[(y * n + j, x * n + i)] = 4.0
+    for (j, i), v in add.items():
+        h[j][i] += v
+    return h
+
+
 def layout_heights(layout_id):
     """The lattice of a layout: its relief where it is solved, its ledges."""
     roles_layout = open_roles(layout_id)
@@ -2726,6 +2804,8 @@ def layout_heights(layout_id):
         ledges_on_ground(roles_layout, h)
     elif layout_id in CAVES:
         h = cave_lattice(roles_layout)
+    elif layout_id in TERRACES:
+        h = terrace_lattice(roles_layout, TERRACES[layout_id])
     else:
         h = flat_lattice(roles_layout)
     art = _ART.get(layout_id)
@@ -3998,6 +4078,7 @@ def main():
         drawn = [l for members in DRAWN.values() for l in members]
         lids = list(ENABLED) + [l for l in drawn if l not in ENABLED]
         lids += [l for l in CAVES if l not in lids]
+        lids += [l for l in TERRACES if l not in lids]
         lids += [l for l in ledge_layouts() if l not in lids]
         lids = list(dict.fromkeys(lids))   # a neighbour is in its alternate's group too
     if args.preview:
