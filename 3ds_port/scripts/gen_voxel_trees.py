@@ -36,6 +36,7 @@ def texel_offset(x, y):
 # sand with the shadow (16x16 at 80,0).
 ISLAND = ("gTileset_General", "gTileset_Dewford", 0x239, 0x23A)
 ISLAND_SHADOW = {(0xbd, 0xac, 0x52), (0x9c, 0x8b, 0x31)}
+FLOWER_SHADOW = {(0x18, 0xa4, 0x6a)}
 
 
 def island_tree(tree):
@@ -86,8 +87,14 @@ def island_tree(tree):
                     ground.putpixel((x, y), (r, g, b, 255))   # the trunk's foot
     # The General tileset's flowers (metatile 004): its upper layer is the
     # cluster, over plain grass. Stood up as a card it is the drawing's own
-    # flowers; a card of other art in their place did not read as them.
+    # flowers; a card of other art in their place did not read as them. The
+    # layer is opaque: round the cluster it repeats the grass under it, and
+    # its shadow on that grass. Neither stands up - a card that carried them
+    # was a square of lawn in front of the flowers behind it.
     general = art.read_u16(os.path.join(tree, art.tileset_dir(primary), "metatiles.bin"))
+    lawn = set(FLOWER_SHADOW)
+    for entry in general[4 * 8:4 * 8 + 4]:
+        lawn |= {tuple(rgb) for (rgb, index) in ts.subtile(entry & 0x3FF, (entry >> 12) & 0xF) if index}
     entries = general[4 * 8 + 4:4 * 8 + 8]
     flowers = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     fpx = flowers.load()
@@ -98,7 +105,7 @@ def island_tree(tree):
                 sx = 7 - x if entry & 0x400 else x
                 sy = 7 - y if entry & 0x800 else y
                 rgb, index = data[sy * 8 + sx]
-                if index:
+                if index and tuple(rgb) not in lawn:
                     fpx[(quad & 1) * 8 + x, (quad >> 1) * 8 + y] = tuple(rgb) + (255,)
     return card, ground, flowers
 

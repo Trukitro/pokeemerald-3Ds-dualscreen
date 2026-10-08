@@ -555,6 +555,8 @@ def standing_card(width=16, height=16):
                   edges={0: Proj(0, height)}, skip=(1, 2, 3), caps=None, west=False, east=False)]
 
 
+# the lawn's three greens, and the shadow drawn on it
+GRASS_COLOURS = ("73c5a4", "a4d5c5", "41b483", "18a46a")
 SLATEPORT_PAVING = ("73c5a4", "a49ca4", "c5b4de", "cdcdde", "e6e6ee")
 # the market's goods that are round, and the quay's bollard: a tile, and a
 # cell that draws it (the others are found by their tile)
@@ -1816,7 +1818,7 @@ SPECS = [
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x234, 0x23C, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF, 0x27E, 0x2BB},
+            "tiles": {0x234, 0x23C, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF, 0x27E, 0x2BB},
             "height": 6, "block": 2,
         },
         "ground": [GRASS],
@@ -2307,6 +2309,18 @@ SPECS += [
      "parts": standing_card,
      "exact": []}
     for (tile, x, y) in SLATEPORT_CARDS]
+
+# The round bushes at the Battle Tent's sides: a dome each, lifted off its
+# own drawing as the tent is, and nothing of the lawn round it. As a low box
+# it was a square of grass with a bush painted on its lid.
+SPECS += [
+    {"name": "slateport_bush",
+     "layout": "LAYOUT_SLATEPORT_CITY",
+     "rect": (7, 10, 1, 1),
+     "ground": [GRASS],
+     "clear": GRASS_COLOURS,
+     "mound": {"rise": 0.9, "step": 2},
+     "exact": [(0, 0, 16, 16)]}]
 
 for _spec in SPECS:
     _room = _spec.get("interior")
