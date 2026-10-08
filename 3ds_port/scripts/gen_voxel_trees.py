@@ -84,7 +84,23 @@ def island_tree(tree):
                 card.putpixel((x, 16 + y), (r, g, b, 255))
                 if y >= 7:
                     ground.putpixel((x, y), (r, g, b, 255))   # the trunk's foot
-    return card, ground
+    # The General tileset's flowers (metatile 004): its upper layer is the
+    # cluster, over plain grass. Stood up as a card it is the drawing's own
+    # flowers; a card of other art in their place did not read as them.
+    general = art.read_u16(os.path.join(tree, art.tileset_dir(primary), "metatiles.bin"))
+    entries = general[4 * 8 + 4:4 * 8 + 8]
+    flowers = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    fpx = flowers.load()
+    for quad, entry in enumerate(entries):
+        data = ts.subtile(entry & 0x3FF, (entry >> 12) & 0xF)
+        for y in range(8):
+            for x in range(8):
+                sx = 7 - x if entry & 0x400 else x
+                sy = 7 - y if entry & 0x800 else y
+                rgb, index = data[sy * 8 + sx]
+                if index:
+                    fpx[(quad & 1) * 8 + x, (quad >> 1) * 8 + y] = tuple(rgb) + (255,)
+    return card, ground, flowers
 
 
 def pack(assets, tree):
@@ -95,8 +111,9 @@ def pack(assets, tree):
             if source.size != size:
                 raise ValueError(f"{name}: expected {size}, got {source.size}")
             images.append((source.convert("RGBA"), size, origin))
-    card, ground = island_tree(tree)
-    images += [(card, card.size, (64, 0)), (ground, ground.size, (80, 0))]
+    card, ground, flowers = island_tree(tree)
+    images += [(card, card.size, (64, 0)), (ground, ground.size, (80, 0)),
+               (flowers, flowers.size, (96, 0))]
     for image, size, (ox, oy) in images:
         for y in range(size[1]):
             for x in range(size[0]):

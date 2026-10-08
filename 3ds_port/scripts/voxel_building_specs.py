@@ -1724,9 +1724,9 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (8, 8, 5, 5),
         "ground": [GRASS],
-        "parts": slateport_tent,
-        # not judged against its drawing: stepped round, it is not the drawing
-        "exact": [],
+        # a dome: lifted off its drawing, round from every side
+        "mound": {"rise": 0.9, "step": 4},
+        "exact": [(0, 0, 80, 80)],
     },
     {
         "name": "slateport_shipyard",

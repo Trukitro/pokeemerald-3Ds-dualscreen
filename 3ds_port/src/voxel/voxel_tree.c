@@ -163,7 +163,9 @@ static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
         [VOXEL_GRASS_TALL] = {0, 44, 10},
         [VOXEL_GRASS_LONG] = {16, 44, 16},
         [VOXEL_GRASS_ASH] = {48, 50, 10},
-        [VOXEL_GRASS_FLOWER] = {0, 54, 10},
+        /* the tileset's own flowers, taken at build time into the texture's
+         * right half (gen_voxel_trees.py): a cluster a cell, as it is drawn */
+        [VOXEL_GRASS_FLOWER] = {96, 0, 16},
     };
     const float u0 = (float)tufts[kind].x / VOXEL_TREE_TEXTURE_DIM;
     const float u1 = u0 + 16.0f / VOXEL_TREE_TEXTURE_DIM;
@@ -183,10 +185,12 @@ static void EmitGrass(VoxelBuilder *builder, int x, int y, VoxelGrass kind)
         builder->lightingConstant = VoxelLighting_Sample(wx + 0.5f, builder->lift + 0.25f, wz + 0.5f);
 #endif
     builder->rounded = true;
-    for (int row = 0; row < VOXEL_GRASS_TUFT_ROWS; ++row)
+    /* Grass stands in rows; a cell of flowers is its one cluster, in the
+     * middle of the cell and never mirrored - the drawing's, stood up. */
+    for (int row = 0; row < (kind == VOXEL_GRASS_FLOWER ? 1 : VOXEL_GRASS_TUFT_ROWS); ++row)
     {
-        float baseZ = wz + 0.45f + row * 0.5f;
-        bool mirror = ((x + y + row) & 1) != 0;
+        float baseZ = kind == VOXEL_GRASS_FLOWER ? wz + 0.9f : wz + 0.45f + row * 0.5f;
+        bool mirror = kind != VOXEL_GRASS_FLOWER && ((x + y + row) & 1) != 0;
         float ua = mirror ? u1 : u0, ub = mirror ? u0 : u1;
 
         VoxelBuilder_Quad(builder,

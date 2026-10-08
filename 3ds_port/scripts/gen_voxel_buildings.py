@@ -957,6 +957,11 @@ def build_models(only=None):
                                seam=(h * 16, open_s, open_n), flank_tile=flank,
                                seam_x=(spec.get("west", ()), spec.get("east", ())))]
             spec["exact"] = [(0, 0, w * 16, h * 16)]
+        elif "mound" in spec:
+            # a round thing of any size, lifted off its own drawing (vb.Mound):
+            # a dome is the drawing at 45 degrees and a dome from anywhere else
+            parts = [vb.Mound("mound", art, rise=spec["mound"].get("rise", 1.0),
+                              step=spec["mound"].get("step", 4))]
         else:
             parts = spec["parts"]()
         model = vb.Model(spec["name"], art, parts, (w, h), spec["ground"][0])
