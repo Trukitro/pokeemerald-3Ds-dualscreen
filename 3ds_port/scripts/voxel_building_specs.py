@@ -517,6 +517,31 @@ def slateport_museum():
             + [box_part("steps", 32, 64, 88, 84, 80)])
 
 
+def market_stall(width):
+    """A market stall: a canopy on two posts, open all round. `width` is its
+    rectangle's, in pixels; the canopy is drawn eight columns in from each
+    side, rows 1-28, and its posts under its front corners, four columns each.
+
+    Not the drawing's own geometry: there the canopy hangs 18 rows up, lower
+    than whoever sells under it stands. It is a thin slab 26 rows up, the
+    canopy's rows laid back on it from its front edge, and the posts are the
+    posts' own shaft repeated up to it. Nothing else: no front under the
+    canopy, no sides, no back - a box's faces dressed with the drawing put a
+    second pair of posts on its sides and a skirt before the sellers."""
+    x0, x1, front, high = 8, width - 8, 48, 26
+
+    def post(name, x):
+        return Prism(name, x, x + 4, [(front, 0), (front, high), (front - 2, high), (front - 2, 0)],
+                     edges={0: Tile(x, 34, x + 4, 44, top=high)}, skip=(1, 2, 3),
+                     caps=None, west=False, east=False)
+
+    lid = Prism("canopy", x0, x1,
+                [(front, high - 3), (front, high), (front - 28, high), (front - 28, high - 3)],
+                edges={0: Tile(x0, 26, x1, 29, top=high), 1: Strip((1, 26))}, skip=(2, 3),
+                caps=None, west=False, east=False)
+    return [lid, post("post_w", x0 + 1), post("post_e", x1 - 5)]
+
+
 def slateport_tent():
     """The Battle Tent: a drum drawn round. Its front steps back towards its
     sides, five boxes under one lid, so it is not a square box; the feet of
@@ -1699,48 +1724,48 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 41, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 20, side_x=4),
-        "exact": [(0, 0, 80, 48, True)],
+        "parts": lambda: market_stall(80),
+        "exact": [],
     },
     {
         "name": "slateport_stall_1",
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 45, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 20, side_x=4),
-        "exact": [(0, 0, 80, 48, True)],
+        "parts": lambda: market_stall(80),
+        "exact": [],
     },
     {
         "name": "slateport_stall_2",
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 49, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 20, side_x=4),
-        "exact": [(0, 0, 80, 48, True)],
+        "parts": lambda: market_stall(80),
+        "exact": [],
     },
     {
         "name": "slateport_stall_3",
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 41, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 20, side_x=4),
-        "exact": [(0, 0, 64, 48, True)],
+        "parts": lambda: market_stall(64),
+        "exact": [],
     },
     {
         "name": "slateport_stall_4",
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 45, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 20, side_x=4),
-        "exact": [(0, 0, 64, 48, True)],
+        "parts": lambda: market_stall(64),
+        "exact": [],
     },
     {
         "name": "slateport_stall_5",
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 49, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 20, side_x=4),
-        "exact": [(0, 0, 64, 48, True)],
+        "parts": lambda: market_stall(64),
+        "exact": [],
     },
     {
         # read column by column, as a hedge is: its outline is not a box's
