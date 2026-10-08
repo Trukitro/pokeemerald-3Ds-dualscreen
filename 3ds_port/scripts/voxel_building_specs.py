@@ -2402,6 +2402,44 @@ SPECS += [
                   "pieces": own_shell(seashore_house())}},
 ]
 
+# ── Route 108: the Abandoned Ship ─────────────────────────────────────────
+#
+# A small drawing of a whole ship aground on the shoal: a hull eleven rows
+# out of the water, its deck laid back from the top of its side; the cabin's
+# roof four rows over the deck, flush with the side its portholes are in; the
+# gangway and the hull's shadow on the water, which lie there.
+
+def raised_part(name, x0, x1, base, foot, facade_top, top):
+    """box_part standing `base` rows up, on another box's lid."""
+    wall = foot - facade_top
+    front = foot + base
+    back = front - (facade_top - top)
+    side = Tile(x0, facade_top, x0 + 8, foot, top=wall)
+    return Prism(name, x0, x1,
+                 [(front, base), (front, base + wall), (back, base + wall), (back, base)],
+                 edges={0: Proj(facade_top, foot), 1: Proj(top, facade_top), 2: side}, skip=(3,),
+                 caps=[Band(base, base + wall + 1, side, front)])
+
+
+def abandoned_ship():
+    return [box_part("hull", 0, 88, 44, 33, 16),
+            raised_part("cabin", 22, 61, 11, 33, 29, 10),
+            raised_part("stack", 61, 75, 11, 33, 31, 13),
+            box_part("shade", 2, 88, 48, 47, 44),
+            box_part("gangway", 29, 51, 56, 55, 48)]
+
+
+SPECS += [
+    {"name": "route108_ship",
+     "layout": "LAYOUT_ROUTE108",
+     "rect": (27, 3, 6, 4),
+     "owned": {(i, j) for j in range(4) for i in range(6)} - {(0, 0), (5, 0), (0, 3), (4, 3), (5, 3)},
+     "ground": [0x19E],
+     "clear": ("9ca4bd", "acc5e6", "6a83d5"),
+     "parts": abandoned_ship,
+     "exact": []},
+]
+
 for _spec in SPECS:
     _room = _spec.get("interior")
     if _room and _room["layout"] in EXTRA_PIECES:
