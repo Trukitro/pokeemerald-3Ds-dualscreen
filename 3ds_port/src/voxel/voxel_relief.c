@@ -377,10 +377,22 @@ float VoxelRelief_CellFoot(const VoxelMapInstance *inst, int x, int y)
 
 static float Sample(const int16_t *g, float worldX, float worldZ);
 
+/* Whoever is asked about next is under a bridge's deck, not on it
+ * (voxel_entities.c): on the ground the deck's relief stands over. */
+static bool sUnder;
+
+void VoxelRelief_Under(bool under)
+{
+    sUnder = under;
+}
+
 float VoxelRelief_LiftAt(float worldX, float worldZ)
 {
     int x = FloorI(worldX), y = FloorI(worldZ);
     const VoxelMapInstance *inst = VoxelWorld_GetInstanceAt(x, y);
+
+    if (sUnder)
+        return VoxelRelief_Base(inst);
 
     return VoxelRelief_Base(inst) + Sample(VoxelRelief_Cell(inst, x, y), worldX, worldZ);
 }
@@ -388,6 +400,9 @@ float VoxelRelief_LiftAt(float worldX, float worldZ)
 float VoxelRelief_ShiftAt(float worldX, float worldZ)
 {
     int x = FloorI(worldX), y = FloorI(worldZ);
+
+    if (sUnder)
+        return 0.0f;
     return Sample(VoxelRelief_Depth(VoxelWorld_GetInstanceAt(x, y), x, y), worldX, worldZ);
 }
 

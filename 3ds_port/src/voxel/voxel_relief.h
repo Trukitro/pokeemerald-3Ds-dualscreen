@@ -65,6 +65,9 @@ float VoxelRelief_CellFoot(const VoxelMapInstance *inst, int x, int y);
 
 /* Height in tiles in the world at a world position, interpolated on the
  * lattice: the base of the map there and the relief over it. */
+/* A bridge's deck is relief like any other, and what passes under it stands
+ * on the ground: set while the questions are about someone under a deck. */
+void VoxelRelief_Under(bool under);
 float VoxelRelief_LiftAt(float worldX, float worldZ);
 
 /* Depth in tiles at a world position, interpolated on the lattice. */

@@ -2790,6 +2790,31 @@ def terrace_lattice(layout, standing):
     return h
 
 
+# A road on a bridge over land and water alike (Route 110's cycling road): its
+# deck's cells are the ones the cartridge gives elevation 15 - walked on above,
+# and under - and stand `rise` pixels up. Every lattice point of a deck cell
+# is up, so the cells round it - its railings, the band under its south rail -
+# slope from it to the ground: its sides.
+BRIDGES = {"LAYOUT_ROUTE110": 16}
+
+
+def bridge_deck(layout, h, rise):
+    n = PER_CELL
+    deck = {(x, y) for y in range(layout.h) for x in range(layout.w) if layout.elevation(x, y) == 15}
+    # and the rows of the deck where it crosses a kerb, which are the deck's
+    # own level alone (4): deck north and south of them, or east and west
+    deck |= {(x, y) for y in range(layout.h) for x in range(layout.w)
+             if layout.elevation(x, y) == 4 and not layout.blocked(x, y)
+             and (((x, y - 1) in deck and (x, y + 1) in deck) or ((x - 1, y) in deck and (x + 1, y) in deck))}
+    for y in range(layout.h):
+        for x in range(layout.w):
+            if (x, y) not in deck:
+                continue
+            for j in range(n + 1):
+                for i in range(n + 1):
+                    h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], float(rise))
+
+
 def layout_heights(layout_id):
     """The lattice of a layout: its relief where it is solved, its ledges."""
     roles_layout = open_roles(layout_id)
@@ -2808,6 +2833,8 @@ def layout_heights(layout_id):
         h = terrace_lattice(roles_layout, TERRACES[layout_id])
     else:
         h = flat_lattice(roles_layout)
+    if layout_id in BRIDGES:
+        bridge_deck(roles_layout, h, BRIDGES[layout_id])
     art = _ART.get(layout_id)
     if art is None:
         art = layout_art(layout_id)
@@ -4079,6 +4106,7 @@ def main():
         lids = list(ENABLED) + [l for l in drawn if l not in ENABLED]
         lids += [l for l in CAVES if l not in lids]
         lids += [l for l in TERRACES if l not in lids]
+        lids += [l for l in BRIDGES if l not in lids]
         lids += [l for l in ledge_layouts() if l not in lids]
         lids = list(dict.fromkeys(lids))   # a neighbour is in its alternate's group too
     if args.preview:

@@ -172,6 +172,29 @@ static float GetMovementProgress(const struct ObjectEvent *obj, const struct Spr
     return t;
 }
 
+/* Under a bridge, not on it: the cartridge gives a deck's cells elevation
+ * 15 - both levels - and whoever is on or beside one below the deck's own
+ * level (4, by the ramps that lead up to it) is on the ground or the water
+ * under it. */
+static bool UnderBridge(const struct ObjectEvent *obj)
+{
+    if (obj->currentElevation >= 4)
+        return false;
+    for (int dy = -1; dy <= 1; ++dy)
+        for (int dx = -1; dx <= 1; ++dx)
+            if (MapGridGetElevationAt(obj->currentCoords.x + dx, obj->currentCoords.y + dy) == 15
+             || MapGridGetElevationAt(obj->previousCoords.x + dx, obj->previousCoords.y + dy) == 15)
+                return true;
+    return false;
+}
+
+bool VoxelEntities_PlayerUnder(void)
+{
+    const struct ObjectEvent *obj = &gObjectEvents[gPlayerAvatar.objectEventId];
+
+    return obj->active && UnderBridge(obj);
+}
+
 static bool GetObjectWorldPos(const struct ObjectEvent *obj, const struct Sprite *sprite,
                               float *outX, float *outZ)
 {
@@ -207,7 +230,9 @@ void VoxelEntities_GetPlayerWorldPos(float *worldX, float *worldZ)
         z += (float)inst->originY;
     }
     /* The camera follows the player where the relief puts it. */
+    VoxelRelief_Under(UnderBridge(obj));
     z += VoxelRelief_ShiftAt(x + 0.5f, z + 0.5f);
+    VoxelRelief_Under(false);
     if (worldX != NULL) *worldX = x;
     if (worldZ != NULL) *worldZ = z;
 }
@@ -1178,6 +1203,7 @@ unsigned VoxelEntities_Emit(VoxelBuilder *builder, uint16_t *atlas, const VoxelC
 
         if (!card->drawn)
             continue;
+        VoxelRelief_Under(i < OBJECT_EVENTS_COUNT && UnderBridge(&gObjectEvents[i]));
         /* Through an open door: gone, shadow and all. */
         dusk = DoorLight(&door, card->worldX + 0.5f, card->worldZ + 0.5f);
         if (dusk <= 0.0f)
@@ -1203,6 +1229,7 @@ unsigned VoxelEntities_Emit(VoxelBuilder *builder, uint16_t *atlas, const VoxelC
         if (i == gPlayerAvatar.objectEventId && builder->count == first + 6)
             sPlayerVertexFirst = (int)first;
     }
+    VoxelRelief_Under(false);
 
     for (unsigned e = 0; e < effectCount; ++e)
     {

@@ -49,6 +49,8 @@ void VoxelEntities_Reset(void);
  * once per step no matter how smooth its damping is.
  */
 void VoxelEntities_GetPlayerWorldPos(float *worldX, float *worldZ);
+/* Is the player under a bridge's deck (on the ground or water it spans)? */
+bool VoxelEntities_PlayerUnder(void);
 /* First vertex of the emitted player quad, or -1 when invisible/not emitted. */
 int VoxelEntities_PlayerVertexFirst(void);
 

@@ -4157,7 +4157,9 @@ static bool HandleMapChange(int mapGroup, int mapNum, float playerX, float playe
     sDappleAnchorX = sDappleAnchorZ = 0;
     sBeltOriginX = sBeltOriginY = 0;
     ++sBeltGrid;
+    VoxelRelief_Under(VoxelEntities_PlayerUnder());
     VoxelCamera_SetGround(&sCamera, VoxelRelief_LiftAt(playerX + 0.5f, playerZ + 0.5f), 1);
+    VoxelRelief_Under(false);
     VoxelCamera_Snap(&sCamera, playerX, playerZ);
     return false;
 }
@@ -4468,7 +4470,9 @@ bool CtrVoxel_Update(void)
     }
     else if (!sBattle.on)
     {
+        VoxelRelief_Under(VoxelEntities_PlayerUnder());
         VoxelCamera_SetGround(&sCamera, VoxelRelief_LiftAt(smoothX + 0.5f, smoothZ + 0.5f), 0);
+        VoxelRelief_Under(false);
         VoxelCamera_Update(&sCamera, smoothX, smoothZ);
     }
     if (sBattle.on)
