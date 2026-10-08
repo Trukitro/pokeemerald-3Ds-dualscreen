@@ -1205,11 +1205,13 @@ def tatami_posts(width):
 def tatami_edge(y, cells=1):
     """The front of the tatami's platform, where it ends before the entrance:
     eleven rows of face across the room - a board, the dark line under it and
-    the grey of the platform's side - and, in the west corner, the same grey
-    running forward to the room's front as a block. Left on the floor it read
-    as a wall lying at the door. A cell of the face a piece, so that it is
-    found again in every room with a platform, whatever its width."""
-    return ([piece("platform_corner", [(0, y, 16, y + 32)], 11, solid=True)]
+    the grey of the platform's side. Left on the floor it read as a wall lying
+    at the door. A cell of the face a piece, so that it is found again in
+    every room with a platform, whatever its width. The west cell's face is
+    drawn in the wall's shadow, and the grey that runs forward from it to the
+    room's front is that shadow on the entrance's floor: it lies there. Stood
+    up as a block it was a box in the corner where the step should be."""
+    return ([piece("platform_face_w", [(0, y, 16, y + 11)], 11)]
             + [piece("platform_face_%d" % i, [(16 + 16 * i, y, 32 + 16 * i, y + 11)], 11)
                for i in range(cells)])
 
@@ -2321,6 +2323,84 @@ SPECS += [
      "clear": GRASS_COLOURS,
      "mound": {"rise": 0.9, "step": 2},
      "exact": [(0, 0, 16, 16)]}]
+
+# ── Route 109's beach ─────────────────────────────────────────────────────
+#
+# The Seashore House is the towns' house kit, five cells wide, on the sand.
+# The parasols are two cells by three: a canopy 29 rows across the middle of
+# which its pole comes down eight rows to the sand, over a round shadow. The
+# canopy is a dome held on the pole (a spec's `parasol`), 22 rows up - where
+# a disc as wide as it is drawn, seen from the GBA's 45 degrees, shows that
+# much pole under its front rim - and the shadow stays on the sand. The sun
+# loungers and the air beds are low: a bed five rows off the sand.
+SAND = 0x124
+SPECS += [
+    {"name": "route109_seashore_house",
+     "layout": "LAYOUT_ROUTE109",
+     "rect": (10, 2, 5, 4),
+     "ground": [SAND],
+     "parts": lambda: kit_house(80),
+     "exact": kit_house_exact(80)},
+] + [
+    {"name": "beach_parasol_%s" % name,
+     "layout": "LAYOUT_ROUTE109",
+     "rect": (x, y, 2, 3),
+     "ground": [SAND],
+     # the sand's three colours: its grain is drawn differently under a parasol
+     "clear": ("decd83", "d5b46a", "eee6a4"),
+     "parasol": {"shadow": ("cd9c52",), "canopy": 32, "pole": (14, 18), "foot": 40,
+                 "shaft": (33, 38), "high": 22, "rise": 0.5, "step": 2},
+     # all but the pole: its shaft is repeated up to the canopy, not projected
+     "exact": [(0, 0, 32, 32), (0, 32, 14, 48), (18, 32, 32, 48)]}
+    for (name, x, y) in (("orange", 9, 6), ("blue", 11, 8), ("green", 13, 14))
+] + [
+    {"name": "beach_%s" % name,
+     "components": {
+         "primary": "gTileset_General",
+         "layouts": ["LAYOUT_ROUTE109"],
+         "tiles": tiles,
+         "height": high,
+     },
+     "ground": [SAND]}
+    for (name, tiles, high) in (("lounger", {0x2E1, 0x2E9, 0x2F1}, 5),
+                                ("air_bed", {0x2E0, 0x2E8, 0x2F0}, 4))
+]
+
+SEASHORE_FLOOR = ("e6e6b4", "c5cd94", "b4b48b", "f6f6cd", "52ac94", "7bc5b4", "b4deff")
+SEASHORE_WALL = ("e6c562", "ffe67b", "bd9c4a", "414a6a", "83838b")
+
+
+def seashore_house():
+    """The Seashore House: a boarded wall two cells tall with the swimming
+    rings hung on it, a post at each end, two chilled cabinets standing half
+    a cell out of it, a folding chair and a table with the kettle, and the
+    low tables in three rows across the room."""
+    fl, wall = SEASHORE_FLOOR, SEASHORE_WALL + SEASHORE_FLOOR
+    side = (144, 0, 160, 32)
+    tables = [piece("table_%d_%d" % (row, k), [(x0, y, x1, y + 16)], 4, leave=fl, solid=True)
+              for row, y in enumerate((64, 96, 128))
+              for k, (x0, x1) in enumerate(((1, 32), (48, 96), (128, 176), (208, 239)))
+              if row < 2 or k in (0, 3)]
+    return tables + [
+        piece("chair", [(97, 32, 111, 47)], 8, leave=fl, solid=True),
+        piece("kettle_table", [(112, 32, 128, 48)], 8, leave=fl, solid=True),
+        # the kettle on it stays on the wall behind: a card of it left two
+        # pixels of its outline to the wall
+        piece("cabinet_w", [(16, 16, 48, 48)], 24, leave=wall, back=40),
+        piece("cabinet_e", [(192, 16, 224, 48)], 24, leave=wall, back=40),
+        piece("post_w", [(0, 3, 8, 40)], 32, back=32),
+        piece("post_e", [(232, 3, 240, 40)], 32, back=32),
+        piece("wall", [(0, 0, 240, 32)], 32, fill=16, foot=32, side=side),
+        piece("side_w", [], 32, side=side, walls=[((0, 160), (0, 32))]),
+        piece("side_e", [], 32, side=side, walls=[((240, 32), (240, 160))]),
+    ]
+
+
+SPECS += [
+    {"name": "seashore_house",
+     "interior": {"layout": "LAYOUT_ROUTE109_SEASHORE_HOUSE", "ground": [0x225],
+                  "pieces": own_shell(seashore_house())}},
+]
 
 for _spec in SPECS:
     _room = _spec.get("interior")

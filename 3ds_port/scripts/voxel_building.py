@@ -1189,16 +1189,28 @@ class Mound:
     the water (foam, its grey shadow). They are the sea's, not the rock's:
     laid flat on the water, textured from the band of the art below `rows`
     that holds them alone (Mound.with_ring), never lifted with the dome.
+
+    `base`: the dome held that far up - a parasol's canopy on its pole.
+    (u, h, v + h) is seen as (u, v) for any h, so the whole dome moved up and
+    towards the eye by `base` is still its drawing. `top_rows`: the rows of
+    the drawing that are the dome; what is drawn below them (the pole) is
+    another part's.
     """
 
-    def __init__(self, name, art, rise=1.0, step=4, back_steps=3, ring=(), rows=None):
+    def __init__(self, name, art, rise=1.0, step=4, back_steps=3, ring=(), rows=None,
+                 base=0.0, top_rows=None):
         self.name, self.rise, self.step, self.back_steps = name, rise, step, back_steps
+        self.base = float(base)
         self.rows = rows if rows is not None else art.size[1]
         self.ring = {tuple(c) for c in ring}
         body = art.crop((0, 0, art.size[0], self.rows))
         bpx = body.load()
         for (x, y) in Mound.ring_pixels(body, self.ring):
             bpx[x, y] = (0, 0, 0, 0)
+        if top_rows is not None:
+            for y in range(top_rows, body.size[1]):
+                for x in range(body.size[0]):
+                    bpx[x, y] = (0, 0, 0, 0)
         self.art = body
         self.full = art
         # the band the faces no drawing shows are laid with (with_ring)
@@ -1376,6 +1388,9 @@ class Mound:
             g = [(a[i] + b[i] + c[i]) / 3.0 - outward[i] for i in range(3)]
             if n[0] * g[0] + n[1] * g[1] + n[2] * g[2] < 0:
                 b, c = c, b
+        if self.base and ".ring" not in tag:
+            up = self.base
+            a, b, c = [(p[0], p[1] + up, p[2] + up) + tuple(p[3:]) for p in (a, b, c)]
         mesh.tri(a, b, c, shade, tag)
 
     def _quad(self, mesh, p, q, r, s, shade, tag, outward=None):

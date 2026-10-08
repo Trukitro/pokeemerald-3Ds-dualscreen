@@ -962,6 +962,22 @@ def build_models(only=None):
             # a dome is the drawing at 45 degrees and a dome from anywhere else
             parts = [vb.Mound("mound", art, rise=spec["mound"].get("rise", 1.0),
                               step=spec["mound"].get("step", 4))]
+        elif "parasol" in spec:
+            # a beach parasol: its canopy a dome held up on its pole, its
+            # shadow left on the sand (the ring of a Mound)
+            p = spec["parasol"]
+            shadow = [tuple(int(c[i:i + 2], 16) for i in (0, 2, 4)) for c in p["shadow"]]
+            spec["drawing"] = art
+            rows = art.size[1]
+            art = vb.Mound.with_ring(art, shadow)
+            px0, px1 = p["pole"]
+            foot, shaft = p["foot"], p["shaft"]
+            parts = [vb.Mound("canopy", art, rise=p.get("rise", 0.5), step=p.get("step", 2),
+                              ring=shadow, rows=rows, base=p["high"], top_rows=p["canopy"]),
+                     vb.Prism("pole", px0, px1, [(foot, 0), (foot, p["high"]), (foot - 1, p["high"]),
+                                                 (foot - 1, 0)],
+                              edges={0: vb.Tile(px0, shaft[0], px1, shaft[1], top=p["high"])},
+                              skip=(1, 2, 3), caps=None, west=False, east=False)]
         else:
             parts = spec["parts"]()
         model = vb.Model(spec["name"], art, parts, (w, h), spec["ground"][0])
@@ -1194,7 +1210,13 @@ def find_placements(model, layouts_json):
                         if cell & 0xC00:
                             continue
                         ring[cell & 0x3FF] = ring.get(cell & 0x3FF, 0) + 1
-                ground = max(ring, key=ring.get) if ring else model.ground_metatile
+                # the commonest ground round it - of the grounds the spec
+                # says it stands on, when one of them is there: a parasol at
+                # the water's edge has more shore than sand beside it, and
+                # stood on a square of shore
+                named = {m: n for m, n in ring.items() if m in model.spec.get("ground", ())}
+                ground = (max(named, key=named.get) if named
+                          else max(ring, key=ring.get) if ring else model.ground_metatile)
                 odd = [(i, j) for j in range(h) for i in range(w) if (i, j) in model.owned
                        and (blocks[(py + j) * lw + px + i] & 0x3FF) != template[j * w + i]]
                 if model.spec.get("relief", {}).get("upper"):

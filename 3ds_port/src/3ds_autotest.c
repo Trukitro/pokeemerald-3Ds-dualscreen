@@ -173,6 +173,7 @@ static void Audit(const char *name)
     {
         if (file != NULL)
             fclose(file);
+    fclose(file);
         return;
     }
     fprintf(file, "map %d %d size %d %d indoor %d\n", inst->mapGroup, inst->mapNum,
@@ -201,6 +202,30 @@ static void Audit(const char *name)
             }
             if (pass == 0)
                 fputc('\n', file);
+        }
+    fclose(file);
+    /* and, beside it, the relief under every model's cell: where a model
+     * stands and where its ground lies ("x y low centre high", in pixels) */
+    snprintf(path, sizeof(path), "sdmc:/3ds/emerald3ds/shots/%s_models.txt", name);
+    file = fopen(path, "w");
+    if (file == NULL)
+        return;
+    for (int y = inst->originY; y < inst->originY + inst->height; ++y)
+        for (int x = inst->originX; x < inst->originX + inst->width; ++x)
+        {
+            const int16_t *g = VoxelRelief_Cell(inst, x, y);
+            int low, high;
+
+            if (g == NULL || !VoxelBuildings_CellAt(inst, x, y, NULL, NULL))
+                continue;
+            low = high = g[0];
+            for (unsigned k = 1; k < VOXEL_RELIEF_SIDE * VOXEL_RELIEF_SIDE; ++k)
+            {
+                if (g[k] < low) low = g[k];
+                if (g[k] > high) high = g[k];
+            }
+            fprintf(file, "%d %d %d %d %d shape %d\n", x - inst->originX, y - inst->originY, low,
+                    g[2 * VOXEL_RELIEF_SIDE + 2], high, (int)VoxelWorld_ClassifyTile(x, y));
         }
     fclose(file);
 #else
