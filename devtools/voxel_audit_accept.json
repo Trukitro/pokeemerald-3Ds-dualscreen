@@ -344,5 +344,14 @@
     "2AB": "a hole torn in the floor: it is a hole",
     "2AC": "a hole torn in the floor: it is a hole",
     "2AD": "a hole torn in the floor: it is a hole"
-  }
+  },
+  "SlateportCity_SternsShipyard_2F": [
+    [
+      8,
+      5,
+      15,
+      12,
+      "the railed opening: a view down to the dock on the floor below, which is flat in it"
+    ]
+  ]
 }

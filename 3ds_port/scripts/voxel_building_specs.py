@@ -1821,7 +1821,7 @@ SPECS = [
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x234, 0x23C, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF, 0x27E, 0x2BB},
+            "tiles": {0x04E, 0x045, 0x047, 0x234, 0x23C, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF, 0x27E, 0x2BB},
             "height": 6, "block": 2,
         },
         "ground": [GRASS],
@@ -2157,7 +2157,7 @@ def shipyard_1f():
     and again south of it), the three girders of the gantry, and the stacks
     of red beams."""
     shop = ("6a7b41", "839473", "acb494", "dedec5")
-    return [
+    return only_here([
         piece("partition_n", [(97, 0, 112, 146)], 32, solid=True),
         piece("partition_s", [(97, 170, 112, 240)], 32, solid=True),
         piece("girder_a", [(113, 65, 132, 112)], 40, leave=shop, solid=True),
@@ -2166,11 +2166,76 @@ def shipyard_1f():
         piece("beams_e", [(305, 49, 335, 111)], 6, leave=shop, solid=True),
         piece("beams_se", [(289, 161, 335, 223)], 6, leave=shop, solid=True),
         piece("beams_sw", [(113, 176, 170, 239)], 6, leave=shop, solid=True),
+        # the Facility tileset's furniture, as in the ship's captain's office
+        piece("chart_table", [(64, 97, 96, 127)], 8, leave=SHIPYARD_FLOOR, solid=True),
+        piece("consoles", [(128, 12, 160, 38)], 20, leave=SHIPYARD_WALL + shop, back=32),
+        piece("shelf", [(0, 32, 32, 44)], 8, leave=SHIPYARD_WALL + SHIPYARD_FLOOR, solid=True),
+        piece("locker", [(161, 17, 175, 39)], 15, leave=SHIPYARD_WALL + shop, back=32),
+    ], "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
+
+
+SHIPYARD_FLOOR = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
+SHIPYARD_WALL = ("6a7b7b", "8b94a4", "a4acde")
+
+
+def office_furniture(layout_id):
+    """An office of the Facility tileset, read off its layout: every desk (a
+    cell of 248, or 249 with its computer, and the cell east of it; its top
+    is drawn eight rows up the cell above), every stool (21D) and every bin
+    (205). Each is a piece of its own, so none is looked for elsewhere."""
+    import voxel_building as vb
+    lay = vb.LayoutArt(layout_id)
+    fl, out = SHIPYARD_FLOOR, []
+    for y in range(lay.h):
+        for x in range(lay.w):
+            m, X, Y = lay.metatile(x, y), x * 16, y * 16
+            if m in (0x248, 0x249):
+                out.append(piece("desk_%d_%d" % (x, y), [(X, Y - 8, X + 32, Y + 16)], 10, leave=fl, solid=True))
+            elif m == 0x21D:
+                out.append(piece("stool_%d_%d" % (x, y), [(X + 2, Y + 1, X + 14, Y + 15)], 3, leave=fl, solid=True))
+            elif m == 0x205:
+                out.append(piece("bin_%d_%d" % (x, y), [(X + 2, Y, X + 14, Y + 16)], 8, leave=fl, solid=True))
+    for pc in out:
+        pc["alone"] = True
+    return out
+
+
+def tent_counter():
+    """A Battle Tent's lobby: the counter, a U open towards the door - two
+    arms with a hook at their back ends and a front each side of the way
+    through - eight rows tall. (The record machine by the east drape stays flat: its
+    outline is no box's.)"""
+    fl = ("b4acf6", "cdd5ff", "ffffff", "9c94e6", "a49cee", "c5bdff")
+    box = lambda name, r: piece(name, [r], 8, leave=fl, solid=True)
+    return [
+        box("counter_w_arm", (33, 32, 48, 96)), box("counter_w_hook", (48, 32, 63, 48)),
+        box("counter_w_front", (48, 77, 95, 96)),
+        box("counter_e_arm", (160, 32, 175, 96)), box("counter_e_hook", (145, 32, 160, 48)),
+        box("counter_e_front", (113, 77, 160, 96)),
+        piece("recorder", [(176, 55, 200, 98)], 42, leave=fl, card=True),
     ]
 
 
+def harbor_quay():
+    """A harbour's hall: the railing round the basin - north, west and south
+    of it, open at the steps - as a low wall, and the stools."""
+    fl = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd", "29418b", "39529c", "526ad5",
+          "6a83d5")
+    rail = lambda name, r: piece(name, [r], 8, leave=fl, solid=True)
+    return [
+        rail("rail_n", (56, 63, 384, 80)),
+        rail("rail_w", (48, 80, 56, 176)),
+        rail("rail_sw", (56, 160, 117, 176)), rail("rail_s", (152, 160, 284, 176)),
+    ] + office_furniture("LAYOUT_HARBOR")
+
+
 EXTRA_PIECES = {
-    "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F": shipyard_1f,
+    "LAYOUT_BATTLE_TENT_LOBBY": tent_counter,
+    "LAYOUT_HARBOR": harbor_quay,
+    "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F": lambda: (
+        shipyard_1f() + office_furniture("LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F")),
+    "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_2F": lambda: office_furniture(
+        "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_2F"),
     # Rustboro's flats and houses: their tables
     "LAYOUT_RUSTBORO_CITY_FLAT1_1F": lambda: [_box("table_a", (16, 64, 46, 96), 10, _FLAT)],
     "LAYOUT_RUSTBORO_CITY_FLAT1_2F": lambda: [_box("stand", (140, 80, 164, 108), 12, _FLAT)],
@@ -2431,7 +2496,23 @@ SPECS += [
     # the bow the map's edge cuts (39, 44) lies as drawn: a card of one
     # tile of a boat was a brown bar standing in the sea
     for (name, x, y, w, h, at) in (("whole", 34, 44, 3, 3, [(34, 44)]),
-                                   ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]))
+                                   ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]),
+                                   # the two-master by the harbour's doors
+                                   ("two_master", 33, 35, 3, 4, [(33, 35)]))
+]
+
+# The rowing boat pulled up on the grass by the harbour: a hull rounded off
+# its own drawing, low.
+SPECS += [
+    {"name": "slateport_rowing_boat",
+     "layout": "LAYOUT_SLATEPORT_CITY",
+     "rect": (21, 35, 3, 2),
+     "ground": [GRASS],
+     # the lawn, and the grey of the shadow drawn under its hull: the light
+     # casts the boat's own
+     "clear": GRASS_COLOURS + ("73737b",),
+     "mound": {"rise": 0.45, "step": 4},
+     "exact": []},
 ]
 
 # ── Route 108: the Abandoned Ship ─────────────────────────────────────────
@@ -2561,24 +2642,12 @@ SPECS += [
 
 
 def captains_office():
-    """The captain's office: the two consoles and the shelf with the model
-    ship against the back wall, the cabinet by the west wall, the chart
-    table."""
-    fl = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
-    wall = ("6a7b7b", "8b94a4", "a4acde") + fl
-    # (the consoles, the shelf and the chart table are the Facility
-    # tileset's: they stand wherever a room draws them again - Stern's
-    # shipyard, the Aqua Hideout, the Space Center. The cabinet is found by
-    # too little to be told from a wall's foot elsewhere, and stays here.)
-    return only_here([
-        piece("consoles", [(48, 12, 80, 38)], 20, leave=wall, back=32),
-        # the shelf alone: the model ship on it stays on the wall behind (one
-        # box of both laid the ship's rows over the shelf's top again and
-        # again, and a card of the ship left its outline to the wall)
-        piece("shelf", [(112, 32, 144, 44)], 8, leave=wall, solid=True),
-        piece("cabinet", [(0, 48, 16, 80)], 16, leave=fl, solid=True),
-        piece("chart_table", [(48, 81, 80, 111)], 8, leave=fl, solid=True),
-    ], "cabinet") + plain_room(9, 7, 5, False)
+    """The captain's office: the cabinet by the west wall. Its consoles, its
+    shelf with the model ship and its chart table are the Facility tileset's,
+    modelled in Stern's shipyard (shipyard_1f) and found here as they are."""
+    fl = SHIPYARD_FLOOR
+    return only_here([piece("cabinet", [(0, 48, 16, 80)], 16, leave=fl, solid=True)],
+                     "cabinet") + plain_room(9, 7, 5, False)
 
 
 SPECS += [

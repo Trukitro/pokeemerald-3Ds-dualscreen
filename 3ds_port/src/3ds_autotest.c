@@ -74,7 +74,7 @@ typedef struct
 {
     u8 op;
     s16 arg[4];
-    char name[40];
+    char name[72];
 } AutotestLine;
 
 static AutotestLine *sLines;
@@ -109,11 +109,11 @@ static void Load(void)
             line->op = OP_FLASH;
         else if (!strcmp(op, "wait") && sscanf(text, "%*s %d", &a) == 1)
             line->op = OP_WAIT;
-        else if (!strcmp(op, "shot") && sscanf(text, "%*s %39s", line->name) == 1)
+        else if (!strcmp(op, "shot") && sscanf(text, "%*s %71s", line->name) == 1)
             line->op = OP_SHOT;
-        else if (!strcmp(op, "audit") && sscanf(text, "%*s %39s", line->name) == 1)
+        else if (!strcmp(op, "audit") && sscanf(text, "%*s %71s", line->name) == 1)
             line->op = OP_AUDIT;
-        else if (!strcmp(op, "perf") && sscanf(text, "%*s %39s %d", line->name, &a) == 2)
+        else if (!strcmp(op, "perf") && sscanf(text, "%*s %71s %d", line->name, &a) == 2)
             line->op = OP_PERF;
         else if (!strcmp(op, "quit"))
             line->op = OP_QUIT;

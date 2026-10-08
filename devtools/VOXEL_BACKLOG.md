@@ -493,22 +493,108 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- /audit:RustboroCity -->
 
 <!-- audit:SlateportCity -->
-### SlateportCity - audit of 2026-10-07
+### SlateportCity - audit of 2026-10-08
 
-- [ ] **SlateportCity**: 39 flat cell(s) in 11 object(s) - `build/audit/SlateportCity.png`
-  - [ ] (16, 9), 1 cell(s), tiles 263
-  - [ ] (20, 9), 1 cell(s), tiles 264
-  - [ ] (32, 16)-(37, 16), 6 cell(s), tiles 04E
+- [ ] **SlateportCity**: 3 flat cell(s) in 1 object(s) - `build/audit/SlateportCity.png`
   - [ ] (36, 25)-(36, 27), 3 cell(s), tiles 2CF
-  - [ ] (8, 32), 1 cell(s), tiles 263
-  - [ ] (12, 32), 1 cell(s), tiles 264
-  - [ ] (21, 35)-(23, 36), 6 cell(s), tiles 220 221 222 228 229 22A
-  - [ ] (33, 35)-(35, 38), 12 cell(s), tiles 346 347 34E 34F 356 357 35E 35F 368 370 378 380
-  - [ ] (20, 48)-(20, 50), 3 cell(s), tiles 045
-  - [ ] (20, 54)-(20, 57), 4 cell(s), tiles 047
-  - [ ] (16, 57), 1 cell(s), tiles 045
+- [x] **SlateportCity_PokemonCenter_1F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (96, 128)-(128, 144), 512 px
+  - [ ] painted on the floor: pixels (192, 32)-(208, 35), 48 px
+  - [ ] painted on the floor: pixels (97, 81)-(103, 87), 36 px
+  - [ ] painted on the floor: pixels (97, 89)-(103, 95), 36 px
+  - [ ] painted on the floor: pixels (121, 81)-(127, 87), 36 px
+  - [ ] painted on the floor: pixels (129, 89)-(135, 95), 36 px
+  - [ ] painted on the floor: pixels (113, 81)-(119, 87), 36 px
+  - [ ] painted on the floor: pixels (121, 89)-(127, 95), 36 px
+  - [ ] painted on the floor: pixels (105, 81)-(111, 87), 36 px
+  - [ ] painted on the floor: pixels (113, 73)-(119, 79), 36 px
+  - [ ] painted on the floor: pixels (105, 73)-(111, 79), 36 px
+  - [ ] painted on the floor: pixels (89, 89)-(95, 95), 36 px
+- [x] **SlateportCity_Mart**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+- [ ] **SlateportCity_SternsShipyard_1F**: 28 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_SternsShipyard_1F.png`
+  - [ ] (9, 4)-(15, 9), 28 cell(s), tiles 210 220 233 234 235 236 23B 23C 23D 23E 243 244 245 246 24C 24D 255 256 25B 25C 263 264 2D0 2D1 2D2 2D3 2D6 2D7
+  - [ ] painted on the floor: pixels (112, 32)-(320, 240), 32512 px
+  - [ ] painted on the floor: pixels (32, 224)-(64, 240), 512 px
+  - [ ] painted on the floor: pixels (16, 48)-(32, 56), 128 px
+  - [ ] painted on the floor: pixels (80, 32)-(96, 40), 128 px
+  - [ ] painted on the floor: pixels (32, 32)-(48, 40), 128 px
+- [ ] **SlateportCity_BattleTentLobby**: 17 flat cell(s) in 6 object(s) - `build/audit/SlateportCity_BattleTentLobby.png`
+  - [ ] (0, 0)-(1, 4), 7 cell(s), tiles 202 203 20A 20B 212 21A 222
+  - [ ] (11, 0)-(12, 2), 6 cell(s), tiles 206 207 208 20E 20F 217
+  - [ ] (0, 8), 1 cell(s), tiles 295
+  - [ ] (12, 8), 1 cell(s), tiles 230
+  - [ ] (1, 9), 1 cell(s), tiles 228
+  - [ ] (11, 9), 1 cell(s), tiles 228
+  - [ ] painted on the floor: pixels (0, 0)-(32, 79), 1751 px
+  - [ ] painted on the floor: pixels (176, 0)-(208, 48), 1280 px
+  - [ ] painted on the floor: pixels (96, 144)-(128, 160), 512 px
+  - [ ] painted on the floor: pixels (57, 96)-(87, 104), 160 px
+- [x] **SlateportCity_PokemonFanClub**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (32, 64)-(192, 144), 10752 px
+  - [ ] painted on the floor: pixels (96, 160)-(128, 176), 512 px
+- [x] **SlateportCity_OceanicMuseum_1F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (189, 32)-(219, 43), 246 px
+  - [ ] painted on the floor: pixels (141, 32)-(171, 43), 246 px
+  - [ ] painted on the floor: pixels (181, 41)-(187, 47), 24 px
+  - [ ] painted on the floor: pixels (129, 37)-(135, 43), 24 px
+  - [ ] painted on the floor: pixels (169, 37)-(175, 43), 24 px
+  - [ ] painted on the floor: pixels (77, 33)-(83, 39), 24 px
+  - [ ] painted on the floor: pixels (253, 33)-(259, 39), 24 px
+  - [ ] painted on the floor: pixels (241, 133)-(247, 139), 24 px
+  - [ ] painted on the floor: pixels (81, 37)-(87, 43), 24 px
+  - [ ] painted on the floor: pixels (257, 37)-(263, 43), 24 px
+  - [ ] painted on the floor: pixels (45, 41)-(51, 47), 24 px
+  - [ ] painted on the floor: pixels (37, 41)-(43, 47), 24 px
+- [x] **SlateportCity_NameRatersHouse**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+  - [ ] painted on the floor: pixels (32, 43)-(128, 48), 480 px
+  - [ ] painted on the floor: pixels (32, 35)-(128, 40), 480 px
+- [ ] **SlateportCity_Harbor**: 29 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_Harbor.png`
+  - [ ] (17, 10)-(22, 14), 29 cell(s), tiles 228 22A 260 2B1 356 3D8 3D9 3DA 3DB 3DC 3DD 3DE 3DF
+  - [ ] painted on the floor: pixels (64, 80)-(368, 240), 31996 px
+  - [ ] painted on the floor: pixels (176, 224)-(208, 240), 512 px
+  - [ ] painted on the floor: pixels (242, 177)-(254, 191), 126 px
+  - [ ] painted on the floor: pixels (146, 177)-(158, 191), 126 px
+  - [ ] painted on the floor: pixels (194, 177)-(206, 191), 126 px
+- [x] **SlateportCity_House**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
+  - [ ] painted on the floor: pixels (48, 35)-(112, 40), 320 px
+  - [ ] painted on the floor: pixels (48, 43)-(112, 48), 320 px
+- [x] **SlateportCity_PokemonCenter_2F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (82, 90)-(94, 96), 44 px
+  - [ ] painted on the floor: pixels (155, 84)-(167, 90), 42 px
+  - [ ] painted on the floor: pixels (161, 103)-(173, 109), 42 px
+  - [ ] painted on the floor: pixels (145, 73)-(151, 79), 32 px
+  - [ ] painted on the floor: pixels (65, 65)-(71, 71), 32 px
+  - [ ] painted on the floor: pixels (73, 65)-(79, 71), 32 px
+  - [ ] painted on the floor: pixels (145, 81)-(151, 87), 32 px
+  - [ ] painted on the floor: pixels (65, 73)-(71, 79), 32 px
+  - [ ] painted on the floor: pixels (73, 73)-(79, 79), 32 px
+  - [ ] painted on the floor: pixels (17, 65)-(23, 71), 32 px
+  - [ ] painted on the floor: pixels (25, 65)-(31, 71), 32 px
+  - [ ] painted on the floor: pixels (169, 65)-(175, 71), 32 px
+- [ ] **SlateportCity_SternsShipyard_2F**: 61 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_SternsShipyard_2F.png`
+  - [ ] (8, 5)-(15, 12), 61 cell(s), tiles 228 229 22A 23B 23C 23D 23E 243 244 245 246 24B 24C 24D 24E 250 251 252 255 256 260 263 264 268 269 26A 26B 26C 28D 297 335
+  - [ ] painted on the floor: pixels (128, 80)-(256, 223), 17246 px
+  - [ ] painted on the floor: pixels (80, 32)-(256, 40), 1408 px
+  - [ ] painted on the floor: pixels (16, 32)-(48, 40), 256 px
+- [ ] **SlateportCity_OceanicMuseum_2F**: 2 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_OceanicMuseum_2F.png`
+  - [ ] (10, 2)-(10, 3), 2 cell(s), tiles 22D 235
+  - [ ] painted on the floor: pixels (128, 32)-(179, 67), 900 px
+  - [ ] painted on the floor: pixels (237, 32)-(275, 43), 328 px
+  - [ ] painted on the floor: pixels (285, 32)-(304, 43), 164 px
+  - [ ] painted on the floor: pixels (181, 41)-(187, 47), 24 px
+  - [ ] painted on the floor: pixels (237, 129)-(243, 135), 24 px
+  - [ ] painted on the floor: pixels (61, 129)-(67, 135), 24 px
+  - [ ] painted on the floor: pixels (213, 33)-(219, 39), 24 px
+  - [ ] painted on the floor: pixels (205, 33)-(211, 39), 24 px
+  - [ ] painted on the floor: pixels (97, 125)-(103, 131), 24 px
+  - [ ] painted on the floor: pixels (53, 129)-(59, 135), 24 px
+  - [ ] painted on the floor: pixels (21, 33)-(27, 39), 24 px
+  - [ ] painted on the floor: pixels (197, 33)-(203, 39), 24 px
 
-39 blocked cell(s) still flat in this area.
+140 blocked cell(s) still flat in this area.
 <!-- /audit:SlateportCity -->
 
 <!-- audit:Route109 -->
