@@ -2182,14 +2182,20 @@ def shipyard_1f():
         # submarine's nose a cylinder's end as tall, its top climbing to it
         # from the bay. As boxes they were flat-topped; made by hand as a
         # vault and a drum they went through the wall and lost the drawing.)
-        # (the nose is drawn from the arc of its top, row 107, not from the
-        # row its sides begin on: cut there, the arc - its pipes, its lamps
-        # - stayed on the bay's face behind it, low, and the nose's front
-        # looked lower than the housing. Its top climbs to the front, half
-        # its height at the back.)
+        # Two parts of one long tank, each stood up on its own. The nose is
+        # a drum seen almost end on: its round end is the drawing from the
+        # row its lamps are on down (forty-three rows in the middle), and
+        # the arc over it, eight rows, is all the drawing shows of its top.
+        # So it stands taller than the housing behind it - which, against
+        # the wall, is the lower of the two and half hidden by it - and from
+        # its top's back edge it falls away to the housing along the GBA
+        # camera's line of sight (vb.Arch's far end): a long body, as the
+        # drawing means, where a housing drawn above the nose read as
+        # standing over it. (Cut at the row its sides begin on, the arc -
+        # its pipes, its lamps - stayed on the housing's face, low.)
         dict(piece("submarine", [("ellipse", 208, 126, 20, 19.5), (188, 126, 228, 158)], 14,
-                   leave=shop, solid=True), arch=(30, 0.5)),
-        dict(piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True), arch=(32, 1.0, 21)),
+                   leave=shop, solid=True), arch=(43, 1.0)),
+        dict(piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True), arch=(27, 1.0, 21)),
         piece("cradle_w", [(177, 88, 184, 136)], 8, leave=shop, solid=True),
         piece("cradle_e", [(232, 88, 240, 136)], 8, leave=shop, solid=True),
         piece("tank", [(145, 74, 176, 120)], 30, leave=shop, solid=True),
