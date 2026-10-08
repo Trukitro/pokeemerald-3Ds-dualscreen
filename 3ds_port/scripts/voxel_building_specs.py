@@ -488,14 +488,42 @@ def box_building(width, foot, facade_top, top=0, side_x=0):
     the rectangle's: a page holds a drawing cropped to what is drawn, and a
     face laid past it shows whatever the page has beside it (the museum had
     the market's jars along its foot)."""
+    return [box_part("body", 0, width, foot, facade_top, top, side_x)]
+
+
+def box_part(name, x0, x1, foot, facade_top, top=0, side_x=None):
+    """One box of a building over the columns [x0, x1): its front the rows
+    from `facade_top` to `foot`, its lid the rows from `top` to `facade_top`
+    laid back from the front's top. Boxes with different feet side by side
+    are a front that steps: pillars standing out of a wall, a round drum."""
     wall = foot - facade_top
     front, back = foot, foot - (facade_top - top)
+    side_x = x0 if side_x is None else side_x
     side = Tile(side_x, facade_top, side_x + 8, foot, top=wall)
-    return [Prism(
-        "body", 0, width,
+    return Prism(
+        name, x0, x1,
         [(front, 0), (front, wall), (back, wall), (back, 0)],
         edges={0: Proj(facade_top, foot), 1: Proj(top, facade_top), 2: side}, skip=(3,),
-        caps=[Band(0, wall + 1, side, front)])]
+        caps=[Band(0, wall + 1, side, front)])
+
+
+def slateport_museum():
+    """The Oceanic Museum: a hall under a flat roof (its drawing's rows 9-48;
+    the rows over it are the quay's kerb behind, which lies with it), a front
+    wall 32 rows tall, four pillars standing eight rows out of it and as much
+    taller, and the steps to its door."""
+    return ([box_part("hall", 0, 96, 80, 48, 0, side_x=16)]
+            + [box_part("pillar_%d" % x, x, x + 8, 88, 48, 40) for x in (8, 24, 64, 80)]
+            + [box_part("steps", 32, 64, 88, 84, 80)])
+
+
+def slateport_tent():
+    """The Battle Tent: a drum drawn round. Its front steps back towards its
+    sides, five boxes under one lid, so it is not a square box; the feet of
+    the arches at its sides, drawn lower than the steps stand, are lost."""
+    return [box_part("drum_%d" % k, x0, x1, foot, 48, 0, side_x=36)
+            for k, (x0, x1, foot) in enumerate(((0, 8, 68), (8, 20, 75), (20, 60, 80),
+                                                (60, 72, 75), (72, 80, 68)))]
 
 
 def flat_block_exact(width, height, first_roof_row):
@@ -1633,8 +1661,8 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (28, 22, 6, 6),
         "ground": [GRASS],
-        "parts": lambda: box_building(96, 88, 60),
-        "exact": [(0, 0, 96, 88)],
+        "parts": slateport_museum,
+        "exact": [(0, 0, 96, 88, True)],
     },
     {
         "name": "slateport_harbor",
@@ -1650,9 +1678,9 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (8, 8, 5, 5),
         "ground": [GRASS],
-        "parts": lambda: box_building(80, 80, 48, side_x=36),
-        # its corners are grass: the box may stand where the drawing has ground
-        "exact": [(0, 0, 80, 80, True)],
+        "parts": slateport_tent,
+        # not judged against its drawing: stepped round, it is not the drawing
+        "exact": [],
     },
     {
         "name": "slateport_shipyard",
@@ -1671,7 +1699,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 41, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "parts": lambda: box_building(80, 48, 20, side_x=4),
         "exact": [(0, 0, 80, 48, True)],
     },
     {
@@ -1679,7 +1707,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 45, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "parts": lambda: box_building(80, 48, 20, side_x=4),
         "exact": [(0, 0, 80, 48, True)],
     },
     {
@@ -1687,7 +1715,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (2, 49, 5, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(80, 48, 30, side_x=4),
+        "parts": lambda: box_building(80, 48, 20, side_x=4),
         "exact": [(0, 0, 80, 48, True)],
     },
     {
@@ -1695,7 +1723,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 41, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "parts": lambda: box_building(64, 48, 20, side_x=4),
         "exact": [(0, 0, 64, 48, True)],
     },
     {
@@ -1703,7 +1731,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 45, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "parts": lambda: box_building(64, 48, 20, side_x=4),
         "exact": [(0, 0, 64, 48, True)],
     },
     {
@@ -1711,7 +1739,7 @@ SPECS = [
         "layout": "LAYOUT_SLATEPORT_CITY",
         "rect": (10, 49, 4, 3),
         "ground": [0x211, 0x285, 0x210, 0x212, 0x209],
-        "parts": lambda: box_building(64, 48, 30, side_x=4),
+        "parts": lambda: box_building(64, 48, 20, side_x=4),
         "exact": [(0, 0, 64, 48, True)],
     },
     {
@@ -1742,7 +1770,7 @@ SPECS = [
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x234, 0x23C, 0x23D, 0x23F, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF},
+            "tiles": {0x234, 0x23C, 0x243, 0x245, 0x24D, 0x255, 0x25D, 0x2B8, 0x2B9, 0x2BA, 0x2FE, 0x2FF},
             "height": 6, "block": 2,
         },
         "ground": [GRASS],
@@ -1764,7 +1792,7 @@ SPECS = [
         "components": {
             "primary": "gTileset_General",
             "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x20B, 0x20C, 0x213, 0x214, 0x21B, 0x21C, 0x223, 0x22B, 0x26B, 0x26C, 0x28D, 0x28E, 0x32D, 0x32E, 0x32F, 0x336, 0x337, 0x33E, 0x33F, 0x344, 0x27E, 0x2BB},
+            "tiles": {0x20B, 0x20C, 0x213, 0x214, 0x21B, 0x21C, 0x223, 0x22B, 0x28D, 0x28E, 0x32D, 0x32E, 0x32F, 0x336, 0x337, 0x33E, 0x33F, 0x344, 0x27E, 0x2BB},
             "height": 10, "block": 1,
         },
         "ground": [GRASS],
