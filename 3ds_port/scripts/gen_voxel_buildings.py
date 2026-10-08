@@ -918,6 +918,13 @@ def interior_specs(spec):
             if pc.get("card"):
                 art.paste(obj, (0, 2 * h * 16 + sh + th))
                 parts = [vb.Card(pc["name"], obj, foot, voff=2 * h * 16 + sh + th)]
+            elif pc.get("dome"):
+                # a round thing in a room - a tank, a submarine's nose -
+                # lifted off its own pixels as a rock is off the sea: every
+                # point of it (u, h, v + h), the drawing itself from the GBA's
+                # camera and a dome from any other. `dome` is how tall it
+                # stands for its depth (vb.Mound's rise).
+                parts = [vb.Mound(pc["name"], obj, rise=float(pc["dome"]), step=2)]
             else:
                 top_tile = (vb.Tile(0, 2 * h * 16 + sh, tw, 2 * h * 16 + sh + th)
                             if lid else None)
