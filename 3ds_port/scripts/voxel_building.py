@@ -1534,6 +1534,14 @@ class Arch:
             mesh.poly([(a, h, foot, a, foot - h), (b, h, foot, b, foot - h),
                        (b, y0, top + y0, b, top), (a, y0, top + y0, a, top)], SHADE_ART,
                       self.name + ".roof~proj")
+            # and its far end, from the top's back edge down to the floor
+            # along the GBA camera's own line of sight: edge on to it, so
+            # never in the drawing, and from anywhere else what joins the
+            # thing to whatever stands behind it instead of a gap
+            if y0 > 0.5:
+                mesh.poly([(a, y0, top + y0, a, top), (b, y0, top + y0, b, top),
+                           (b, 0.0, float(top), b, top), (a, 0.0, float(top), a, top)], SHADE_BACK,
+                          self.name + ".tail~behind~proj")
             line = (h, foot, y0, top + y0, u + 0.5, top, foot - h)
             if prev is not None:
                 # the step between two columns, which the GBA's camera never

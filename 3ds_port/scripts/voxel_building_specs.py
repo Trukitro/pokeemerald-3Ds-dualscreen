@@ -2182,7 +2182,13 @@ def shipyard_1f():
         # submarine's nose a cylinder's end as tall, its top climbing to it
         # from the bay. As boxes they were flat-topped; made by hand as a
         # vault and a drum they went through the wall and lost the drawing.)
-        dict(piece("submarine", [(192, 112, 224, 158)], 14, leave=shop, solid=True), arch=(26, 0.35)),
+        # (the nose is drawn from the arc of its top, row 107, not from the
+        # row its sides begin on: cut there, the arc - its pipes, its lamps
+        # - stayed on the bay's face behind it, low, and the nose's front
+        # looked lower than the housing. Its top climbs to the front, half
+        # its height at the back.)
+        dict(piece("submarine", [("ellipse", 208, 126, 20, 19.5), (188, 126, 228, 158)], 14,
+                   leave=shop, solid=True), arch=(30, 0.5)),
         dict(piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True), arch=(32, 1.0, 21)),
         piece("cradle_w", [(177, 88, 184, 136)], 8, leave=shop, solid=True),
         piece("cradle_e", [(232, 88, 240, 136)], 8, leave=shop, solid=True),
