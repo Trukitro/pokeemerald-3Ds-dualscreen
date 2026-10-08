@@ -2795,7 +2795,11 @@ def terrace_lattice(layout, standing):
 # and under - and stand `rise` pixels up. Every lattice point of a deck cell
 # is up, so the cells round it - its railings, the band under its south rail -
 # slope from it to the ground: its sides.
-BRIDGES = {"LAYOUT_ROUTE110": 56}
+# (None now: Route 110's cycling road was tried as one, 16, 28 and 56 rows up,
+# and read worse than its drawing - the road lies as it is drawn, and its
+# railings stand on it as models (voxel_building_specs.py). bridge_deck stays
+# for a bridge it suits.)
+BRIDGES = {}
 BRIDGE_RAMP = 4     # cells of ramp at a gate (bridge_deck's profile)
 BRIDGE_SHADE = (0x171, 0x179)   # the General tileset's water in a bridge's shade
 

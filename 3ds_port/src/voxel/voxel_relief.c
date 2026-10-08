@@ -391,8 +391,10 @@ float VoxelRelief_LiftAt(float worldX, float worldZ)
     int x = FloorI(worldX), y = FloorI(worldZ);
     const VoxelMapInstance *inst = VoxelWorld_GetInstanceAt(x, y);
 
+    /* under the road, as the GBA draws it: the road's own drawing over
+     * whoever passes, who is seen through it as a silhouette */
     if (sUnder)
-        return VoxelRelief_Base(inst);
+        return VoxelRelief_Base(inst) - 1.75f;
 
     return VoxelRelief_Base(inst) + Sample(VoxelRelief_Cell(inst, x, y), worldX, worldZ);
 }

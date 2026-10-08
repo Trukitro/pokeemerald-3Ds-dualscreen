@@ -180,13 +180,9 @@ static bool UnderBridge(const struct ObjectEvent *obj)
 {
     if (obj->currentElevation >= 4)
         return false;
-    /* (within five cells: what holds a deck up stands that far south of it) */
-    for (int dy = -5; dy <= 5; ++dy)
-        for (int dx = -5; dx <= 5; ++dx)
-            if (MapGridGetElevationAt(obj->currentCoords.x + dx, obj->currentCoords.y + dy) == 15
-             || MapGridGetElevationAt(obj->previousCoords.x + dx, obj->previousCoords.y + dy) == 15)
-                return true;
-    return false;
+    /* on such a cell, coming or going: beside it they are in the open */
+    return MapGridGetElevationAt(obj->currentCoords.x, obj->currentCoords.y) == 15
+        && MapGridGetElevationAt(obj->previousCoords.x, obj->previousCoords.y) == 15;
 }
 
 bool VoxelEntities_PlayerUnder(void)

@@ -2550,6 +2550,17 @@ SPECS += [
      "ground": [GRASS],
      "parts": lambda: box_building(80, 96, 70),
      "exact": []},
+    # The cycling road lies as it is drawn; what stands on it is modelled
+    # piece by piece. First its railings along the spans that run east and
+    # west, drawn from in front: twelve rows tall.
+    {"name": "route110_rails",
+     "components": {
+         "secondary": "gTileset_Mauville",
+         "layouts": ["LAYOUT_ROUTE110"],
+         "tiles": {0x2F1, 0x2F2, 0x2F3, 0x34C, 0x30A, 0x309, 0x30B, 0x306, 0x307},
+         "height": 12, "block": 2,
+     },
+     "ground": [0x170, GRASS, 0x171]},
     {"name": "route110_kerbs",
      "components": {
          "primary": "gTileset_General",
