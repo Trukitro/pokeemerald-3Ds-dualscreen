@@ -689,6 +689,58 @@ static void EmitRelief(VoxelBuilder *b, int x, int y, const int16_t *g, const in
                 p[k] = (VoxelVertex){ x + a / (float)n, h + raise, y + c / (float)n + d,
                                       u0 + (u1 - u0) * a / n, v0 + (v1 - v0) * c / n, shade };
             }
+            /*
+             * A drop sideways steeper than any slope - a bridge's deck beside
+             * the water it crosses, more than ten pixels down in one step of
+             * four: its side. As a quad of the lattice it leaned back north
+             * by its own height (a point stands as far south as it is high),
+             * a slanted panel under the railing. It hangs straight down
+             * instead, from the high edge to the low edge's height.
+             */
+            {
+                float west = (p[0].y + p[3].y) * 0.5f, east = (p[1].y + p[2].y) * 0.5f;
+
+                if (fabsf(west - east) > 10.0f / 16.0f
+                 && fabsf(p[0].y - p[3].y) < 6.0f / 16.0f && fabsf(p[1].y - p[2].y) < 6.0f / 16.0f)
+                {
+                    int hi0 = west > east ? 0 : 1, hi1 = west > east ? 3 : 2;
+                    int lo0 = west > east ? 1 : 0, lo1 = west > east ? 2 : 3;
+                    VoxelVertex q0 = p[hi0], q1 = p[hi1], q2 = p[hi1], q3 = p[hi0];
+                    float shade = west > east ? 0.72f : 0.80f;
+
+                    q2.y = p[lo1].y; q2.u = p[lo1].u; q2.v = p[lo1].v;
+                    q3.y = p[lo0].y; q3.u = p[lo0].u; q3.v = p[lo0].v;
+                    q0.shade = q1.shade = q2.shade = q3.shade = shade;
+                    b->vertexFace = false;
+                    VoxelBuilder_Quad(b, &q0, &q1, &q2, &q3);
+                    VoxelBuilder_Quad(b, &q1, &q0, &q3, &q2);
+#if CTR_VOXEL_LIGHTING
+                    b->vertexFace = b->lighting;
+#endif
+                    continue;
+                }
+            }
+            /* and a drop as steep towards the camera - a railing's end: the
+             * same, hung from its north edge */
+            {
+                float north = (p[0].y + p[1].y) * 0.5f, south = (p[2].y + p[3].y) * 0.5f;
+
+                if (north - south > 10.0f / 16.0f
+                 && fabsf(p[0].y - p[1].y) < 6.0f / 16.0f && fabsf(p[2].y - p[3].y) < 6.0f / 16.0f)
+                {
+                    VoxelVertex q0 = p[0], q1 = p[1], q2 = p[1], q3 = p[0];
+
+                    q2.y = p[2].y; q2.u = p[2].u; q2.v = p[2].v;
+                    q3.y = p[3].y; q3.u = p[3].u; q3.v = p[3].v;
+                    b->vertexFace = false;
+                    VoxelBuilder_Quad(b, &q0, &q1, &q2, &q3);
+                    VoxelBuilder_Quad(b, &q1, &q0, &q3, &q2);
+#if CTR_VOXEL_LIGHTING
+                    b->vertexFace = b->lighting;
+#endif
+                    continue;
+                }
+            }
             VoxelBuilder_Quad(b, &p[0], &p[1], &p[2], &p[3]);
         }
     b->vertexFace = false;

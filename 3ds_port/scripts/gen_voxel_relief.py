@@ -2795,20 +2795,31 @@ def terrace_lattice(layout, standing):
 # and under - and stand `rise` pixels up. Every lattice point of a deck cell
 # is up, so the cells round it - its railings, the band under its south rail -
 # slope from it to the ground: its sides.
-BRIDGES = {"LAYOUT_ROUTE110": 28}
+BRIDGES = {"LAYOUT_ROUTE110": 56}
+BRIDGE_RAMP = 4     # cells of ramp at a gate (bridge_deck's profile)
+BRIDGE_SHADE = (0x171, 0x179)   # the General tileset's water in a bridge's shade
 
 
-BRIDGE_RAMP = 4     # cells a deck takes to climb from where it is entered
+def bridge_deck(layout, h, rise, layout_id=None):
+    """A road on a bridge, as a height field that is still its drawing.
 
-
-def bridge_deck(layout, h, rise):
-    """The road is every walkable cell at the deck's own level (4) or at both
-    levels (15, where it is crossed under), reached from one of the latter,
+    The deck is every walkable cell at the deck's own level (4) or at both
+    levels (15, where it is crossed under) reached from one of the latter,
     and the cells without a level (0) that lead onto it. Where it is entered
-    from the ground - at a gatehouse - it is on the ground, and climbs to its
-    height over the next BRIDGE_RAMP cells: a ramp, then level until it comes
-    down at the other end. A deck up everywhere stood a wall at each gate;
-    one up only over its crossings was a road of steps."""
+    from the ground - at a gatehouse - it is on the ground, and it climbs to
+    `rise` over the next BRIDGE_RAMP cells along the road: a ramp, then
+    level until it comes down at the other end.
+
+    Its railings, drawn in the cells beside it, are up with it as far as
+    they are drawn in the deck's own colours; the drop to the ground is the
+    last step of them, a wall in the railing's own edge.
+
+    South of it the drawing shows what holds it up - the band under the
+    rail, the pillars, the water in its shade - and that stands: a row lower
+    for every row down (a wall, at 45 degrees), for as long as the cells are
+    the bridge's own or its shade. `rise` is the height at which the pillars'
+    feet come to the ground: the band's rows and the pillars' together.
+    """
     n = PER_CELL
     W, H = layout.w, layout.h
     inside = lambda x, y: 0 <= x < W and 0 <= y < H
@@ -2821,34 +2832,97 @@ def bridge_deck(layout, h, rise):
             if q not in deck and road(*q) and (layout.elevation(*q) != 0 or layout.elevation(x, y) != 0):
                 deck.add(q)
                 todo.append(q)
-    # entered from the ground: a deck cell not crossed under, beside a
-    # walkable cell that is not the deck's
-    dist = {c: 0 for c in deck if layout.elevation(*c) != 15 and any(
+    entries = [c for c in deck if layout.elevation(*c) != 15 and any(
         inside(*q) and q not in deck and not layout.blocked(*q)
-        for q in ((c[0] + 1, c[1]), (c[0] - 1, c[1]), (c[0], c[1] + 1), (c[0], c[1] - 1)))}
-    todo = list(dist)
-    while todo:
-        nxt = []
-        for (x, y) in todo:
-            for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-                if q in deck and q not in dist:
-                    dist[q] = dist[(x, y)] + 1
-                    nxt.append(q)
-        todo = nxt
-    # a corner is as high as the lowest cell of the deck that touches it
+        for q in ((c[0] + 1, c[1]), (c[0] - 1, c[1]), (c[0], c[1] + 1), (c[0], c[1] - 1)))]
+    # how far along the road each corner of the deck is from where it is
+    # entered, across cells and their diagonals (cells alone gave lines of
+    # equal height in diamonds, and a ramp that rippled)
+    import heapq
     corner = {}
+    heap = [(0.0, c) for (x, y) in entries for c in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1))]
+    links = {}
     for (x, y) in deck:
-        d = dist.get((x, y), BRIDGE_RAMP)
-        for c in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)):
-            corner[c] = min(corner.get(c, BRIDGE_RAMP), d)
+        a, b_, c, d = (x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)
+        for p_, q, w in ((a, b_, 1.0), (c, d, 1.0), (a, c, 1.0), (b_, d, 1.0), (a, d, 1.4142), (b_, c, 1.4142)):
+            links.setdefault(p_, []).append((q, w))
+            links.setdefault(q, []).append((p_, w))
+    while heap:
+        dd, c = heapq.heappop(heap)
+        if c in corner:
+            continue
+        corner[c] = dd
+        for (q, w) in links.get(c, ()):
+            if q not in corner:
+                heapq.heappush(heap, (dd + w, q))
+
+    def profile(dd):
+        """The ramp its drawing shows at a gate - BRIDGE_RAMP cells to half
+        the deck's height, a slope the 45 degrees can show - and then the
+        rest, gently, over three times as far."""
+        if dd <= BRIDGE_RAMP:
+            return 0.5 * rise * dd / BRIDGE_RAMP
+        return min(float(rise), 0.5 * rise * (1.0 + (dd - BRIDGE_RAMP) / (3.0 * BRIDGE_RAMP)))
+
+    up = {}     # lattice point (j, i) -> height
     for (x, y) in deck:
-        a, b, c, d = (rise * min(BRIDGE_RAMP, corner[k]) / float(BRIDGE_RAMP)
-                      for k in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)))
+        a, b_, c, d = (profile(corner.get(k, 1e9)) for k in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)))
         for j in range(n + 1):
             for i in range(n + 1):
                 u, v = i / n, j / n
-                value = (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v
-                h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], value)
+                value = (a * (1 - u) + b_ * u) * (1 - v) + (c * (1 - u) + d * u) * v
+                key = (y * n + j, x * n + i)
+                up[key] = max(up.get(key, 0.0), value)
+    owned = set(up)
+    # Its sides. A road's railings are drawn in its own cells' outer columns:
+    # the last step of a deck cell beside a cell that is not the deck's goes
+    # down to the ground, and is the side - in the railing's own blue. (Read
+    # by colour from the cells beside it, where trees overlap the railing,
+    # the side came out as a row of teeth.)
+    for (j, i) in list(up):
+        if i % n:
+            continue
+        x, rows = i // n, ([j // n] if j % n else [j // n - 1, j // n])
+        pairs = [((x - 1, cy) in deck, (x, cy) in deck) for cy in rows]
+        # (a side runs past this point - and it is no corner where the deck
+        # goes on both ways, nor a point of its north or south edge)
+        if any(a != b_ for a, b_ in pairs) and not any(a and b_ for a, b_ in pairs):
+            up[(j, i)] = 0.0
+    # The rail along its north edge is drawn in the cells north of it: up
+    # with the deck, whole cells of it.
+    for (j, i) in list(owned):
+        if (j - 1, i) in owned or up[(j, i)] <= 0:
+            continue
+        for k in range(1, n + 1):
+            q = (j - k, i)
+            if q[0] < 0 or q in owned:
+                break
+            cell = (min(i * STEP, W * 16 - 1) // 16, min(q[0] * STEP, H * 16 - 1) // 16)
+            if layout.metatile(*cell) < 0x200 or cell in deck:
+                break
+            up[q] = max(up.get(q, 0.0), up[(j, i)])
+    # what holds it up: south of the deck, a row down for every row
+    for i in range(W * n + 1):
+        j = 0
+        while j < H * n:
+            # (from the deck's own edge only: a railing's end has nothing
+            # drawn under it, and a fall from each of its points was a row
+            # of teeth down the road's side)
+            if (j, i) in owned and (j + 1, i) not in up and up[(j, i)] > 0:
+                value, k = up[(j, i)], j + 1
+                while k <= H * n and value > 0 and (k, i) not in owned:
+                    cell = (min(i * STEP, W * 16 - 1) // 16, min(k * STEP, H * 16 - 1) // 16)
+                    m = layout.metatile(*cell)
+                    if not (m >= 0x200 or m in BRIDGE_SHADE):
+                        break
+                    value = max(0.0, value - STEP)
+                    up[(k, i)] = value
+                    k += 1
+                j = k
+            else:
+                j += 1
+    for (j, i), value in up.items():
+        h[j][i] = max(h[j][i], value)
 
 
 def layout_heights(layout_id):
@@ -2870,7 +2944,7 @@ def layout_heights(layout_id):
     else:
         h = flat_lattice(roles_layout)
     if layout_id in BRIDGES:
-        bridge_deck(roles_layout, h, BRIDGES[layout_id])
+        bridge_deck(roles_layout, h, BRIDGES[layout_id], layout_id)
     art = _ART.get(layout_id)
     if art is None:
         art = layout_art(layout_id)

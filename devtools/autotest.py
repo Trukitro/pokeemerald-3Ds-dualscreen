@@ -73,6 +73,10 @@ def main():
     ap.add_argument("--rom", default=None, help="another build's 3DSX (to compare with upstream's)")
     ap.add_argument("--suffix", default="", help="added to every capture's name")
     ap.add_argument("--flash", type=int, default=None, help="flash level set after each warp (1 = after Flash)")
+    ap.add_argument("--ride", default=None,
+                    help="moves after each warp, in voxel: 'bike,U40,s,R60,s' - bike = mount the Mach "
+                         "Bike, U/D/L/R<frames> = hold that way, w<frames> = wait, s = capture "
+                         "(<place>_ride<N>.png)")
     args = ap.parse_args()
 
     exe = azahar()
@@ -99,6 +103,20 @@ def main():
                 lines += ["flash %d" % args.flash, "wait 12", "shot %s_%s_mid" % (tag, mode), "wait 120"]
             lines.append("shot %s_%s" % (tag, mode))
             wanted.append("%s_%s" % (tag, mode))
+            if args.ride and mode == "3d":
+                count = 0
+                for move in args.ride.split(","):
+                    if move == "bike":
+                        lines += ["bike", "wait 30"]
+                    elif move == "s":
+                        count += 1
+                        lines.append("shot %s_ride%d" % (tag, count))
+                        wanted.append("%s_ride%d" % (tag, count))
+                    elif move[0] == "w":
+                        lines.append("wait %d" % int(move[1:]))
+                    else:
+                        lines += ["keys %d %d" % ({"R": 16, "L": 32, "U": 64, "D": 128}[move[0]], int(move[1:])),
+                                  "wait 20"]
     lines.append("quit")
     with open(os.path.join(card, "autotest.txt"), "w", newline="\n") as f:
         f.write("\n".join(lines) + "\n")

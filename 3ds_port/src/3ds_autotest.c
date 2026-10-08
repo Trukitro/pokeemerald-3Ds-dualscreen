@@ -68,7 +68,12 @@
 /* A warp that never reaches the field is skipped, not waited on for ever. */
 #define AUTOTEST_WARP_TIMEOUT 900
 
-enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_AUDIT, OP_WAIT, OP_SHOT, OP_PERF, OP_QUIT };
+enum { OP_WARP, OP_VOXEL, OP_FLASH, OP_AUDIT, OP_WAIT, OP_SHOT, OP_PERF, OP_KEYS, OP_BIKE, OP_QUIT };
+
+/* The buttons a script holds down ("keys MASK FRAMES": 3ds_input.c's order -
+ * A 1, B 2, right 16, left 32, up 64, down 128), so that a thing is tried by
+ * moving through it and not only by standing in it. */
+uint32_t gCtrAutotestButtons;
 
 typedef struct
 {
@@ -115,6 +120,10 @@ static void Load(void)
             line->op = OP_AUDIT;
         else if (!strcmp(op, "perf") && sscanf(text, "%*s %71s %d", line->name, &a) == 2)
             line->op = OP_PERF;
+        else if (!strcmp(op, "keys") && sscanf(text, "%*s %d %d", &a, &b) == 2)
+            line->op = OP_KEYS;
+        else if (!strcmp(op, "bike"))
+            line->op = OP_BIKE;
         else if (!strcmp(op, "quit"))
             line->op = OP_QUIT;
         else
@@ -326,6 +335,8 @@ void CtrAutotest_Frame(u32 frame)
                 PerfEnd();
         }
         --sWait;
+        if (sWait == 0)
+            gCtrAutotestButtons = 0;
         if (sState == 2 && CtrGame_IsOverworld() && !gPaletteFade.active)
         {
             sState = 1;
@@ -364,6 +375,13 @@ void CtrAutotest_Frame(u32 frame)
         case OP_SHOT:
             CtrCapture_Save(line->name);
             return;         /* a frame between captures */
+        case OP_KEYS:
+            gCtrAutotestButtons = (uint32_t)line->arg[0];
+            sWait = line->arg[1] > 0 ? (unsigned)line->arg[1] : 1;
+            return;
+        case OP_BIKE:
+            SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_MACH_BIKE);
+            break;
         case OP_AUDIT:
             Audit(line->name);
             break;

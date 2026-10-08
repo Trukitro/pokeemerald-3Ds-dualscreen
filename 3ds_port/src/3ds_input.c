@@ -28,6 +28,11 @@ void CtrInput_Scan(void)
     for (unsigned i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i)
         if (raw & keys[i])
             sample.buttons |= 1u << i;
+    {
+        extern uint32_t gCtrAutotestButtons;    /* 3ds_autotest.c: a script's */
+
+        sample.buttons |= gCtrAutotestButtons;
+    }
     circlePosition circle;
     hidCircleRead(&circle);
     sample.circleX = circle.dx;
