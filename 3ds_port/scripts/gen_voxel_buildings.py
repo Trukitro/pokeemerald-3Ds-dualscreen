@@ -962,9 +962,14 @@ def build_models(only=None):
             # a dome is the drawing at 45 degrees and a dome from anywhere else
             parts = [vb.Mound("mound", art, rise=spec["mound"].get("rise", 1.0),
                               step=spec["mound"].get("step", 4))]
+        elif spec.get("card"):
+            # its drawing stood up at its foot, no wider or taller than what
+            # is drawn: a card past the drawing's edge showed lines of
+            # whatever the page holds beside it
+            parts = [vb.Card("card", art, h * 16)]
         elif "parasol" in spec:
-            # a beach parasol: its canopy a dome held up on its pole, its
-            # shadow left on the sand (the ring of a Mound)
+            # a beach parasol: its canopy a dome held up on its pole. The
+            # shadow drawn on the sand is left out: the light casts its own
             p = spec["parasol"]
             shadow = [tuple(int(c[i:i + 2], 16) for i in (0, 2, 4)) for c in p["shadow"]]
             spec["drawing"] = art
@@ -973,7 +978,8 @@ def build_models(only=None):
             px0, px1 = p["pole"]
             foot, shaft = p["foot"], p["shaft"]
             parts = [vb.Mound("canopy", art, rise=p.get("rise", 0.5), step=p.get("step", 2),
-                              ring=shadow, rows=rows, base=p["high"], top_rows=p["canopy"]),
+                              ring=shadow, rows=rows, base=p["high"], top_rows=p["canopy"],
+                              lay_ring=False),
                      vb.Prism("pole", px0, px1, [(foot, 0), (foot, p["high"]), (foot - 1, p["high"]),
                                                  (foot - 1, 0)],
                               edges={0: vb.Tile(px0, shaft[0], px1, shaft[1], top=p["high"])},

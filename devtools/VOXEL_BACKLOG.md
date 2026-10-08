@@ -541,14 +541,14 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:AbandonedShip -->
 ### AbandonedShip - audit of 2026-10-08
 
-- [ ] **AbandonedShip_CaptainsOffice**: 22 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_CaptainsOffice.png`
-  - [ ] (0, 0)-(8, 2), 16 cell(s), tiles 20E 20F 216 217 21B 21C 223 224 2B8 2B9 2F8 300
-  - [ ] (0, 3)-(0, 4), 2 cell(s), tiles 3B4 3B5
+- [ ] **AbandonedShip_CaptainsOffice**: 5 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_CaptainsOffice.png`
+  - [ ] (7, 2), 1 cell(s), tiles 216
   - [ ] (3, 5)-(4, 6), 4 cell(s), tiles 20C 20D 214 215
 - [ ] **AbandonedShip_Corridors_1F**: 2 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Corridors_1F.png`
   - [ ] (7, 0)-(7, 1), 2 cell(s), tiles 201
-- [ ] **AbandonedShip_Corridors_B1F**: 73 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Corridors_B1F.png`
-  - [ ] (0, 0)-(12, 4), 53 cell(s), tiles 221 222 223 224 225 226 229 22A 22B 22C 22D 22E 230 231 232 233 29F 2A7
+- [ ] **AbandonedShip_Corridors_B1F**: 30 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Corridors_B1F.png`
+  - [ ] (0, 0)-(1, 2), 5 cell(s), tiles 221 229 29F 2A7
+  - [ ] (8, 0)-(9, 2), 5 cell(s), tiles 221 229 29F 2A7
   - [ ] (12, 6), 1 cell(s), tiles 2AC
   - [ ] (0, 8), 1 cell(s), tiles 2AD
   - [ ] (4, 8)-(12, 9), 18 cell(s), tiles 230 231 232
@@ -556,48 +556,54 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] (0, 0)-(22, 15), 273 cell(s), tiles 210 218 21F 220 227 228 22A 22F 260 262 265 266 268 269 26A 2A1 2C3 2C4 2C5 2CB 2CD 35D 3B3 3C8 3C9 3CA 3CB
   - [ ] (11, 10), 1 cell(s), tiles 3C8
   - [ ] (15, 11)-(22, 15), 34 cell(s), tiles 218 220 265 269 3C8 3C9 3CA 3CB
-- [ ] **AbandonedShip_HiddenFloorCorridors**: 74 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_HiddenFloorCorridors.png`
-  - [ ] (0, 0)-(12, 1), 26 cell(s), tiles 208 209 210 211 2A8 2A9 2B0 2B1
+- [ ] **AbandonedShip_HiddenFloorCorridors**: 3 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_HiddenFloorCorridors.png`
   - [ ] (0, 3), 1 cell(s), tiles 2AD
-  - [ ] (2, 4)-(10, 8), 45 cell(s), tiles 222 223 224 225 226 22A 22B 22C 22D 22E 230 231 232 233
   - [ ] (12, 4), 1 cell(s), tiles 2AC
   - [ ] (0, 5), 1 cell(s), tiles 2AD
-- [ ] **AbandonedShip_HiddenFloorRooms**: 330 flat cell(s) in 9 object(s) - `build/audit/AbandonedShip_HiddenFloorRooms.png`
-  - [ ] (0, 0)-(43, 14), 310 cell(s), tiles 201 20F 217 227 22F 235 236 237 23E 23F 246 247 24E 24F 256 257 25E 25F 262 263 268 295 296 297 299 29A 29D 29E 2A0 2A2 2AA 2AB
-  - [ ] (33, 3), 1 cell(s), tiles 262
-  - [ ] (3, 4)-(4, 5), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (38, 5), 1 cell(s), tiles 262
-  - [ ] (10, 11)-(11, 12), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (25, 11), 1 cell(s), tiles 262
-  - [ ] (35, 11)-(36, 12), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (16, 13)-(17, 14), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (33, 14), 1 cell(s), tiles 262
-- [ ] **AbandonedShip_Room_B1F**: 10 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Room_B1F.png`
-  - [ ] (0, 0)-(0, 7), 8 cell(s), tiles 236 23E
-  - [ ] (8, 0)-(8, 1), 2 cell(s), tiles 237 23F
-- [ ] **AbandonedShip_Rooms2_1F**: 21 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_Rooms2_1F.png`
-  - [ ] (0, 0)-(0, 16), 17 cell(s), tiles 201 236 23E
-  - [ ] (8, 0)-(8, 1), 2 cell(s), tiles 237 23F
-  - [ ] (8, 9)-(8, 10), 2 cell(s), tiles 237 23F
-- [ ] **AbandonedShip_Rooms2_B1F**: 79 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms2_B1F.png`
-  - [ ] (0, 0)-(17, 7), 71 cell(s), tiles 227 22F 236 237 23E 23F 240 241 242 243 244 245 246 247 248 249 24A 24B 24C 24D 24E 24F 250 251 254 255 256 257 258 259 25C 25D 25E 25F 2AA 2AB
-  - [ ] (7, 5)-(10, 7), 8 cell(s), tiles 23E 23F 262 2AB
-- [ ] **AbandonedShip_Rooms_1F**: 41 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
-  - [ ] (0, 0)-(0, 16), 17 cell(s), tiles 201 236 23E
-  - [ ] (8, 0)-(9, 12), 17 cell(s), tiles 201 236 237 23E 23F 246 24E
-  - [ ] (17, 0)-(17, 1), 2 cell(s), tiles 237 23F
-  - [ ] (17, 9)-(17, 10), 2 cell(s), tiles 237 23F
+- [ ] **AbandonedShip_HiddenFloorRooms**: 79 flat cell(s) in 16 object(s) - `build/audit/AbandonedShip_HiddenFloorRooms.png`
+  - [ ] (1, 2), 1 cell(s), tiles 268
+  - [ ] (18, 2)-(20, 3), 5 cell(s), tiles 20F 217 235 25E 25F
+  - [ ] (22, 2)-(23, 3), 4 cell(s), tiles 299 29A 2A0 2A2
+  - [ ] (40, 2)-(41, 3), 4 cell(s), tiles 299 29A 2A0 2A2
+  - [ ] (12, 3), 1 cell(s), tiles 2AA
+  - [ ] (15, 3), 1 cell(s), tiles 2AB
+  - [ ] (29, 3)-(43, 7), 24 cell(s), tiles 201 23E 23F 2AA 2AB
+  - [ ] (1, 5), 1 cell(s), tiles 2AB
+  - [ ] (0, 7)-(27, 7), 28 cell(s), tiles 201
+  - [ ] (7, 10), 1 cell(s), tiles 235
+  - [ ] (40, 10)-(41, 11), 4 cell(s), tiles 299 29A 2A0 2A2
+  - [ ] (27, 11), 1 cell(s), tiles 2AA
+  - [ ] (30, 11), 1 cell(s), tiles 2AB
+  - [ ] (1, 13), 1 cell(s), tiles 2AB
+  - [ ] (42, 13), 1 cell(s), tiles 2AA
+  - [ ] (12, 14), 1 cell(s), tiles 2AA
+- [x] **AbandonedShip_Room_B1F**: nothing blocked lies flat
+- [ ] **AbandonedShip_Rooms2_1F**: 8 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms2_1F.png`
+  - [ ] (0, 8)-(3, 8), 4 cell(s), tiles 201
+  - [ ] (5, 8)-(8, 8), 4 cell(s), tiles 201
+- [ ] **AbandonedShip_Rooms2_B1F**: 11 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Rooms2_B1F.png`
+  - [ ] (7, 3), 1 cell(s), tiles 2AA
+  - [ ] (16, 4)-(17, 7), 5 cell(s), tiles 23F 2AA
+  - [ ] (9, 5)-(10, 7), 4 cell(s), tiles 23E 2AB
+  - [ ] (1, 6), 1 cell(s), tiles 2AB
+- [ ] **AbandonedShip_Rooms_1F**: 29 flat cell(s) in 8 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
+  - [ ] (16, 3), 1 cell(s), tiles 2AA
+  - [ ] (1, 4), 1 cell(s), tiles 2AB
+  - [ ] (10, 6), 1 cell(s), tiles 2AB
+  - [ ] (0, 8)-(12, 8), 13 cell(s), tiles 201
+  - [ ] (14, 8)-(17, 8), 4 cell(s), tiles 201
+  - [ ] (16, 13)-(17, 16), 5 cell(s), tiles 23F 2AA
   - [ ] (9, 14)-(9, 16), 3 cell(s), tiles 23E
-- [ ] **AbandonedShip_Rooms_B1F**: 115 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Rooms_B1F.png`
-  - [ ] (0, 0)-(3, 7), 19 cell(s), tiles 236 23E 240 248 250 251 258 259 26B 273 295 29D 2AB
-  - [ ] (5, 0)-(21, 7), 72 cell(s), tiles 201 227 22F 240 245 248 24D 250 251 254 255 258 259 25C 25D 263 26B 26D 273 275 295 296 297 29D 29E 2AA
-  - [ ] (23, 0)-(26, 7), 19 cell(s), tiles 237 23F 245 24D 254 255 25C 25D 26D 275 296 29E 2AA
-  - [ ] (2, 5)-(3, 6), 4 cell(s), tiles 256 257 25E 25F
-  - [ ] (24, 6), 1 cell(s), tiles 262
+  - [ ] (1, 16), 1 cell(s), tiles 2AB
+- [ ] **AbandonedShip_Rooms_B1F**: 28 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Rooms_B1F.png`
+  - [ ] (7, 2)-(9, 7), 13 cell(s), tiles 201 2AA
+  - [ ] (16, 2)-(18, 7), 13 cell(s), tiles 201 2AA
+  - [ ] (1, 7), 1 cell(s), tiles 2AB
+  - [ ] (25, 7), 1 cell(s), tiles 2AA
 - [ ] **AbandonedShip_Underwater1**: 16 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Underwater1.png`
   - [ ] (0, 0)-(7, 1), 16 cell(s), tiles 2CC 2CD 2CE 2D4 2D5 2D6 2D7
 - [ ] **AbandonedShip_Underwater2**: 41 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Underwater2.png`
   - [ ] (0, 0)-(20, 1), 41 cell(s), tiles 2CC 2CD 2CE 2D4 2D5 2D6 2D7 2D8 2D9 2DA 2DB 2DD
 
-1132 blocked cell(s) still flat in this area.
+560 blocked cell(s) still flat in this area.
 <!-- /audit:AbandonedShip -->

@@ -34,7 +34,7 @@ Both roofs are hipped: seen from the side they are tiles too, laid along the
 side eave, so no gable wall of plaster ever shows.
 """
 
-from voxel_building import (Band, Cylinder, Frustum, HipRoof, Prism, Proj, Strip, Tile,
+from voxel_building import (Band, Cylinder, Frustum, HipRoof, Prism, Proj, Scaled, Strip, Tile,
                             Vault, Walls)
 
 GRASS = 0x001
@@ -1826,17 +1826,6 @@ SPECS = [
         "ground": [GRASS],
     },
     {
-        # the sailing boats moored at the quay
-        "name": "slateport_boats",
-        "components": {
-            "primary": "gTileset_General",
-            "layouts": ["LAYOUT_SLATEPORT_CITY"],
-            "tiles": {0x338, 0x339, 0x33A, 0x340, 0x341, 0x342, 0x348, 0x349, 0x34A},
-            "height": 16,
-        },
-        "ground": [GRASS],
-    },
-    {
         # the market's crates, which are boxes (its jars, bowls and flowers are cards)
         "name": "slateport_market",
         "components": {
@@ -2351,7 +2340,7 @@ SPECS += [
      "parasol": {"shadow": ("cd9c52",), "canopy": 32, "pole": (14, 18), "foot": 40,
                  "shaft": (33, 38), "high": 22, "rise": 0.5, "step": 2},
      # all but the pole: its shaft is repeated up to the canopy, not projected
-     "exact": [(0, 0, 32, 32), (0, 32, 14, 48), (18, 32, 32, 48)]}
+     "exact": [(0, 0, 32, 26)]}
     for (name, x, y) in (("orange", 9, 6), ("blue", 11, 8), ("green", 13, 14))
 ] + [
     {"name": "beach_%s" % name,
@@ -2402,6 +2391,26 @@ SPECS += [
                   "pieces": own_shell(seashore_house())}},
 ]
 
+# Slateport's sailing boats, moored at the quay: each its drawing stood up as
+# a card, the sea cleared from round it - as a box it was a square of sea
+# lifted with the boat. One whole, two with the quay across their hulls, and
+# the bow of one the map's edge cuts.
+SEA_COLOURS = ("526ad5", "6a83d5", "8394de", "839cde")
+SPECS += [
+    {"name": "slateport_boat_%s" % name,
+     "layout": "LAYOUT_SLATEPORT_CITY",
+     "rect": (x, y, w, h),
+     "owned": {(i, j) for j in range(h) for i in range(w)},
+     "repeat_at": at,
+     "ground": [0x170],
+     "clear": SEA_COLOURS,
+     "card": True,
+     "exact": []}
+    for (name, x, y, w, h, at) in (("whole", 34, 44, 3, 3, [(34, 44)]),
+                                   ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]),
+                                   ("bow", 39, 44, 1, 1, [(39, 44)]))
+]
+
 # ── Route 108: the Abandoned Ship ─────────────────────────────────────────
 #
 # A small drawing of a whole ship aground on the shoal: a hull eleven rows
@@ -2422,10 +2431,11 @@ def raised_part(name, x0, x1, base, foot, facade_top, top):
 
 
 def abandoned_ship():
-    return [box_part("hull", 0, 88, 44, 33, 16),
-            raised_part("cabin", 22, 61, 11, 33, 29, 10),
-            raised_part("stack", 61, 75, 11, 33, 31, 13),
-            box_part("shade", 2, 88, 48, 47, 44),
+    """Twice the size it is drawn, about the foot of its gangway: as drawn
+    its hull stood to the player's knee, and it is a liner one walks into."""
+    return [Scaled("ship", [box_part("hull", 0, 88, 44, 33, 16),
+                            raised_part("cabin", 22, 61, 11, 33, 29, 10),
+                            raised_part("stack", 61, 75, 11, 33, 31, 13)], 2.0, 40, 48),
             box_part("gangway", 29, 51, 56, 55, 48)]
 
 
@@ -2467,29 +2477,148 @@ SPECS += [
                   "pieces": own_shell(ship_corridors_1f())}},
 ]
 
-def ship_cabins(rooms):
-    """The ship's cabins, several to a layout: each nine cells across and
-    eight down from (x, y), a panelled wall two cells tall along its back
-    between the white lines that are its side walls' tops."""
-    pieces = []
-    for k, (x, y) in enumerate(rooms):
-        X, Y = x * 16, y * 16
-        side = (X + 16, Y, X + 32, Y + 32)
-        pieces += [
-            piece("wall_%d" % k, [(X + 16, Y, X + 128, Y + 32)], 32, fill=16, foot=Y + 32, side=side),
-            piece("side_%d" % k, [], 32, side=side,
-                  walls=[((X + 16, Y + 128), (X + 16, Y + 32)), ((X + 128, Y + 32), (X + 128, Y + 128))]),
-        ]
+def ship_corridors(layout_id):
+    """A corridor deck read off its layout: the wall along its back wherever
+    the top two rows are wall, and every block of cabins - its white roof
+    (230-232) over the front its doors are in - as a box 28 rows tall. A
+    block the layout's bottom edge cuts has no front drawn and stays flat."""
+    import voxel_building as vb
+    lay = vb.LayoutArt(layout_id)
+    roof = {0x230, 0x231, 0x232}
+    front = {0x225, 0x223, 0x224, 0x222, 0x226, 0x22D, 0x22B, 0x22C, 0x22A, 0x22E, 0x233, 0x2AE, 0x2B6}
+    blocked = lambda c, r: bool(lay.blocks[r * lay.w + c] & 0xC00)
+    pieces, seen = [], set()
+    for y in range(lay.h):
+        for x in range(lay.w):
+            if (x, y) in seen or lay.metatile(x, y) not in roof | front:
+                continue
+            todo, cells = [(x, y)], {(x, y)}
+            while todo:
+                cx, cy = todo.pop()
+                for q in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if (0 <= q[0] < lay.w and 0 <= q[1] < lay.h and q not in cells
+                            and lay.metatile(*q) in roof | front):
+                        cells.add(q)
+                        todo.append(q)
+            seen |= cells
+            if not any(lay.metatile(*c) in front for c in cells):
+                continue
+            x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells) + 1
+            y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells) + 1
+            pieces.append(piece("cabins_%d_%d" % (x0, y0),
+                                [(x0 * 16, max(0, y0 * 16 - 7), x1 * 16, y1 * 16)], 28,
+                                leave=SHIP_FLOOR, solid=True))
+    run = None
+    for c in range(lay.w + 1):
+        wall = (c < lay.w and blocked(c, 0) and blocked(c, 1)
+                and lay.metatile(c, 0) not in roof | {0x201} and lay.metatile(c, 0) in (0x208, 0x209, 0x2A8, 0x2A9))
+        if wall and run is None:
+            run = c
+        if not wall and run is not None:
+            side = (run * 16, 0, run * 16 + 16, 32)
+            pieces.append(piece("wall_%d" % run, [(run * 16, 0, c * 16, 32)], 32, fill=16, foot=32, side=side))
+            run = None
+    for pc in pieces:
+        pc["alone"] = True
+    return pieces
+
+
+SPECS += [
+    {"name": "ship_" + layout.lower(),
+     "interior": {"layout": "LAYOUT_ABANDONED_SHIP_" + layout, "ground": [0x202],
+                  "pieces": ship_corridors("LAYOUT_ABANDONED_SHIP_" + layout)}}
+    for layout in ("CORRIDORS_B1F", "HIDDEN_FLOOR_CORRIDORS")
+]
+
+
+SPECS += [
+    {"name": "ship_captains_office",
+     "interior": {"layout": "LAYOUT_ABANDONED_SHIP_CAPTAINS_OFFICE", "ground": [0x202],
+                  "shade": [0x203, 0x204], "pieces": own_shell(plain_room(9, 7, 5, False))}},
+]
+
+
+def ship_cabins(layout_id):
+    """The ship's cabins, several to a layout, read off the layout itself. A
+    cabin begins at its top-left corner tile (236) and is as wide as the row
+    runs to 237. Along its back, a panelled wall two cells tall, open where a
+    passage comes through it. Down its sides, the white lines are its side
+    walls' tops: each a wall six pixels thick under that line, ending in the
+    grey face of a doorway where the border has an open cell. They lay
+    painted in the black between the cabins, and a passage's floor was
+    painted up the wall it goes through."""
+    import voxel_building as vb
+    lay = vb.LayoutArt(layout_id)
+    blocked = lambda c, r: bool(lay.blocks[r * lay.w + c] & 0xC00)
+    pieces, k = [], 0
+    for y in range(lay.h):
+        for x in range(lay.w):
+            if lay.metatile(x, y) != 0x236:
+                continue
+            x2 = x + 1
+            while x2 < lay.w and lay.metatile(x2, y) != 0x237:
+                x2 += 1
+            if x2 >= lay.w:
+                continue
+            y2 = y + 2
+            while y2 < lay.h and lay.metatile(x, y2) in (0x23E, 0x246, 0x24E) :
+                y2 += 1
+            X, Y, XE = x * 16, y * 16, x2 * 16
+            side = (X + 16, Y, X + 32, Y + 32)
+            # the back wall, between the passages through it
+            run = None
+            for c in list(range(x + 1, x2)) + [x2]:
+                solid = c < x2 and blocked(c, y + 1)
+                if solid and run is None:
+                    run = c
+                if not solid and run is not None:
+                    pieces.append(piece("wall_%d_%d" % (k, run), [(run * 16, Y, c * 16, Y + 32)], 32,
+                                        fill=16, foot=Y + 32, side=side))
+                    run = None
+            # the side walls
+            for tag, c, s0, s1, wx in (("w", x, X + 10, X + 16, X + 16), ("e", x2, XE, XE + 6, XE)):
+                r = y
+                while r < y2:
+                    if not blocked(c, r):
+                        r += 1
+                        continue
+                    r0 = r
+                    while r < y2 and blocked(c, r):
+                        r += 1
+                    if r0 == y and (r - r0) * 16 > 32:
+                        pieces.append(piece("jamb_%d_%s" % (k, tag), [(s0, r0 * 16, s1, r * 16)], 32, solid=True,
+                                            side=side))
+                    elif r0 > y:
+                        a, b = (wx, r * 16), (wx, r0 * 16)
+                        pieces.append(piece("side_%d_%s_%d" % (k, tag, r0), [], 32, side=side,
+                                            walls=[(a, b) if tag == "w" else (b, a)]))
+            k += 1
+    # and what stands in them, each found by its tile: a bed on its cream
+    # platform (its first row seven rows up the cell above), a table, a bin,
+    # a chair
+    fl = ("dea462", "c56241", "de7b52", "bd5a41", "bd7341")
+    for y in range(lay.h):
+        for x in range(lay.w):
+            m, X, Y = lay.metatile(x, y), x * 16, y * 16
+            if m in (0x250, 0x254):
+                pieces.append(piece("bed_%d_%d" % (x, y), [(X, Y - 7, X + 32, Y + 32)], 8, leave=fl, solid=True))
+            elif m == 0x256:
+                pieces.append(piece("table_%d_%d" % (x, y), [(X, Y, X + 32, Y + 32)], 8, leave=fl, solid=True))
+            elif m == 0x262:
+                pieces.append(piece("bin_%d_%d" % (x, y), [(X + 2, Y, X + 14, Y + 16)], 8, leave=fl, solid=True))
+            elif m in (0x260, 0x261):
+                pieces.append(piece("chair_%d_%d" % (x, y), [(X + 2, Y, X + 14, Y + 16)], 6, leave=fl, solid=True))
+    for pc in pieces:
+        pc["alone"] = True
     return pieces
 
 
 SPECS += [
     {"name": "ship_" + layout.lower(),
      "interior": {"layout": "LAYOUT_ABANDONED_SHIP_" + layout, "ground": [0x238],
-                  "shade": [0x23B, 0x23D, 0x23A, 0x23C], "pieces": own_shell(ship_cabins(rooms))}}
-    for layout, rooms in (("ROOMS_1F", ((0, 0), (9, 0), (0, 9), (9, 9))),
-                          ("ROOMS2_1F", ((0, 0), (0, 9))),
-                          ("ROOM_B1F", ((0, 0),)))
+                  "shade": [0x23B, 0x23D, 0x23A, 0x23C],
+                  "pieces": ship_cabins("LAYOUT_ABANDONED_SHIP_" + layout)}}
+    for layout in ("ROOMS_1F", "ROOMS2_1F", "ROOM_B1F", "ROOMS_B1F", "ROOMS2_B1F", "HIDDEN_FLOOR_ROOMS")
 ]
 
 for _spec in SPECS:

@@ -1198,9 +1198,12 @@ class Mound:
     """
 
     def __init__(self, name, art, rise=1.0, step=4, back_steps=3, ring=(), rows=None,
-                 base=0.0, top_rows=None):
+                 base=0.0, top_rows=None, lay_ring=True):
         self.name, self.rise, self.step, self.back_steps = name, rise, step, back_steps
         self.base = float(base)
+        # False: the ring is a shadow the drawing paints, and the console's
+        # own light casts the thing's shadow - it is left out altogether
+        self.lay_ring = lay_ring
         self.rows = rows if rows is not None else art.size[1]
         self.ring = {tuple(c) for c in ring}
         body = art.crop((0, 0, art.size[0], self.rows))
@@ -1343,7 +1346,7 @@ class Mound:
                 self._quad(mesh, ra[i], rb[i], rb[i + 1], ra[i + 1], SHADE_WOUND,
                            self.name + ".back~behind~proj", outward=centre)
         # the ring round its foot, flat on the water
-        if self.ring:
+        if self.ring and self.lay_ring:
             W, H = self.full.size
             box = self.full.crop((0, self.rows, W, min(H, 2 * self.rows))).getbbox()
             if box:
@@ -1396,6 +1399,28 @@ class Mound:
     def _quad(self, mesh, p, q, r, s, shade, tag, outward=None):
         self._tri(mesh, p, q, r, shade, tag, outward)
         self._tri(mesh, p, r, s, shade, tag, outward)
+
+
+class Scaled:
+    """Parts made larger than they are drawn, about a point of the ground
+    (ox, oz): a ship drawn a few cells long that is a liner to walk into.
+    Not its drawing any more - nothing of it is judged against it."""
+
+    def __init__(self, name, parts, k, ox, oz):
+        self.name, self.parts, self.k, self.ox, self.oz = name, parts, float(k), float(ox), float(oz)
+
+    def emit(self, mesh):
+        own = Mesh()
+        for part in self.parts:
+            if isinstance(part, Prism):
+                emit_prism(own, part)
+            else:
+                part.emit(own)
+        k, ox, oz = self.k, self.ox, self.oz
+        for (pts, shade, tag) in own.tris:
+            a, b, c = [(ox + (p[0] - ox) * k, p[1] * k, oz + (p[2] - oz) * k) + tuple(p[3:]) for p in pts]
+            # "~proj": its texels are no longer one to a pixel, by intent
+            mesh.tri(a, b, c, shade, tag if tag.endswith("~proj") else tag + "~proj")
 
 
 class Card:
