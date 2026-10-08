@@ -2795,10 +2795,10 @@ def terrace_lattice(layout, standing):
 # and under - and stand `rise` pixels up. Every lattice point of a deck cell
 # is up, so the cells round it - its railings, the band under its south rail -
 # slope from it to the ground: its sides.
-BRIDGES = {"LAYOUT_ROUTE110": 16}
+BRIDGES = {"LAYOUT_ROUTE110": 28}
 
 
-BRIDGE_RAMP = 3     # cells a deck takes to climb from where it is entered
+BRIDGE_RAMP = 4     # cells a deck takes to climb from where it is entered
 
 
 def bridge_deck(layout, h, rise):

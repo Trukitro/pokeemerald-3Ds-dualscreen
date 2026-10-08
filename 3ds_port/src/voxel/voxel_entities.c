@@ -1126,7 +1126,20 @@ unsigned VoxelEntities_Emit(VoxelBuilder *builder, uint16_t *atlas, const VoxelC
                                                                    (int)floorf(worldZ + 0.5f));
             outdoor = inst != NULL && !inst->indoor;
             if (outdoor)
-                shade = VoxelLighting_Sample(worldX + 0.5f, 0.75f, worldZ + 0.5f);
+            {
+                /* at its own height: on a bridge's deck or a ship's, a sample
+                 * three quarters of a tile over the map's base was inside
+                 * what it stands on, and it went about in the dark */
+                float feet;
+
+                VoxelRelief_Under(UnderBridge(obj));
+                feet = VoxelRelief_LiftAt(worldX + 0.5f, worldZ + 0.5f)
+                     - VoxelRelief_Base(VoxelWorld_GetInstanceAt((int)floorf(worldX + 0.5f),
+                                                                 (int)floorf(worldZ + 0.5f)));
+                VoxelRelief_Under(false);
+                shade = VoxelLighting_Sample(worldX + 0.5f, 0.75f + (feet > 0.0f ? feet : 0.0f),
+                                             worldZ + 0.5f);
+            }
         }
 #endif
         card->drawn = true;
