@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mesa de modelos 3D</title>
+<style>
+  :root { --bg:#1d1f27; --panel:#272a35; --line:#3b4050; --ink:#e8e9ee; --dim:#9aa0b4; --acc:#f2c14e; --ok:#6fcf97; --bad:#eb6f6f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui, sans-serif; display:grid;
+         grid-template-columns: 250px 1fr 340px; height:100vh; }
+  aside, section { overflow:auto; }
+  aside { background:var(--panel); border-right:1px solid var(--line); padding:10px; }
+  #side { border-left:1px solid var(--line); border-right:0; }
+  h1 { font-size:15px; margin:0 0 8px; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); margin:16px 0 6px; }
+  input, select, textarea, button { font:inherit; color:var(--ink); background:#1a1c23; border:1px solid var(--line);
+         border-radius:5px; padding:5px 7px; width:100%; }
+  textarea { min-height:56px; resize:vertical; }
+  button { cursor:pointer; background:#343949; }
+  button.main { background:var(--acc); color:#1d1f27; border-color:var(--acc); font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:6px; margin:6px 0; align-items:center; }
+  .row label { flex:0 0 92px; color:var(--dim); font-size:12px; }
+  #maps div { padding:3px 6px; border-radius:4px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #maps div:hover { background:#343949; } #maps div.on { background:var(--acc); color:#1d1f27; }
+  #stage { position:relative; padding:12px; }
+  #wrap { position:relative; display:inline-block; }
+  canvas { image-rendering:pixelated; display:block; }
+  #over { position:absolute; left:0; top:0; cursor:crosshair; }
+  #bar { position:sticky; top:0; z-index:2; background:var(--bg); padding:8px 12px; border-bottom:1px solid var(--line);
+         display:flex; gap:10px; align-items:center; }
+  #bar select, #bar button { width:auto; }
+  .chip { display:inline-flex; align-items:center; gap:4px; margin:2px; padding:2px 6px; border:1px solid var(--line);
+          border-radius:10px; font-size:12px; cursor:pointer; }
+  .chip i { width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid #0006; }
+  #log { white-space:pre-wrap; font:12px ui-monospace, monospace; color:var(--dim); margin-top:6px; }
+  #sheet { max-width:100%; margin-top:8px; border:1px solid var(--line); border-radius:5px; }
+  .req { border:1px solid var(--line); border-radius:6px; padding:6px; margin:6px 0; font-size:12px; }
+  .req b { font-size:13px; } .req img { max-width:100%; image-rendering:pixelated; display:block; margin-top:4px; }
+  .req button { width:auto; padding:2px 8px; float:right; }
+  .hint { color:var(--dim); font-size:12px; }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Mesa de modelos 3D</h1>
+  <input id="find" placeholder="Buscar mapa (Slateport, Route109…)">
+  <div class="hint" style="margin:6px 0">Elige un mapa. Arrastra sobre las casillas de un objeto.</div>
+  <div id="maps"></div>
+</aside>
+<section>
+  <div id="bar">
+    <b id="title">—</b>
+    <span class="hint" id="info"></span>
+    <span style="flex:1"></span>
+    Zoom <select id="zoom"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>6</option></select>
+    <label><input type="checkbox" id="grid" checked style="width:auto"> cuadrícula</label>
+    <label><input type="checkbox" id="solid" style="width:auto"> casillas bloqueadas</label>
+  </div>
+  <div id="stage"><div id="wrap"><canvas id="map"></canvas><canvas id="over"></canvas></div></div>
+</section>
+<aside id="side">
+  <h2>Selección</h2>
+  <div id="sel" class="hint">Nada seleccionado.</div>
+  <canvas id="crop" style="margin-top:6px; border:1px solid var(--line)"></canvas>
+  <h2>Modelo</h2>
+  <div class="row"><label>Nombre</label><input id="name" placeholder="ej. slateport_buoy"></div>
+  <div class="row"><label>Tipo</label><select id="kind">
+    <option value="card">Carta: dibujo de pie (jarrón, bote, flores)</option>
+    <option value="dome">Cúpula: redondo (arbusto, roca, tienda)</option>
+    <option value="box">Caja: frente y tapa (caja, mesa, casa)</option></select></div>
+  <div class="row" id="hrow"><label>Alto (px)</label><input id="height" type="number" value="16" min="1" max="255"></div>
+  <div class="row"><label>Fondo</label><button id="pick">Elegir casilla de fondo…</button></div>
+  <div id="chips" class="hint">Sin colores de fondo. Elige una casilla que sea solo suelo o mar: sus colores se quitan del modelo.</div>
+  <div class="row"><label></label><label style="flex:1;color:var(--ink)"><input type="checkbox" id="drop" style="width:auto"> quitarlos también por dentro (sombras de puntos)</label></div>
+  <div class="row"><label>Nota</label><textarea id="note" placeholder="Qué es y cómo debería verse en 3D"></textarea></div>
+  <div class="row"><button id="preview">Vista previa 3D</button><button id="save" class="main">Guardar pedido</button></div>
+  <div id="log"></div>
+  <img id="sheet" hidden alt="vista previa">
+  <h2>Pedidos guardados</h2>
+  <div id="reqs" class="hint">Ninguno.</div>
+</aside>
+<script>
+const $ = id => document.getElementById(id);
+let index = [], cur = null, img = null, sel = null, drag = null, picking = false, clear = [];
+const hex = (r, g, b) => [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+
+async function boot() {
+  index = await (await fetch('/index.json')).json();
+  index.sort((a, b) => (a.maps[0] || a.id).localeCompare(b.maps[0] || b.id));
+  listMaps(); showRequests(await (await fetch('/requests')).json());
+}
+function label(l) { return l.maps.length ? l.maps.join(', ') : l.id.replace('LAYOUT_', ''); }
+function listMaps() {
+  const q = $('find').value.toLowerCase().replace(/\s+/g, '');
+  $('maps').innerHTML = '';
+  for (const l of index) {
+    if (q && !(label(l) + l.id).toLowerCase().replace(/_/g, '').includes(q.replace(/_/g, ''))) continue;
+    const d = document.createElement('div');
+    d.textContent = label(l); d.title = l.id + ' ' + l.w + 'x' + l.h;
+    if (cur && cur.id === l.id) d.className = 'on';
+    d.onclick = () => openMap(l.id);
+    $('maps').appendChild(d);
+  }
+}
+async function openMap(id, rect) {
+  cur = await (await fetch('/layouts/' + id + '.json')).json();
+  cur.maps = (index.find(l => l.id === id) || {maps: []}).maps;
+  img = new Image();
+  img.onload = () => { sel = rect || null; draw(); describe(); };
+  img.src = '/layouts/' + id + '.png';
+  $('title').textContent = cur.maps[0] || id;
+  $('info').textContent = id + ' · ' + cur.w + '×' + cur.h + ' casillas · ' + cur.secondary.replace('gTileset_', '');
+  listMaps();
+}
+function draw() {
+  const z = +$('zoom').value, m = $('map'), o = $('over');
+  for (const c of [m, o]) { c.width = cur.w * 16 * z; c.height = cur.h * 16 * z; }
+  const g = m.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.drawImage(img, 0, 0, m.width, m.height);
+  const h = o.getContext('2d');
+  if ($('solid').checked) {
+    h.fillStyle = 'rgba(235,111,111,.35)';
+    for (let i = 0; i < cur.blocks.length; i++) if (cur.blocks[i] & 0xC00)
+      h.fillRect((i % cur.w) * 16 * z, Math.floor(i / cur.w) * 16 * z, 16 * z, 16 * z);
+  }
+  if ($('grid').checked && z >= 2) {
+    h.strokeStyle = 'rgba(255,255,255,.18)'; h.lineWidth = 1; h.beginPath();
+    for (let x = 0; x <= cur.w; x++) { h.moveTo(x * 16 * z + .5, 0); h.lineTo(x * 16 * z + .5, o.height); }
+    for (let y = 0; y <= cur.h; y++) { h.moveTo(0, y * 16 * z + .5); h.lineTo(o.width, y * 16 * z + .5); }
+    h.stroke();
+  }
+  if (sel) {
+    h.strokeStyle = '#f2c14e'; h.lineWidth = 2;
+    h.strokeRect(sel[0] * 16 * z + 1, sel[1] * 16 * z + 1, sel[2] * 16 * z - 2, sel[3] * 16 * z - 2);
+  }
+}
+function cellAt(e) {
+  const r = $('over').getBoundingClientRect(), z = +$('zoom').value;
+  return [Math.max(0, Math.min(cur.w - 1, Math.floor((e.clientX - r.left) / (16 * z)))),
+          Math.max(0, Math.min(cur.h - 1, Math.floor((e.clientY - r.top) / (16 * z))))];
+}
+function pixels(x, y, w, h) {
+  const c = document.createElement('canvas'); c.width = w * 16; c.height = h * 16;
+  const g = c.getContext('2d'); g.drawImage(img, x * 16, y * 16, w * 16, h * 16, 0, 0, w * 16, h * 16);
+  return [c, g.getImageData(0, 0, c.width, c.height).data];
+}
+$('over').onmousedown = e => {
+  if (!cur) return;
+  const [x, y] = cellAt(e);
+  if (picking) {
+    const d = pixels(x, y, 1, 1)[1], seen = new Set(clear);
+    for (let i = 0; i < d.length; i += 4) seen.add(hex(d[i], d[i + 1], d[i + 2]));
+    clear = [...seen].slice(0, 16); picking = false; $('pick').textContent = 'Elegir casilla de fondo…';
+    ground = cur.blocks[y * cur.w + x] & 0x3FF; chips(); return;
+  }
+  drag = [x, y]; sel = [x, y, 1, 1]; draw();
+};
+let ground = 1;
+window.onmousemove = e => {
+  if (!drag) return;
+  const [x, y] = cellAt(e);
+  sel = [Math.min(x, drag[0]), Math.min(y, drag[1]), Math.abs(x - drag[0]) + 1, Math.abs(y - drag[1]) + 1];
+  draw();
+};
+window.onmouseup = () => { if (drag) { drag = null; describe(); } };
+function describe() {
+  const c = $('crop');
+  if (!sel) { $('sel').textContent = 'Nada seleccionado.'; c.width = c.height = 0; return; }
+  const [x, y, w, h] = sel, ids = new Set();
+  let blocked = 0;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const b = cur.blocks[(y + j) * cur.w + x + i];
+    ids.add((b & 0x3FF).toString(16).toUpperCase().padStart(3, '0')); if (b & 0xC00) blocked++;
+  }
+  $('sel').innerHTML = `Casilla (${x}, ${y}), ${w}×${h} · ${blocked} bloqueadas de ${w * h}<br>Metatiles: ${[...ids].join(' ')}`;
+  const k = Math.max(1, Math.min(6, Math.floor(300 / (w * 16))));
+  c.width = w * 16 * k; c.height = h * 16 * k;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.drawImage(img, x * 16, y * 16, w * 16, h * 16, 0, 0, c.width, c.height);
+}
+function chips() {
+  const box = $('chips');
+  if (!clear.length) { box.textContent = 'Sin colores de fondo.'; return; }
+  box.innerHTML = '';
+  for (const c of clear) {
+    const s = document.createElement('span'); s.className = 'chip'; s.title = 'Quitar #' + c;
+    s.innerHTML = `<i style="background:#${c}"></i>${c} ✕`;
+    s.onclick = () => { clear = clear.filter(v => v !== c); chips(); };
+    box.appendChild(s);
+  }
+}
+function request() {
+  if (!cur || !sel) throw new Error('Selecciona primero las casillas del objeto.');
+  const name = $('name').value.trim().toLowerCase();
+  if (!/^[a-z0-9_]{1,40}$/.test(name)) throw new Error('Pon un nombre con letras minúsculas, números y _.');
+  return {name, layout: cur.id, map: cur.maps[0] || '', rect: sel, kind: $('kind').value, ground,
+          clear, drop: $('drop').checked, height: +$('height').value || 16, note: $('note').value};
+}
+async function post(path, body) { return (await fetch(path, {method: 'POST', body: JSON.stringify(body)})).json(); }
+$('preview').onclick = async () => {
+  let r; try { r = request(); } catch (e) { $('log').textContent = e.message; return; }
+  $('preview').disabled = true; $('log').textContent = 'Generando el modelo (unos 15 segundos)…'; $('sheet').hidden = true;
+  try {
+    const a = await post('/preview', r);
+    $('log').textContent = (a.ok ? '' : 'No se pudo generar.\n') + (a.log || '');
+    if (a.ok) { $('sheet').src = a.image + '?t=' + Date.now(); $('sheet').hidden = false; }
+  } catch (e) { $('log').textContent = 'Sin respuesta del servidor: ' + e.message; }
+  $('preview').disabled = false;
+};
+$('save').onclick = async () => {
+  let r; try { r = request(); } catch (e) { $('log').textContent = e.message; return; }
+  r.picture = pixels(...sel)[0].toDataURL('image/png');
+  const a = await post('/save', r);
+  $('log').textContent = a.ok ? 'Pedido guardado: ' + r.name : (a.log || 'No se pudo guardar.');
+  if (a.ok) showRequests(a.requests);
+};
+function showRequests(items) {
+  const box = $('reqs');
+  if (!items.length) { box.textContent = 'Ninguno.'; return; }
+  box.innerHTML = '';
+  for (const r of items.slice().reverse()) {
+    const d = document.createElement('div'); d.className = 'req';
+    const kind = {card: 'carta', dome: 'cúpula', box: 'caja'}[r.kind] || r.kind;
+    d.innerHTML = `<button>Borrar</button><b></b> · ${kind} · ${r.status}<br><span></span><br><em></em>
+                   <img src="/pictures/${r.name}.png?t=${Date.now()}" alt="">`;
+    d.querySelector('b').textContent = r.name;
+    d.querySelector('span').textContent = (r.map || r.layout) + ' (' + r.rect.join(', ') + ')';
+    d.querySelector('em').textContent = r.note || '';
+    d.querySelector('img').onclick = () => openMap(r.layout, r.rect);
+    d.querySelector('button').onclick = async () => showRequests((await post('/delete', {name: r.name})).requests);
+    box.appendChild(d);
+  }
+}
+$('pick').onclick = () => { picking = !picking; $('pick').textContent = picking ? 'Haz clic en una casilla de solo fondo' : 'Elegir casilla de fondo…'; };
+$('find').oninput = listMaps;
+for (const id of ['zoom', 'grid', 'solid']) $(id).onchange = () => cur && draw();
+$('kind').onchange = () => { $('hrow').style.display = $('kind').value === 'box' ? '' : 'none'; };
+$('kind').onchange(); boot();
+</script>
+</body>
+</html>

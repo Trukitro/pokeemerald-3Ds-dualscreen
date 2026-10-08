@@ -34,6 +34,7 @@ Both roofs are hipped: seen from the side they are tiles too, laid along the
 side eave, so no gable wall of plaster ever shows.
 """
 
+import os
 from voxel_building import (Band, Cylinder, Frustum, HipRoof, Prism, Proj, Scaled, Strip, Tile,
                             Vault, Walls)
 
@@ -2535,10 +2536,29 @@ SPECS += [
 ]
 
 
+def captains_office():
+    """The captain's office: the two consoles and the shelf with the model
+    ship against the back wall, the cabinet by the west wall, the chart
+    table."""
+    fl = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
+    wall = ("6a7b7b", "8b94a4", "a4acde") + fl
+    # (here alone: found again in the Aqua Hideout and the Space Center,
+    # rooms nobody has looked at yet, they stood on other floors unchecked)
+    return only_here([
+        piece("consoles", [(48, 12, 80, 38)], 20, leave=wall, back=32),
+        # the shelf alone: the model ship on it stays on the wall behind (one
+        # box of both laid the ship's rows over the shelf's top again and
+        # again, and a card of the ship left its outline to the wall)
+        piece("shelf", [(112, 32, 144, 44)], 8, leave=wall, solid=True),
+        piece("cabinet", [(0, 48, 16, 80)], 16, leave=fl, solid=True),
+        piece("chart_table", [(48, 81, 80, 111)], 8, leave=fl, solid=True),
+    ], "consoles", "shelf", "cabinet", "chart_table") + plain_room(9, 7, 5, False)
+
+
 SPECS += [
     {"name": "ship_captains_office",
      "interior": {"layout": "LAYOUT_ABANDONED_SHIP_CAPTAINS_OFFICE", "ground": [0x202],
-                  "shade": [0x203, 0x204], "pieces": own_shell(plain_room(9, 7, 5, False))}},
+                  "shade": [0x203, 0x204], "pieces": own_shell(captains_office())}},
 ]
 
 
@@ -2640,6 +2660,37 @@ SPECS += [
                   "pieces": ship_cabins("LAYOUT_ABANDONED_SHIP_" + layout)}}
     for layout in ("ROOMS_1F", "ROOMS2_1F", "ROOM_B1F", "ROOMS_B1F", "ROOMS2_B1F", "HIDDEN_FLOOR_ROOMS")
 ]
+
+# A model somebody is trying out in devtools/workbench.py: the file $VOXEL_DRAFT
+# names, a list of {name, layout, rect, kind, ground, clear, drop, height}.
+# Built only for its preview (devtools/model_view.sh); a request that is to
+# stay becomes a spec of its own above.
+def draft_specs(path):
+    import json
+    out = []
+    for d in json.load(open(path, encoding="utf-8")):
+        x, y, w, h = d["rect"]
+        spec = {"name": d["name"], "layout": d["layout"], "rect": (x, y, w, h),
+                "owned": {(i, j) for j in range(h) for i in range(w)}, "repeat_at": [(x, y)],
+                "ground": [int(d.get("ground", GRASS))], "exact": []}
+        if d.get("clear"):
+            spec["clear"] = tuple(d["clear"])
+        if d.get("drop"):
+            spec["drop"] = tuple(d["clear"])
+        kind = d.get("kind", "card")
+        if kind == "card":
+            spec["card"] = True
+        elif kind == "dome":
+            spec["mound"] = {"rise": float(d.get("rise", 0.9)), "step": 2}
+        else:
+            tall = max(1, min(int(d.get("height", 16)), h * 16 - 1))
+            spec["parts"] = (lambda W, H, T: (lambda: box_building(W, H, H - T)))(w * 16, h * 16, tall)
+        out.append(spec)
+    return out
+
+
+if os.environ.get("VOXEL_DRAFT"):
+    SPECS += draft_specs(os.environ["VOXEL_DRAFT"])
 
 for _spec in SPECS:
     _room = _spec.get("interior")
