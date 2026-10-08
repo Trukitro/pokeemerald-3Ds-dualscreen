@@ -1406,6 +1406,80 @@ class Mound:
         self._tri(mesh, p, r, s, shade, tag, outward)
 
 
+def _outward(mesh, a, b, c, centre, shade, tag):
+    """A triangle wound to face away from `centre`."""
+    e1 = [b[i] - a[i] for i in range(3)]
+    e2 = [c[i] - a[i] for i in range(3)]
+    n = (e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0])
+    g = [(a[i] + b[i] + c[i]) / 3.0 - centre[i] for i in range(3)]
+    if n[0] * g[0] + n[1] * g[1] + n[2] * g[2] < 0:
+        b, c = c, b
+    mesh.tri(a, b, c, shade, tag)
+
+
+class Barrel:
+    """A vaulted housing - a tank's, a hangar's - made as the thing it is and
+    not read off its drawing: half an ellipse across x, `height` tall, running
+    back `length` from its front at z = `front`. Its arched front is the
+    drawing's own rows under `foot` (at 45 degrees, where the drawing shows
+    it); its roof is laid with the rows `skin` = (top, bottom) of the drawing,
+    back to front - the drawing's view of the roof from above, a hatch on it
+    and all. "~added": nothing of it is judged against the drawing, which
+    shows such a thing as a few rows against a wall."""
+
+    def __init__(self, name, x0, x1, front, length, height, foot, skin, steps=10):
+        self.name, self.x0, self.x1 = name, float(x0), float(x1)
+        self.front, self.length, self.height = float(front), float(length), float(height)
+        self.foot, self.skin, self.steps = float(foot), skin, steps
+
+    def emit(self, mesh):
+        xc, rx = (self.x0 + self.x1) / 2.0, (self.x1 - self.x0) / 2.0
+        zf, zb = self.front, self.front - self.length
+        arc = [(xc - rx * math.cos(math.pi * k / self.steps), self.height * math.sin(math.pi * k / self.steps))
+               for k in range(self.steps + 1)]
+        centre = (xc, 0.0, (zf + zb) / 2.0)
+        va, vb = self.skin
+        tag = self.name + ".%s~added~proj"
+        for (xa, ya), (xb, yb) in zip(arc, arc[1:]):
+            p, q = (xa, ya, zf, xa, vb), (xb, yb, zf, xb, vb)
+            r, s = (xb, yb, zb, xb, va), (xa, ya, zb, xa, va)
+            _outward(mesh, p, q, r, centre, SHADE_ART, tag % "roof")
+            _outward(mesh, p, r, s, centre, SHADE_ART, tag % "roof")
+            for z, shade, part in ((zf, SHADE_ART, "front"), (zb, SHADE_BACK, "back")):
+                _outward(mesh, (xc, 0.0, z, xc, self.foot), (xa, ya, z, xa, self.foot - ya),
+                         (xb, yb, z, xb, self.foot - yb), centre, shade, tag % part)
+
+
+class Drum:
+    """A cylinder lying along z - a submarine's nose, an engine - made as
+    what it is: its round end at z = `front`, centred (xc, yc) with radius
+    `r`, its body running back `length`. The end is the drawing's own rows
+    (its foot row `foot` is where y = 0 shows at 45 degrees); the body is
+    wrapped with the columns of the drawing it is drawn across and the rows
+    `skin`. "~added", as a Barrel is."""
+
+    def __init__(self, name, xc, yc, r, front, length, foot, skin, steps=12):
+        self.name, self.xc, self.yc, self.r = name, float(xc), float(yc), float(r)
+        self.front, self.length, self.foot = float(front), float(length), float(foot)
+        self.skin, self.steps = skin, steps
+
+    def emit(self, mesh):
+        xc, yc, r = self.xc, self.yc, self.r
+        zf, zb = self.front, self.front - self.length
+        ring = [(xc + r * math.cos(2 * math.pi * k / self.steps), yc + r * math.sin(2 * math.pi * k / self.steps))
+                for k in range(self.steps + 1)]
+        centre = (xc, yc, (zf + zb) / 2.0)
+        va, vb = self.skin
+        tag = self.name + ".%s~added~proj"
+        for (xa, ya), (xb, yb) in zip(ring, ring[1:]):
+            p, q = (xa, ya, zf, xa, vb), (xb, yb, zf, xb, vb)
+            r_, s = (xb, yb, zb, xb, va), (xa, ya, zb, xa, va)
+            _outward(mesh, p, q, r_, centre, SHADE_ART, tag % "body")
+            _outward(mesh, p, r_, s, centre, SHADE_ART, tag % "body")
+            _outward(mesh, (xc, yc, zf, xc, self.foot - yc), (xa, ya, zf, xa, self.foot - ya),
+                     (xb, yb, zf, xb, self.foot - yb), centre, SHADE_ART, tag % "end")
+
+
 class Lit:
     """A part whose every face is a card's (SHADE_CARD)."""
 
@@ -1674,7 +1748,7 @@ def ortho_check(model, out_png=None, exact=None, margin=32, reference=None):
     M = margin
     ras = Raster(W + 2 * M, H + M, bg=(0, 0, 0))
     for (tri, shade, tag) in model.mesh.tris:
-        if "~depth" in tag or "~behind" in tag:
+        if "~depth" in tag or "~behind" in tag or "~added" in tag:
             continue  # real depth behind the drawing: not the drawing's to judge
         vs = []
         for (x, y, z, u, v) in tri:

@@ -918,6 +918,10 @@ def interior_specs(spec):
             if pc.get("card"):
                 art.paste(obj, (0, 2 * h * 16 + sh + th))
                 parts = [vb.Card(pc["name"], obj, foot, voff=2 * h * 16 + sh + th)]
+            elif pc.get("made"):
+                # made by hand, as the thing it is (vb.Barrel, vb.Drum): its
+                # parts, in the piece's own pixels from its rectangle's corner
+                parts = pc["made"](x0 * 16, y0 * 16)
             elif pc.get("dome"):
                 # a round thing in a room - a tank, a submarine's nose -
                 # lifted off its own pixels as a rock is off the sea: every
@@ -965,7 +969,8 @@ def interior_specs(spec):
         out.append({"name": "%s_%s" % (spec["name"], pc["name"]), "layout": room["layout"],
                     "rect": (x0, y0, w, h), "ground": room["ground"], "art": art,
                     "parts": (lambda ps: (lambda: ps))(parts),
-                    "exact": [(0, 0, w * 16, h * 16)], "interior": spec["name"]})
+                    "exact": [] if pc.get("made") else [(0, 0, w * 16, h * 16)],
+                    "interior": spec["name"]})
         # `alone`: a room's own shell - its walls, a doorway's recess - which
         # another room does not repeat by having the same floor along an edge
         if not pc.get("alone"):
@@ -1825,6 +1830,8 @@ def room_check(models, layout_id, out_dir):
         for x in range(W):
             if _inside(room.get("open", ()), x, y):
                 continue  # floor in the round where the drawing is black
+            if _inside(room.get("remade", ()), x, y):
+                continue  # a thing made by hand stands there, not its drawing
             if fpx[x, y] != gpx[x, y]:
                 bad += 1
                 dpx[x, y] = (255, 0, 255)
