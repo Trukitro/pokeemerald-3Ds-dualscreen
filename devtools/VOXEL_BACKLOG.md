@@ -25,9 +25,28 @@ every reported item is ticked. Work one area to the end before the next.
 - [ ] Not blocked, so not seen by the audit, and still flat: cushions and chairs in the houses and the hall, the gym leader's dais
 
 <!-- audit:DewfordTown -->
-### DewfordTown - audit of 2026-10-07
+### DewfordTown - audit of 2026-10-08
 
 - [x] **DewfordTown**: nothing blocked lies flat
+- [x] **DewfordTown_Hall**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (176, 83)-(184, 88), 40 px
+  - [ ] painted on the floor: pixels (176, 91)-(184, 96), 40 px
+  - [ ] painted on the floor: pixels (176, 99)-(184, 104), 40 px
+  - [ ] painted on the floor: pixels (176, 67)-(184, 72), 40 px
+  - [ ] painted on the floor: pixels (176, 75)-(184, 80), 40 px
+  - [ ] painted on the floor: pixels (176, 51)-(184, 56), 40 px
+  - [ ] painted on the floor: pixels (176, 59)-(184, 64), 40 px
+  - [ ] painted on the floor: pixels (176, 107)-(184, 112), 40 px
+- [x] **DewfordTown_PokemonCenter_1F**: nothing blocked lies flat
+- [x] **DewfordTown_Gym**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 28 cell(s): the rock west of the maze's edge wall: outside the room, and a block of it puts the page past 512x512
+  - left flat, 10 cell(s): the rock behind the leader's place: with it the layout's page is past the console's 512x512
+  - left flat, 2 cell(s): the corner of the rock east of the edge wall, outside the room
+  - left flat, 2 cell(s): the leader's dais: a low platform, its corner posts drawn on it
+  - left flat, 2 cell(s): the leader's dais and the shelf's foot beside it
+- [x] **DewfordTown_House1**: nothing blocked lies flat
+- [x] **DewfordTown_House2**: nothing blocked lies flat
+- [x] **DewfordTown_PokemonCenter_2F**: nothing blocked lies flat
 
 0 blocked cell(s) still flat in this area.
 <!-- /audit:DewfordTown -->
@@ -497,6 +516,16 @@ every reported item is ticked. Work one area to the end before the next.
 
 - [ ] **Route109**: 2 flat cell(s) in 1 object(s) - `build/audit/Route109.png`
   - [ ] (38, 0)-(39, 0), 2 cell(s), tiles 158 159
+- [x] **Route109_SeashoreHouse**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (96, 144)-(128, 160), 512 px
+  - [ ] painted on the floor: pixels (16, 80)-(224, 83), 448 px
+  - [ ] painted on the floor: pixels (16, 55)-(224, 58), 444 px
+  - [ ] painted on the floor: pixels (32, 128)-(208, 130), 352 px
+  - [ ] painted on the floor: pixels (128, 32)-(192, 35), 144 px
+  - [ ] painted on the floor: pixels (48, 32)-(96, 35), 108 px
+  - [ ] painted on the floor: pixels (96, 104)-(128, 106), 64 px
+  - [ ] painted on the floor: pixels (176, 104)-(208, 106), 64 px
+  - [ ] painted on the floor: pixels (32, 104)-(48, 106), 32 px
 
 2 blocked cell(s) still flat in this area.
 <!-- /audit:Route109 -->
@@ -504,10 +533,9 @@ every reported item is ticked. Work one area to the end before the next.
 <!-- audit:Route108 -->
 ### Route108 - audit of 2026-10-08
 
-- [ ] **Route108**: 12 flat cell(s) in 1 object(s) - `build/audit/Route108.png`
-  - [ ] (27, 4)-(32, 5), 12 cell(s), tiles 358 359 35A 35B 35C 35D 360 361 362 363 364 365
+- [x] **Route108**: nothing blocked lies flat
 
-12 blocked cell(s) still flat in this area.
+0 blocked cell(s) still flat in this area.
 <!-- /audit:Route108 -->
 
 <!-- audit:AbandonedShip -->
@@ -517,13 +545,8 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] (0, 0)-(8, 2), 16 cell(s), tiles 20E 20F 216 217 21B 21C 223 224 2B8 2B9 2F8 300
   - [ ] (0, 3)-(0, 4), 2 cell(s), tiles 3B4 3B5
   - [ ] (3, 5)-(4, 6), 4 cell(s), tiles 20C 20D 214 215
-- [ ] **AbandonedShip_Corridors_1F**: 104 flat cell(s) in 6 object(s) - `build/audit/AbandonedShip_Corridors_1F.png`
-  - [ ] (0, 0)-(17, 11), 49 cell(s), tiles 201 208 209 20B 210 211 2A8 2A9 2AD 2B0 2B1
-  - [ ] (0, 4), 1 cell(s), tiles 2AD
-  - [ ] (2, 4)-(4, 9), 18 cell(s), tiles 223 225 226 22B 22D 22E 230 231 232
-  - [ ] (10, 4)-(15, 9), 34 cell(s), tiles 222 223 224 225 226 22A 22B 22C 22D 22E 230 231 232
-  - [ ] (0, 8), 1 cell(s), tiles 2AD
-  - [ ] (17, 9), 1 cell(s), tiles 2AC
+- [ ] **AbandonedShip_Corridors_1F**: 2 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Corridors_1F.png`
+  - [ ] (7, 0)-(7, 1), 2 cell(s), tiles 201
 - [ ] **AbandonedShip_Corridors_B1F**: 73 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Corridors_B1F.png`
   - [ ] (0, 0)-(12, 4), 53 cell(s), tiles 221 222 223 224 225 226 229 22A 22B 22C 22D 22E 230 231 232 233 29F 2A7
   - [ ] (12, 6), 1 cell(s), tiles 2AC
@@ -549,21 +572,22 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] (35, 11)-(36, 12), 4 cell(s), tiles 256 257 25E 25F
   - [ ] (16, 13)-(17, 14), 4 cell(s), tiles 256 257 25E 25F
   - [ ] (33, 14), 1 cell(s), tiles 262
-- [ ] **AbandonedShip_Room_B1F**: 31 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Room_B1F.png`
-  - [ ] (0, 0)-(8, 7), 31 cell(s), tiles 227 22F 236 237 23E 23F 262
-- [ ] **AbandonedShip_Rooms2_1F**: 75 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_Rooms2_1F.png`
-  - [ ] (0, 0)-(8, 16), 70 cell(s), tiles 201 227 22F 236 237 23E 23F 240 248 250 251 258 259 263 26B 273 295 296 297 29D 29E
-  - [ ] (3, 6), 1 cell(s), tiles 262
-  - [ ] (2, 13)-(3, 14), 4 cell(s), tiles 256 257 25E 25F
+- [ ] **AbandonedShip_Room_B1F**: 10 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Room_B1F.png`
+  - [ ] (0, 0)-(0, 7), 8 cell(s), tiles 236 23E
+  - [ ] (8, 0)-(8, 1), 2 cell(s), tiles 237 23F
+- [ ] **AbandonedShip_Rooms2_1F**: 21 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_Rooms2_1F.png`
+  - [ ] (0, 0)-(0, 16), 17 cell(s), tiles 201 236 23E
+  - [ ] (8, 0)-(8, 1), 2 cell(s), tiles 237 23F
+  - [ ] (8, 9)-(8, 10), 2 cell(s), tiles 237 23F
 - [ ] **AbandonedShip_Rooms2_B1F**: 79 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms2_B1F.png`
   - [ ] (0, 0)-(17, 7), 71 cell(s), tiles 227 22F 236 237 23E 23F 240 241 242 243 244 245 246 247 248 249 24A 24B 24C 24D 24E 24F 250 251 254 255 256 257 258 259 25C 25D 25E 25F 2AA 2AB
   - [ ] (7, 5)-(10, 7), 8 cell(s), tiles 23E 23F 262 2AB
-- [ ] **AbandonedShip_Rooms_1F**: 156 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
-  - [ ] (0, 0)-(17, 16), 144 cell(s), tiles 201 227 22F 236 237 23E 23F 240 241 242 243 244 245 246 247 248 249 24A 24B 24C 24D 24E 24F 250 251 254 255 258 259 25C 25D 263 26B 273 295 296 297 29D 29E 2AA 2AB
-  - [ ] (2, 6), 1 cell(s), tiles 262
-  - [ ] (4, 13), 1 cell(s), tiles 262
-  - [ ] (8, 14)-(9, 16), 6 cell(s), tiles 23E 23F
-  - [ ] (11, 14)-(12, 15), 4 cell(s), tiles 256 257 25E 25F
+- [ ] **AbandonedShip_Rooms_1F**: 41 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
+  - [ ] (0, 0)-(0, 16), 17 cell(s), tiles 201 236 23E
+  - [ ] (8, 0)-(9, 12), 17 cell(s), tiles 201 236 237 23E 23F 246 24E
+  - [ ] (17, 0)-(17, 1), 2 cell(s), tiles 237 23F
+  - [ ] (17, 9)-(17, 10), 2 cell(s), tiles 237 23F
+  - [ ] (9, 14)-(9, 16), 3 cell(s), tiles 23E
 - [ ] **AbandonedShip_Rooms_B1F**: 115 flat cell(s) in 5 object(s) - `build/audit/AbandonedShip_Rooms_B1F.png`
   - [ ] (0, 0)-(3, 7), 19 cell(s), tiles 236 23E 240 248 250 251 258 259 26B 273 295 29D 2AB
   - [ ] (5, 0)-(21, 7), 72 cell(s), tiles 201 227 22F 240 245 248 24D 250 251 254 255 258 259 25C 25D 263 26B 26D 273 275 295 296 297 29D 29E 2AA
@@ -575,5 +599,5 @@ every reported item is ticked. Work one area to the end before the next.
 - [ ] **AbandonedShip_Underwater2**: 41 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Underwater2.png`
   - [ ] (0, 0)-(20, 1), 41 cell(s), tiles 2CC 2CD 2CE 2D4 2D5 2D6 2D7 2D8 2D9 2DA 2DB 2DD
 
-1424 blocked cell(s) still flat in this area.
+1132 blocked cell(s) still flat in this area.
 <!-- /audit:AbandonedShip -->

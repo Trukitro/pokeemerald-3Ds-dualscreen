@@ -2440,6 +2440,58 @@ SPECS += [
      "exact": []},
 ]
 
+# ── The Abandoned Ship, inside ────────────────────────────────────────────
+#
+# Its corridors: two halves of a deck side by side, each under a wall of
+# portholes two cells tall, with the block of cabins in its middle - a white
+# roof laid back from a front 28 rows tall with the cabins' doors in it.
+SHIP_FLOOR = ("948341", "8394bd", "c58b5a", "9cacd5")
+
+
+def ship_corridors_1f():
+    fl = SHIP_FLOOR
+    west, east = (0, 0, 16, 32), (128, 0, 144, 32)
+    return [
+        piece("cabins_w", [(32, 57, 80, 160)], 28, leave=fl, solid=True),
+        piece("cabins_e", [(160, 57, 256, 160)], 28, leave=fl, solid=True),
+        piece("wall_w", [(0, 0, 112, 32)], 32, fill=16, foot=32, side=west),
+        piece("wall_e", [(128, 0, 288, 32)], 32, fill=16, foot=32, side=east),
+        piece("side_w", [], 32, side=west, walls=[((0, 192), (0, 32)), ((112, 32), (112, 192))]),
+        piece("side_e", [], 32, side=east, walls=[((128, 192), (128, 32)), ((288, 32), (288, 192))]),
+    ]
+
+
+SPECS += [
+    {"name": "ship_corridors_1f",
+     "interior": {"layout": "LAYOUT_ABANDONED_SHIP_CORRIDORS_1F", "ground": [0x202],
+                  "pieces": own_shell(ship_corridors_1f())}},
+]
+
+def ship_cabins(rooms):
+    """The ship's cabins, several to a layout: each nine cells across and
+    eight down from (x, y), a panelled wall two cells tall along its back
+    between the white lines that are its side walls' tops."""
+    pieces = []
+    for k, (x, y) in enumerate(rooms):
+        X, Y = x * 16, y * 16
+        side = (X + 16, Y, X + 32, Y + 32)
+        pieces += [
+            piece("wall_%d" % k, [(X + 16, Y, X + 128, Y + 32)], 32, fill=16, foot=Y + 32, side=side),
+            piece("side_%d" % k, [], 32, side=side,
+                  walls=[((X + 16, Y + 128), (X + 16, Y + 32)), ((X + 128, Y + 32), (X + 128, Y + 128))]),
+        ]
+    return pieces
+
+
+SPECS += [
+    {"name": "ship_" + layout.lower(),
+     "interior": {"layout": "LAYOUT_ABANDONED_SHIP_" + layout, "ground": [0x238],
+                  "shade": [0x23B, 0x23D, 0x23A, 0x23C], "pieces": own_shell(ship_cabins(rooms))}}
+    for layout, rooms in (("ROOMS_1F", ((0, 0), (9, 0), (0, 9), (9, 9))),
+                          ("ROOMS2_1F", ((0, 0), (0, 9))),
+                          ("ROOM_B1F", ((0, 0),)))
+]
+
 for _spec in SPECS:
     _room = _spec.get("interior")
     if _room and _room["layout"] in EXTRA_PIECES:
