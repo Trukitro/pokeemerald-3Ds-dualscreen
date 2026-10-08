@@ -2151,7 +2151,26 @@ _SCHOOL = ("c5c5bd", "dedede")
 _DEVON = ("bd6252", "cd837b", "deaca4")
 _MUSEUM = ("006a73", "208b94", "4aa4a4", "7bbdb4", "a4d5c5")
 
+def shipyard_1f():
+    """Stern's shipyard, ground floor: the wall that parts the office from
+    the workshop (its white top, a pillar's face where it ends at the door
+    and again south of it), the three girders of the gantry, and the stacks
+    of red beams."""
+    shop = ("6a7b41", "839473", "acb494", "dedec5")
+    return [
+        piece("partition_n", [(97, 0, 112, 146)], 32, solid=True),
+        piece("partition_s", [(97, 170, 112, 240)], 32, solid=True),
+        piece("girder_a", [(113, 65, 132, 112)], 40, leave=shop, solid=True),
+        piece("girder_b", [(161, 145, 175, 208)], 56, leave=shop, solid=True),
+        piece("girder_c", [(225, 161, 239, 208)], 40, leave=shop, solid=True),
+        piece("beams_e", [(305, 49, 335, 111)], 6, leave=shop, solid=True),
+        piece("beams_se", [(289, 161, 335, 223)], 6, leave=shop, solid=True),
+        piece("beams_sw", [(113, 176, 170, 239)], 6, leave=shop, solid=True),
+    ]
+
+
 EXTRA_PIECES = {
+    "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F": shipyard_1f,
     # Rustboro's flats and houses: their tables
     "LAYOUT_RUSTBORO_CITY_FLAT1_1F": lambda: [_box("table_a", (16, 64, 46, 96), 10, _FLAT)],
     "LAYOUT_RUSTBORO_CITY_FLAT1_2F": lambda: [_box("stand", (140, 80, 164, 108), 12, _FLAT)],
@@ -2547,8 +2566,10 @@ def captains_office():
     table."""
     fl = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
     wall = ("6a7b7b", "8b94a4", "a4acde") + fl
-    # (here alone: found again in the Aqua Hideout and the Space Center,
-    # rooms nobody has looked at yet, they stood on other floors unchecked)
+    # (the consoles, the shelf and the chart table are the Facility
+    # tileset's: they stand wherever a room draws them again - Stern's
+    # shipyard, the Aqua Hideout, the Space Center. The cabinet is found by
+    # too little to be told from a wall's foot elsewhere, and stays here.)
     return only_here([
         piece("consoles", [(48, 12, 80, 38)], 20, leave=wall, back=32),
         # the shelf alone: the model ship on it stays on the wall behind (one
@@ -2557,7 +2578,7 @@ def captains_office():
         piece("shelf", [(112, 32, 144, 44)], 8, leave=wall, solid=True),
         piece("cabinet", [(0, 48, 16, 80)], 16, leave=fl, solid=True),
         piece("chart_table", [(48, 81, 80, 111)], 8, leave=fl, solid=True),
-    ], "consoles", "shelf", "cabinet", "chart_table") + plain_room(9, 7, 5, False)
+    ], "cabinet") + plain_room(9, 7, 5, False)
 
 
 SPECS += [
@@ -2690,7 +2711,8 @@ SPECS += [
 ]
 
 # A model somebody is trying out in devtools/workbench.py: the file $VOXEL_DRAFT
-# names, a list of {name, layout, rect, kind, ground, clear, drop, height}.
+# names, a list of {name, layout, rect, kind, ground, clear, drop, height} -
+# and, of kind "stack", {cut, low, high, deep} (gen_voxel_buildings: `stack`).
 # Built only for its preview (devtools/model_view.sh); a request that is to
 # stay becomes a spec of its own above.
 def draft_specs(path):
@@ -2710,6 +2732,9 @@ def draft_specs(path):
             spec["card"] = True
         elif kind == "dome":
             spec["mound"] = {"rise": float(d.get("rise", 0.9)), "step": 2}
+        elif kind == "stack":
+            spec["stack"] = {"cut": int(d.get("cut", h * 8)), "low": d.get("low", "box"),
+                             "high": d.get("high", "dome"), "deep": int(d.get("deep", 8))}
         else:
             tall = max(1, min(int(d.get("height", 16)), h * 16 - 1))
             spec["parts"] = (lambda W, H, T: (lambda: box_building(W, H, H - T)))(w * 16, h * 16, tall)

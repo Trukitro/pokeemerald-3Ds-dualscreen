@@ -34,7 +34,32 @@
           border-radius:10px; font-size:12px; cursor:pointer; }
   .chip i { width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid #0006; }
   #log { white-space:pre-wrap; font:12px ui-monospace, monospace; color:var(--dim); margin-top:6px; }
-  #sheet { max-width:100%; margin-top:8px; border:1px solid var(--line); border-radius:5px; }
+  #sheet { max-width:100%; margin-top:8px; border:1px solid var(--line); border-radius:5px; cursor:zoom-in; }
+  #crops { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  #crops figure { margin:0; } #crops figcaption { font-size:11px; color:var(--dim); margin-top:2px; }
+  #crops canvas { border:1px solid var(--line); }
+  #crop { cursor:crosshair; }
+  #kept { background:repeating-conic-gradient(#4a4f60 0 25%, #6a7086 0 50%) 0 0/12px 12px; }
+  #legend i, .key { width:10px; height:10px; display:inline-block; border-radius:2px; margin-right:3px; }
+  .chip.left { border-color:var(--bad); } .chip small { color:var(--dim); } .chip.left small { color:var(--bad); }
+  #pick.on, #splitpick.on { background:var(--acc); color:#1d1f27; border-color:var(--acc); }
+  #busy { display:flex; gap:10px; align-items:center; margin-top:8px; padding:8px; border:1px solid var(--line);
+          border-radius:6px; font-size:12px; }
+  #busy[hidden], #box[hidden] { display:none; }
+  .spin { flex:0 0 26px; height:26px; border:3px solid var(--line); border-top-color:var(--acc); border-radius:50%;
+          animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .track { height:6px; margin-top:5px; background:#1a1c23; border-radius:3px; overflow:hidden; }
+  #fill { height:100%; width:0; background:var(--acc); border-radius:3px; transition:width .1s linear; }
+  #fill.over { width:100% !important; background:repeating-linear-gradient(45deg, var(--acc) 0 8px, #a8842f 8px 16px);
+               background-size:23px 100%; animation:slide .6s linear infinite; }
+  @keyframes slide { to { background-position:23px 0; } }
+  #box { position:fixed; inset:0; z-index:10; background:rgba(12,13,18,.96); display:flex; flex-direction:column; }
+  #boxbar { display:flex; gap:6px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  #boxbar button { width:auto; } #boxbar button.on { background:var(--acc); color:#1d1f27; border-color:var(--acc); }
+  #view { flex:1; position:relative; overflow:hidden; cursor:grab; }
+  #view.pan { cursor:grabbing; }
+  #big { position:absolute; left:0; top:0; transform-origin:0 0; image-rendering:pixelated; max-width:none; user-select:none; }
   .req { border:1px solid var(--line); border-radius:6px; padding:6px; margin:6px 0; font-size:12px; }
   .req b { font-size:13px; } .req img { max-width:100%; image-rendering:pixelated; display:block; margin-top:4px; }
   .req button { width:auto; padding:2px 8px; float:right; }
@@ -62,24 +87,52 @@
 <aside id="side">
   <h2>Selección</h2>
   <div id="sel" class="hint">Nada seleccionado.</div>
-  <canvas id="crop" style="margin-top:6px; border:1px solid var(--line)"></canvas>
+  <div id="crops">
+    <figure><canvas id="crop" title="Clic en un píxel: añade o saca su color del fondo"></canvas><figcaption id="cropcap"></figcaption></figure>
+    <figure id="keptfig" hidden><canvas id="kept"></canvas><figcaption>Lo que queda en el modelo</figcaption></figure>
+  </div>
+  <div id="legend" class="hint"></div>
   <h2>Modelo</h2>
   <div class="row"><label>Nombre</label><input id="name" placeholder="ej. slateport_buoy"></div>
   <div class="row"><label>Tipo</label><select id="kind">
     <option value="card">Carta: dibujo de pie (jarrón, bote, flores)</option>
     <option value="dome">Cúpula: redondo (arbusto, roca, tienda)</option>
-    <option value="box">Caja: frente y tapa (caja, mesa, casa)</option></select></div>
+    <option value="box">Caja: frente y tapa (caja, mesa, casa)</option>
+    <option value="stack">Compuesto: una pieza sobre otra (pilar con bola, farola)</option></select></div>
   <div class="row" id="hrow"><label>Alto (px)</label><input id="height" type="number" value="16" min="1" max="255"></div>
+  <div id="stackrows">
+    <div class="row"><label>Corte (fila px)</label><input id="split" type="number" min="1" style="flex:0 0 64px">
+      <button id="splitpick">Marcar en el dibujo…</button></div>
+    <div class="row"><label>Arriba</label><select id="high">
+      <option value="dome">Cúpula: redonda (bola, lámpara, copa)</option>
+      <option value="card">Carta: plana, de pie</option></select></div>
+    <div class="row"><label>Abajo</label><select id="low">
+      <option value="box">Caja: con grosor (columna, poste, maceta)</option>
+      <option value="card">Carta: plana, de pie</option></select></div>
+    <div class="row" id="deeprow"><label>Grosor (px)</label><input id="deep" type="number" value="8" min="1" max="64"></div>
+    <div class="hint">La línea amarilla del dibujo separa las dos piezas: lo de arriba se apoya sobre lo de abajo.</div>
+  </div>
   <div class="row"><label>Fondo</label><button id="pick">Elegir casilla de fondo…</button></div>
   <div id="chips" class="hint">Sin colores de fondo. Elige una casilla que sea solo suelo o mar: sus colores se quitan del modelo.</div>
   <div class="row"><label></label><label style="flex:1;color:var(--ink)"><input type="checkbox" id="drop" style="width:auto"> quitarlos también por dentro (sombras de puntos)</label></div>
+  <div class="row"><label></label><label style="flex:1;color:var(--ink)"><input type="checkbox" id="mark" checked style="width:auto"> resaltar en el dibujo lo que se quita</label></div>
   <div class="row"><label>Nota</label><textarea id="note" placeholder="Qué es y cómo debería verse en 3D"></textarea></div>
   <div class="row"><button id="preview">Vista previa 3D</button><button id="save" class="main">Guardar pedido</button></div>
+  <div id="busy" hidden><div class="spin"></div><div style="flex:1"><div id="busytext"></div>
+    <div class="track"><div id="fill"></div></div></div></div>
   <div id="log"></div>
-  <img id="sheet" hidden alt="vista previa">
+  <img id="sheet" hidden alt="vista previa" title="Clic en una vista para ampliarla">
+  <div id="sheethint" class="hint" hidden>Clic en una vista para verla en grande.</div>
   <h2>Pedidos guardados</h2>
   <div id="reqs" class="hint">Ninguno.</div>
 </aside>
+<div id="box" hidden>
+  <div id="boxbar"><span id="tabs"></span><span style="flex:1"></span>
+    <span class="hint">rueda: zoom · arrastrar: mover · Esc: cerrar</span>
+    <button id="zout">−</button><span id="zpct" style="min-width:44px;text-align:center"></span><button id="zin">+</button>
+    <button id="zclose">Cerrar ✕</button></div>
+  <div id="view"><img id="big" alt="" draggable="false"></div>
+</div>
 <script>
 const $ = id => document.getElementById(id);
 let index = [], cur = null, img = null, sel = null, drag = null, picking = false, clear = [];
@@ -134,6 +187,9 @@ function draw() {
     h.strokeStyle = '#f2c14e'; h.lineWidth = 2;
     h.strokeRect(sel[0] * 16 * z + 1, sel[1] * 16 * z + 1, sel[2] * 16 * z - 2, sel[3] * 16 * z - 2);
   }
+  h.strokeStyle = '#5ee0e0'; h.lineWidth = 2; h.setLineDash([4, 3]);     // the cells the background was taken from
+  for (const [id, x, y] of bgCells) if (id === cur.id) h.strokeRect(x * 16 * z + 1, y * 16 * z + 1, 16 * z - 2, 16 * z - 2);
+  h.setLineDash([]);
 }
 function cellAt(e) {
   const r = $('over').getBoundingClientRect(), z = +$('zoom').value;
@@ -151,12 +207,31 @@ $('over').onmousedown = e => {
   if (picking) {
     const d = pixels(x, y, 1, 1)[1], seen = new Set(clear);
     for (let i = 0; i < d.length; i += 4) seen.add(hex(d[i], d[i + 1], d[i + 2]));
-    clear = [...seen].slice(0, 16); picking = false; $('pick').textContent = 'Elegir casilla de fondo…';
-    ground = cur.blocks[y * cur.w + x] & 0x3FF; chips(); return;
+    clear = [...seen].slice(0, 16); setPicking(false); bgCells.push([cur.id, x, y]);
+    ground = [cur.id, cur.blocks[y * cur.w + x] & 0x3FF]; chips(); draw(); return;
   }
   drag = [x, y]; sel = [x, y, 1, 1]; draw();
 };
-let ground = 1;
+let ground = null, bgCells = [], cut = null, hover = null;
+// The floor the preview lays under the model: the cell picked as background in this map, or
+// the commonest walkable metatile round the selection (as the generator places a model),
+// or of the map - never a metatile the map does not hold, which would be drawn black.
+function floorUnder() {
+  if (ground && ground[0] === cur.id) return ground[1];
+  const [x, y, w, h] = sel, near = new Map(), all = new Map();
+  for (let j = 0; j < cur.h; j++) for (let i = 0; i < cur.w; i++) {
+    const b = cur.blocks[j * cur.w + i], inside = i >= x && i < x + w && j >= y && j < y + h;
+    if (b & 0xC00 || inside) continue;
+    all.set(b & 0x3FF, (all.get(b & 0x3FF) || 0) + 1);
+    if (i >= x - 1 && i <= x + w && j >= y - 1 && j <= y + h) near.set(b & 0x3FF, (near.get(b & 0x3FF) || 0) + 1);
+  }
+  const best = m => [...m].sort((p, q) => q[1] - p[1])[0];
+  return (best(near) || best(all) || [1])[0];
+}
+function setPicking(on) {
+  picking = on; $('pick').classList.toggle('on', on); $('over').style.cursor = on ? 'cell' : '';
+  $('pick').textContent = on ? 'Haz clic en una casilla de solo fondo' : 'Elegir casilla de fondo…';
+}
 window.onmousemove = e => {
   if (!drag) return;
   const [x, y] = cellAt(e);
@@ -165,8 +240,7 @@ window.onmousemove = e => {
 };
 window.onmouseup = () => { if (drag) { drag = null; describe(); } };
 function describe() {
-  const c = $('crop');
-  if (!sel) { $('sel').textContent = 'Nada seleccionado.'; c.width = c.height = 0; return; }
+  if (!sel) { $('sel').textContent = 'Nada seleccionado.'; chips(); return; }
   const [x, y, w, h] = sel, ids = new Set();
   let blocked = 0;
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
@@ -174,40 +248,197 @@ function describe() {
     ids.add((b & 0x3FF).toString(16).toUpperCase().padStart(3, '0')); if (b & 0xC00) blocked++;
   }
   $('sel').innerHTML = `Casilla (${x}, ${y}), ${w}×${h} · ${blocked} bloqueadas de ${w * h}<br>Metatiles: ${[...ids].join(' ')}`;
-  const k = Math.max(1, Math.min(6, Math.floor(300 / (w * 16))));
-  c.width = w * 16 * k; c.height = h * 16 * k;
+  chips();
+}
+// What the generator will cut from the selection, as it does it (gen_voxel_buildings.py):
+// clear_round floods the background colours in from the drawing's edge; drop_colours takes
+// them everywhere, and then the pixels left alone.
+function cutOut() {
+  if (!sel || !img) return null;
+  const [c, d] = pixels(...sel), W = c.width, H = c.height, n = W * H;
+  const key = new Array(n), gone = new Uint8Array(n), want = new Set(clear);
+  for (let p = 0; p < n; p++) key[p] = hex(d[p * 4], d[p * 4 + 1], d[p * 4 + 2]);
+  const todo = [];
+  const reach = p => { if (!gone[p] && want.has(key[p])) { gone[p] = 1; todo.push(p); } };
+  for (let x = 0; x < W; x++) { reach(x); reach((H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { reach(y * W); reach(y * W + W - 1); }
+  while (todo.length) {
+    const p = todo.pop(), x = p % W;
+    if (x + 1 < W) reach(p + 1); if (x > 0) reach(p - 1); if (p + W < n) reach(p + W); if (p >= W) reach(p - W);
+  }
+  if ($('drop').checked && clear.length) {
+    for (let p = 0; p < n; p++) if (want.has(key[p])) gone[p] = 1;
+    const lone = [];
+    for (let p = 0; p < n; p++) {
+      const x = p % W;
+      if (!gone[p] && !((x + 1 < W && !gone[p + 1]) || (x > 0 && !gone[p - 1]) || (p + W < n && !gone[p + W]) || (p >= W && !gone[p - W])))
+        lone.push(p);
+    }
+    for (const p of lone) gone[p] = 1;
+  }
+  const stats = new Map(clear.map(v => [v, [0, 0]]));     // colour -> [pixels cut, pixels left]
+  let cutN = 0;
+  for (let p = 0; p < n; p++) { cutN += gone[p]; const s = stats.get(key[p]); if (s) s[gone[p] ? 0 : 1]++; }
+  return {src: c, d, W, H, key, gone, stats, cutN, n};
+}
+function paintCrop() {
+  paintCut();
+  if (!cut || $('kind').value !== 'stack') return;
+  for (const c of [$('crop'), $('kept')]) {     // where the upper piece ends and the lower begins
+    const g = c.getContext('2d'), y = Math.round(splitRow() * c.height / cut.H);
+    g.fillStyle = '#1d1f27'; g.fillRect(0, y - 2, c.width, 4);
+    g.fillStyle = '#f2c14e'; g.fillRect(0, y - 1, c.width, 2);
+  }
+}
+function splitRow() {       // the cut, kept inside the selection: half way down until one is marked
+  const H = sel[3] * 16, v = Math.round(+$('split').value);
+  const row = v >= 1 && v <= H - 1 ? v : H >> 1;
+  $('split').value = row; $('split').max = H - 1;
+  return row;
+}
+function setSplitting(on) {
+  splitting = on; $('splitpick').classList.toggle('on', on);
+  $('splitpick').textContent = on ? 'Haz clic donde se separan' : 'Marcar en el dibujo…';
+}
+let splitting = false;
+function paintCut() {
+  const c = $('crop'), t = $('kept');
+  if (!cut) { c.width = c.height = 0; $('keptfig').hidden = true; $('cropcap').textContent = ''; $('legend').textContent = ''; return; }
+  const {src, d, W, H, key, gone} = cut, two = clear.length > 0;
+  const k = Math.max(1, Math.min(6, Math.floor((two ? 147 : 300) / W)));
+  c.width = W * k; c.height = H * k;
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
-  g.drawImage(img, x * 16, y * 16, w * 16, h * 16, 0, 0, c.width, c.height);
+  g.drawImage(src, 0, 0, c.width, c.height);
+  $('keptfig').hidden = !two; $('cropcap').textContent = two ? 'Dibujo' : '';
+  if (!two) { $('legend').textContent = ''; return; }
+  const mark = $('mark').checked;
+  for (let p = 0; p < W * H; p++) {
+    if (hover ? key[p] !== hover : !(mark && gone[p])) continue;
+    g.fillStyle = gone[p] ? 'rgba(255,0,200,.8)' : 'rgba(0,255,255,.9)';
+    g.fillRect((p % W) * k, Math.floor(p / W) * k, k, k);
+  }
+  const m = document.createElement('canvas'); m.width = W; m.height = H;
+  const out = new ImageData(new Uint8ClampedArray(d), W, H);
+  for (let p = 0; p < W * H; p++) if (gone[p]) out.data[p * 4 + 3] = 0;
+  m.getContext('2d').putImageData(out, 0, 0);
+  t.width = W * k; t.height = H * k;
+  const q = t.getContext('2d'); q.imageSmoothingEnabled = false; q.drawImage(m, 0, 0, t.width, t.height);
+  $('legend').innerHTML = `<i style="background:#ff00c8"></i>se quita: ${cut.cutN} px &nbsp; se queda: ${cut.n - cut.cutN} px`
+    + (hover ? ` &nbsp; <i style="background:#00ffff"></i>#${hover} que se queda` : '');
 }
 function chips() {
   const box = $('chips');
-  if (!clear.length) { box.textContent = 'Sin colores de fondo.'; return; }
+  if (!clear.length) bgCells = [];
+  cut = cutOut(); hover = null; paintCrop();
+  if (!clear.length) {
+    box.textContent = 'Sin colores de fondo. Elige una casilla que sea solo suelo o mar, o haz clic en un píxel del dibujo: sus colores se quitan del modelo.';
+    if (cur && img) draw(); return;
+  }
   box.innerHTML = '';
   for (const c of clear) {
-    const s = document.createElement('span'); s.className = 'chip'; s.title = 'Quitar #' + c;
-    s.innerHTML = `<i style="background:#${c}"></i>${c} ✕`;
+    const [off, left] = cut ? cut.stats.get(c) : [0, 0];
+    const s = document.createElement('span'); s.className = 'chip' + (left ? ' left' : '');
+    s.title = !cut ? 'Sacar #' + c + ' de la lista'
+      : `#${c}: ${off} px se quitan` + (left ? `, ${left} px se quedan dentro del objeto (el borde no los alcanza)` : '') + '. Clic: sacarlo de la lista.';
+    s.innerHTML = `<i style="background:#${c}"></i>${c}` + (cut ? ` <small>−${off}${left ? ' · queda ' + left : ''}</small>` : '') + ' ✕';
     s.onclick = () => { clear = clear.filter(v => v !== c); chips(); };
+    s.onmouseenter = () => { hover = c; paintCrop(); };
+    s.onmouseleave = () => { hover = null; paintCrop(); };
     box.appendChild(s);
   }
 }
+$('crop').onclick = e => {      // a pixel of the drawing: its colour into the background, or out of it
+  if (!cut) return;
+  const r = $('crop').getBoundingClientRect();
+  const x = Math.min(cut.W - 1, Math.floor((e.clientX - r.left) / r.width * cut.W));
+  const y = Math.min(cut.H - 1, Math.floor((e.clientY - r.top) / r.height * cut.H));
+  if (splitting) {
+    $('split').value = Math.max(1, Math.min(cut.H - 1, Math.round((e.clientY - r.top) / r.height * cut.H)));
+    setSplitting(false); paintCrop(); return;
+  }
+  const c = cut.key[y * cut.W + x];
+  if (clear.includes(c)) clear = clear.filter(v => v !== c); else if (clear.length < 16) clear.push(c);
+  chips();
+};
 function request() {
   if (!cur || !sel) throw new Error('Selecciona primero las casillas del objeto.');
   const name = $('name').value.trim().toLowerCase();
   if (!/^[a-z0-9_]{1,40}$/.test(name)) throw new Error('Pon un nombre con letras minúsculas, números y _.');
-  return {name, layout: cur.id, map: cur.maps[0] || '', rect: sel, kind: $('kind').value, ground,
-          clear, drop: $('drop').checked, height: +$('height').value || 16, note: $('note').value};
+  const r = {name, layout: cur.id, map: cur.maps[0] || '', rect: sel, kind: $('kind').value, ground: floorUnder(),
+             clear, drop: $('drop').checked, height: +$('height').value || 16, note: $('note').value};
+  if (r.kind === 'stack') Object.assign(r, {cut: splitRow(), high: $('high').value, low: $('low').value, deep: +$('deep').value || 8});
+  return r;
 }
 async function post(path, body) { return (await fetch(path, {method: 'POST', body: JSON.stringify(body)})).json(); }
 $('preview').onclick = async () => {
   let r; try { r = request(); } catch (e) { $('log').textContent = e.message; return; }
-  $('preview').disabled = true; $('log').textContent = 'Generando el modelo (unos 15 segundos)…'; $('sheet').hidden = true;
+  $('preview').disabled = true; $('log').textContent = ''; $('sheet').hidden = $('sheethint').hidden = true;
+  // the wait counted down from what the last preview took on this machine
+  let guess = 15; try { guess = +localStorage.getItem('wb_preview_secs') || 15; } catch (e) {}
+  const t0 = performance.now(), took = () => (performance.now() - t0) / 1000;
+  const tick = () => {
+    const s = took(), late = s >= guess;
+    $('fill').classList.toggle('over', late); $('fill').style.width = Math.min(100, s / guess * 100) + '%';
+    $('busytext').textContent = late ? `Tarda más de lo previsto: ${Math.floor(s)} s (se esperaban ${guess})…`
+                                     : `Generando el modelo… quedan ${Math.ceil(guess - s)} s`;
+  };
+  $('busy').hidden = false; tick();
+  const timer = setInterval(tick, 100);
   try {
-    const a = await post('/preview', r);
-    $('log').textContent = (a.ok ? '' : 'No se pudo generar.\n') + (a.log || '');
-    if (a.ok) { $('sheet').src = a.image + '?t=' + Date.now(); $('sheet').hidden = false; }
+    const a = await post('/preview', r), s = took();
+    $('log').textContent = (a.ok ? `Listo en ${s.toFixed(1)} s.\n` : 'No se pudo generar.\n') + (a.log || '');
+    if (a.ok) {
+      views = a.views || [];
+      $('sheet').src = a.image + '?t=' + Date.now(); $('sheet').hidden = $('sheethint').hidden = false;
+      try { localStorage.setItem('wb_preview_secs', Math.max(3, Math.ceil(s))); } catch (e) {}
+    }
   } catch (e) { $('log').textContent = 'Sin respuesta del servidor: ' + e.message; }
+  clearInterval(timer); $('busy').hidden = true;
   $('preview').disabled = false;
 };
+// The preview's sheet, large: one of its pictures or all of it, zoomed with the wheel.
+const VIEW = {ortho: 'Prueba (dibujo · modelo · diferencia)', game: 'Cámara del juego', yaw35: 'Giro 35°',
+              'yaw-50': 'Giro −50°', left: 'Izquierda', right: 'Derecha', high: 'Desde arriba'};
+let views = [], zs = 1, zx = 0, zy = 0, pan = null;
+function place() {
+  $('big').style.transform = `translate(${zx}px,${zy}px) scale(${zs})`; $('zpct').textContent = Math.round(zs * 100) + '%';
+}
+function fit(r) {
+  const v = $('view').getBoundingClientRect();
+  zs = Math.min((v.width - 24) / r[2], (v.height - 24) / r[3]);
+  zx = (v.width - r[2] * zs) / 2 - r[0] * zs; zy = (v.height - r[3] * zs) / 2 - r[1] * zs; place();
+}
+function zoomAt(f, x, y) {
+  const n = Math.max(.1, Math.min(48, zs * f));
+  zx = x - (x - zx) * n / zs; zy = y - (y - zy) * n / zs; zs = n; place();
+}
+function openBox(which) {
+  const s = $('sheet'), all = [['', 0, 0, s.naturalWidth, s.naturalHeight]].concat(views);
+  $('box').hidden = false; $('big').src = s.src; $('tabs').innerHTML = '';
+  all.forEach((v, i) => {
+    const b = document.createElement('button'); b.textContent = i ? VIEW[v[0]] || v[0] : 'Todo';
+    if (v === which || (!which && !i)) b.className = 'on';
+    b.onclick = () => openBox(v); $('tabs').appendChild(b);
+  });
+  fit((which || all[0]).slice(1));
+}
+$('sheet').onclick = e => {
+  const s = $('sheet'), r = s.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * s.naturalWidth, y = (e.clientY - r.top) / r.height * s.naturalHeight;
+  openBox(views.find(v => x >= v[1] && x < v[1] + v[3] && y >= v[2] && y < v[2] + v[4]));
+};
+const centre = f => { const v = $('view').getBoundingClientRect(); zoomAt(f, v.width / 2, v.height / 2); };
+$('zin').onclick = () => centre(1.5); $('zout').onclick = () => centre(1 / 1.5);
+$('zclose').onclick = () => { $('box').hidden = true; };
+$('view').addEventListener('wheel', e => {
+  e.preventDefault();
+  const v = $('view').getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.25 : .8, e.clientX - v.left, e.clientY - v.top);
+}, {passive: false});
+$('view').ondblclick = e => { const v = $('view').getBoundingClientRect(); zoomAt(2, e.clientX - v.left, e.clientY - v.top); };
+$('view').onmousedown = e => { pan = [e.clientX - zx, e.clientY - zy]; $('view').classList.add('pan'); e.preventDefault(); };
+window.addEventListener('mousemove', e => { if (pan) { zx = e.clientX - pan[0]; zy = e.clientY - pan[1]; place(); } });
+window.addEventListener('mouseup', () => { pan = null; $('view').classList.remove('pan'); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') { $('box').hidden = true; if (picking) setPicking(false); } });
 $('save').onclick = async () => {
   let r; try { r = request(); } catch (e) { $('log').textContent = e.message; return; }
   r.picture = pixels(...sel)[0].toDataURL('image/png');
@@ -221,7 +452,7 @@ function showRequests(items) {
   box.innerHTML = '';
   for (const r of items.slice().reverse()) {
     const d = document.createElement('div'); d.className = 'req';
-    const kind = {card: 'carta', dome: 'cúpula', box: 'caja'}[r.kind] || r.kind;
+    const kind = {card: 'carta', dome: 'cúpula', box: 'caja', stack: 'compuesto'}[r.kind] || r.kind;
     d.innerHTML = `<button>Borrar</button><b></b> · ${kind} · ${r.status}<br><span></span><br><em></em>
                    <img src="/pictures/${r.name}.png?t=${Date.now()}" alt="">`;
     d.querySelector('b').textContent = r.name;
@@ -232,10 +463,20 @@ function showRequests(items) {
     box.appendChild(d);
   }
 }
-$('pick').onclick = () => { picking = !picking; $('pick').textContent = picking ? 'Haz clic en una casilla de solo fondo' : 'Elegir casilla de fondo…'; };
+$('pick').onclick = () => setPicking(!picking);
+$('drop').onchange = chips; $('mark').onchange = paintCrop;
 $('find').oninput = listMaps;
 for (const id of ['zoom', 'grid', 'solid']) $(id).onchange = () => cur && draw();
-$('kind').onchange = () => { $('hrow').style.display = $('kind').value === 'box' ? '' : 'none'; };
+$('kind').onchange = () => {
+  const k = $('kind').value;
+  $('hrow').style.display = k === 'box' ? '' : 'none';
+  $('stackrows').style.display = k === 'stack' ? '' : 'none';
+  $('deeprow').style.display = $('low').value === 'box' ? '' : 'none';
+  setSplitting(k === 'stack' && !$('split').value);
+  paintCrop();
+};
+$('low').onchange = $('kind').onchange; $('split').onchange = paintCrop;
+$('splitpick').onclick = () => setSplitting(!splitting);
 $('kind').onchange(); boot();
 </script>
 </body>

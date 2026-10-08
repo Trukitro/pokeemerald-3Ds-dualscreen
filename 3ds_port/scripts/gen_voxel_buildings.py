@@ -1051,6 +1051,50 @@ def build_models(only=None):
                                                  (foot - 1, 0)],
                               edges={0: vb.Tile(px0, shaft[0], px1, shaft[1], top=p["high"])},
                               skip=(1, 2, 3), caps=None, west=False, east=False)]
+        elif "stack" in spec:
+            # two things drawn as one, one standing on the other - a pillar
+            # and the ball on it, a lamp on its post: the rows from `cut`
+            # down are the lower one (a card, or a box `deep` pixels through),
+            # the rows above it the upper (a dome held on the lower one's
+            # top, as a parasol's canopy is, or a card going on up)
+            s = spec["stack"]
+            W = art.size[0]
+            box = art.getbbox()
+            if not box:
+                raise ValueError("%s: nothing is left of its drawing" % spec["name"])
+            by0, by1 = box[1], box[3]
+            cut = s["cut"]
+            under = art.crop((0, cut, W, by1)).getbbox() if by0 < cut < by1 else None
+            over = art.crop((0, by0, W, cut)).getbbox() if under else None
+            if not over:
+                raise ValueError("%s: the cut (row %d) leaves nothing on one side of it: "
+                                 "the drawing is rows %d to %d" % (spec["name"], cut, by0, by1))
+            lx0, lx1 = under[0], under[2]
+            high = by1 - cut
+            if s.get("low") == "box":
+                deep = max(1, min(int(s.get("deep", 8)), by1))
+                side = vb.Tile(lx0, cut, min(lx0 + 8, lx1), by1, top=high)
+                parts = [vb.Prism("low", lx0, lx1,
+                                  [(by1, 0), (by1, high), (by1 - deep, high), (by1 - deep, 0)],
+                                  edges={0: vb.Proj(cut, by1), 1: vb.Proj(cut, cut + 1), 2: side},
+                                  skip=(3,), caps=[vb.Band(0, high + 1, side, by1)])]
+            else:
+                parts = [vb.Lit(vb.Prism("low", lx0, lx1,
+                                         [(by1, 0), (by1, high), (by1 - 1, high), (by1 - 1, 0)],
+                                         edges={0: vb.Proj(cut, by1)}, skip=(1, 2, 3), caps=None,
+                                         west=False, east=False))]
+            if s.get("high") == "dome":
+                spec["drawing"] = art
+                rows = art.size[1]
+                art = vb.Mound.with_ring(art, ())
+                parts.append(vb.Mound("high", art, rise=float(s.get("rise", 0.9)), step=2, rows=rows,
+                                      base=high, top_rows=cut, lay_ring=False))
+            else:
+                tall = by1 - by0
+                parts.append(vb.Lit(vb.Prism("high", over[0], over[2],
+                                             [(by1, high), (by1, tall), (by1 - 1, tall), (by1 - 1, high)],
+                                             edges={0: vb.Proj(by0, cut)}, skip=(1, 2, 3), caps=None,
+                                             west=False, east=False)))
         else:
             parts = spec["parts"]()
         model = vb.Model(spec["name"], art, parts, (w, h), spec["ground"][0])

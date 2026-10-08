@@ -58,11 +58,17 @@ def clean(d):
     if len(rect) != 4 or min(rect) < 0 or rect[2] < 1 or rect[3] < 1 or rect[2] > 16 or rect[3] > 16:
         raise ValueError("a rectangle of 1 to 16 cells a side")
     colours = [c for c in d.get("clear", []) if re.match(r"^[0-9a-f]{6}$", c)][:16]
-    return {"name": d["name"], "layout": d["layout"], "map": str(d.get("map", ""))[:60], "rect": rect,
-            "kind": d.get("kind") if d.get("kind") in ("card", "dome", "box") else "card",
+    item = {"name": d["name"], "layout": d["layout"], "map": str(d.get("map", ""))[:60], "rect": rect,
+            "kind": d.get("kind") if d.get("kind") in ("card", "dome", "box", "stack") else "card",
             "ground": int(d.get("ground", 1)), "clear": colours, "drop": bool(d.get("drop")),
             "height": max(1, min(int(d.get("height", 16)), 255)),
             "note": str(d.get("note", ""))[:400]}
+    if item["kind"] == "stack":     # two pieces, the rows above `cut` standing on those below
+        item["cut"] = max(1, min(int(d.get("cut", rect[3] * 8)), rect[3] * 16 - 1))
+        item["high"] = d.get("high") if d.get("high") in ("dome", "card") else "dome"
+        item["low"] = d.get("low") if d.get("low") in ("box", "card") else "box"
+        item["deep"] = max(1, min(int(d.get("deep", 8)), 64))
+    return item
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -132,8 +138,11 @@ class Handler(BaseHTTPRequestHandler):
                 run = subprocess.run(["wsl", "-d", "Ubuntu-24.04", "--", "bash", "-lc", command],
                                      capture_output=True, text=True, timeout=400)
                 sheet = os.path.join(REPO, "build", "previews", item["name"] + "_sheet.png")
+                views = []      # [kind, x, y, w, h] of each picture in the sheet
+                if os.path.exists(sheet[:-4] + ".json"):
+                    views = json.load(open(sheet[:-4] + ".json", encoding="utf-8"))
                 return self.send({"ok": os.path.exists(sheet) and run.returncode == 0,
-                                  "log": (run.stdout + run.stderr)[-1500:],
+                                  "log": (run.stdout + run.stderr)[-1500:], "views": views,
                                   "image": "/preview/%s_sheet.png" % item["name"]})
             self.send({"error": "not found"}, code=404)
         except Exception as error:      # said to the page, not a dead server
