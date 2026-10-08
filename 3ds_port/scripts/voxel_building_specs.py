@@ -2171,7 +2171,18 @@ def shipyard_1f():
         piece("consoles", [(128, 12, 160, 38)], 20, leave=SHIPYARD_WALL + shop, back=32),
         piece("shelf", [(0, 32, 32, 44)], 8, leave=SHIPYARD_WALL + SHIPYARD_FLOOR, solid=True),
         piece("locker", [(161, 17, 175, 39)], 15, leave=SHIPYARD_WALL + shop, back=32),
-    ], "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
+        # the dry dock: the submarine, nose out of its bay; the bay's dome;
+        # the low white cradle round them; the tank and its console; and,
+        # behind them all, the dock's wall under its white top, ended by a
+        # pillar
+        piece("submarine", [(192, 112, 224, 158)], 14, leave=shop, solid=True),
+        piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True),
+        piece("cradle_w", [(177, 88, 184, 136)], 8, leave=shop, solid=True),
+        piece("cradle_e", [(232, 88, 240, 136)], 8, leave=shop, solid=True),
+        piece("tank", [(145, 74, 176, 120)], 30, leave=shop, solid=True),
+        piece("dock_pillar", [(240, 56, 256, 98)], 30, leave=shop, solid=True),
+        piece("dock_wall", [(112, 60, 240, 96)], 36, fill=16, foot=96, side=(132, 60, 144, 96)),
+    ], "submarine", "bay", "cradle_w", "cradle_e", "tank", "dock_pillar", "dock_wall", "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
 
 
 SHIPYARD_FLOOR = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
@@ -2221,11 +2232,18 @@ def harbor_quay():
     of it, open at the steps - as a low wall, and the stools."""
     fl = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd", "29418b", "39529c", "526ad5",
           "6a83d5")
-    rail = lambda name, r: piece(name, [r], 8, leave=fl, solid=True)
+    bay = ("6a7b41", "839473", "acb494", "dedec5")
+    rail = lambda name, r: piece(name, [r], 8, leave=fl + bay, solid=True)
     return [
         rail("rail_n", (56, 63, 384, 80)),
         rail("rail_w", (48, 80, 56, 176)),
         rail("rail_sw", (56, 160, 117, 176)), rail("rail_s", (152, 160, 284, 176)),
+        # the loading bay east of the hall: its railing, and the crates - a
+        # stack against the quay with one more behind it, and a stack by the
+        # east wall - their slatted lids over a dark front
+        rail("rail_se", (320, 160, 384, 176)), rail("rail_e", (272, 176, 280, 240)),
+        piece("crates_n", [(288, 160, 320, 176), (288, 176, 352, 207)], 15, leave=fl + bay, solid=True),
+        piece("crates_e", [(352, 192, 384, 240)], 16, leave=fl + bay, solid=True),
     ] + office_furniture("LAYOUT_HARBOR")
 
 

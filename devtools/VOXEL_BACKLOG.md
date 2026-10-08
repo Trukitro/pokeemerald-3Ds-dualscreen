@@ -512,10 +512,11 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (89, 89)-(95, 95), 36 px
 - [x] **SlateportCity_Mart**: nothing blocked lies flat
   - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
-- [ ] **SlateportCity_SternsShipyard_1F**: 28 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_SternsShipyard_1F.png`
-  - [ ] (9, 4)-(15, 9), 28 cell(s), tiles 210 220 233 234 235 236 23B 23C 23D 23E 243 244 245 246 24C 24D 255 256 25B 25C 263 264 2D0 2D1 2D2 2D3 2D6 2D7
-  - [ ] painted on the floor: pixels (112, 32)-(320, 240), 32512 px
+- [x] **SlateportCity_SternsShipyard_1F**: nothing blocked lies flat
+  - [ ] painted on the floor: pixels (176, 32)-(320, 240), 18432 px
+  - [ ] painted on the floor: pixels (112, 112)-(176, 176), 3072 px
   - [ ] painted on the floor: pixels (32, 224)-(64, 240), 512 px
+  - [ ] painted on the floor: pixels (112, 32)-(128, 48), 256 px
   - [ ] painted on the floor: pixels (16, 48)-(32, 56), 128 px
   - [ ] painted on the floor: pixels (80, 32)-(96, 40), 128 px
   - [ ] painted on the floor: pixels (32, 32)-(48, 40), 128 px
@@ -550,10 +551,13 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (48, 112)-(80, 128), 512 px
   - [ ] painted on the floor: pixels (32, 43)-(128, 48), 480 px
   - [ ] painted on the floor: pixels (32, 35)-(128, 40), 480 px
-- [ ] **SlateportCity_Harbor**: 29 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_Harbor.png`
-  - [ ] (17, 10)-(22, 14), 29 cell(s), tiles 228 22A 260 2B1 356 3D8 3D9 3DA 3DB 3DC 3DD 3DE 3DF
-  - [ ] painted on the floor: pixels (64, 80)-(368, 240), 31996 px
+- [ ] **SlateportCity_Harbor**: 9 flat cell(s) in 2 object(s) - `build/audit/SlateportCity_Harbor.png`
+  - [ ] (22, 11), 1 cell(s), tiles 2B1
+  - [ ] (18, 13)-(21, 14), 8 cell(s), tiles 228 22A
+  - [ ] painted on the floor: pixels (64, 80)-(368, 176), 24572 px
+  - [ ] painted on the floor: pixels (288, 208)-(352, 240), 2048 px
   - [ ] painted on the floor: pixels (176, 224)-(208, 240), 512 px
+  - [ ] painted on the floor: pixels (352, 176)-(368, 192), 256 px
   - [ ] painted on the floor: pixels (242, 177)-(254, 191), 126 px
   - [ ] painted on the floor: pixels (146, 177)-(158, 191), 126 px
   - [ ] painted on the floor: pixels (194, 177)-(206, 191), 126 px
@@ -574,8 +578,8 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (17, 65)-(23, 71), 32 px
   - [ ] painted on the floor: pixels (25, 65)-(31, 71), 32 px
   - [ ] painted on the floor: pixels (169, 65)-(175, 71), 32 px
-- [ ] **SlateportCity_SternsShipyard_2F**: 61 flat cell(s) in 1 object(s) - `build/audit/SlateportCity_SternsShipyard_2F.png`
-  - [ ] (8, 5)-(15, 12), 61 cell(s), tiles 228 229 22A 23B 23C 23D 23E 243 244 245 246 24B 24C 24D 24E 250 251 252 255 256 260 263 264 268 269 26A 26B 26C 28D 297 335
+- [x] **SlateportCity_SternsShipyard_2F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 61 cell(s): the railed opening: a view down to the dock on the floor below, which is flat in it
   - [ ] painted on the floor: pixels (128, 80)-(256, 223), 17246 px
   - [ ] painted on the floor: pixels (80, 32)-(256, 40), 1408 px
   - [ ] painted on the floor: pixels (16, 32)-(48, 40), 256 px
@@ -594,7 +598,7 @@ every reported item is ticked. Work one area to the end before the next.
   - [ ] painted on the floor: pixels (21, 33)-(27, 39), 24 px
   - [ ] painted on the floor: pixels (197, 33)-(203, 39), 24 px
 
-140 blocked cell(s) still flat in this area.
+31 blocked cell(s) still flat in this area.
 <!-- /audit:SlateportCity -->
 
 <!-- audit:Route109 -->
