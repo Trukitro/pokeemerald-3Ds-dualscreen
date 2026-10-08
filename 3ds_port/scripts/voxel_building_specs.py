@@ -2176,13 +2176,17 @@ def shipyard_1f():
         # behind them all, the dock's wall under its white top, ended by a
         # pillar
         piece("submarine", [(192, 112, 224, 158)], 14, leave=shop, solid=True),
-        piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True),
+        # (in two steps, a hood rounded towards the dock's wall: its front
+        # sixteen rows tall, and eight rows back a second step eight taller.
+        # As one box it was a picture of a dome stuck on the wall.)
+        piece("bay", [(184, 88, 232, 112)], 16, leave=shop, solid=True),
+        piece("bay_top", [(184, 72, 232, 88)], 8, base=16, leave=shop, solid=True),
         piece("cradle_w", [(177, 88, 184, 136)], 8, leave=shop, solid=True),
         piece("cradle_e", [(232, 88, 240, 136)], 8, leave=shop, solid=True),
         piece("tank", [(145, 74, 176, 120)], 30, leave=shop, solid=True),
         piece("dock_pillar", [(240, 56, 256, 98)], 30, leave=shop, solid=True),
         piece("dock_wall", [(112, 60, 240, 96)], 36, fill=16, foot=96, side=(132, 60, 144, 96)),
-    ], "submarine", "bay", "cradle_w", "cradle_e", "tank", "dock_pillar", "dock_wall", "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
+    ], "submarine", "bay", "bay_top", "cradle_w", "cradle_e", "tank", "dock_pillar", "dock_wall", "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
 
 
 SHIPYARD_FLOOR = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
