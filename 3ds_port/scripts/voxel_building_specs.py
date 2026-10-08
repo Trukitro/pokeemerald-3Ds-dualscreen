@@ -2175,26 +2175,21 @@ def shipyard_1f():
         # the low white cradle round them; the tank and its console; and,
         # behind them all, the dock's wall under its white top, ended by a
         # pillar
-        # (made by hand, as what they are - the generator's `made`, vb.Barrel
-        # and vb.Drum: the bay a vaulted housing thirty rows tall running
-        # back through the dock's wall, its hatch on its roof; the submarine
-        # a cylinder lying out of its arch. Read off the drawing, which shows
-        # them as a few rows against the wall, they were a box, then a hood
-        # in two steps, then a dome - never the tank they are.)
-        dict(piece("submarine", [(192, 112, 224, 158)], 14, leave=shop, solid=True),
-             made=lambda ox, oz: [Drum("submarine", 208 - ox, 14, 12, 156 - oz, 50, 156 - oz,
-                                       (121 - oz, 128 - oz))]),
-        dict(piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True),
-             made=lambda ox, oz: [Barrel("bay", 184 - ox, 232 - ox, 112 - oz, 52, 30, 112 - oz,
-                                         (73 - oz, 103 - oz))]),
+        # (rounded across their width and still their drawing - a piece's
+        # `arch`, vb.Arch: the bay a housing twenty-one rows tall at its sides
+        # and thirty-two in the middle, its roof level, in front of the
+        # dock's wall (any lower and its back would be behind it); the
+        # submarine's nose a cylinder's end as tall, its top climbing to it
+        # from the bay. As boxes they were flat-topped; made by hand as a
+        # vault and a drum they went through the wall and lost the drawing.)
+        dict(piece("submarine", [(192, 112, 224, 158)], 14, leave=shop, solid=True), arch=(26, 0.35)),
+        dict(piece("bay", [(184, 72, 232, 112)], 30, leave=shop, solid=True), arch=(32, 1.0, 21)),
         piece("cradle_w", [(177, 88, 184, 136)], 8, leave=shop, solid=True),
         piece("cradle_e", [(232, 88, 240, 136)], 8, leave=shop, solid=True),
         piece("tank", [(145, 74, 176, 120)], 30, leave=shop, solid=True),
         piece("dock_pillar", [(240, 56, 256, 98)], 30, leave=shop, solid=True),
-        # (the dock's wall, either side of the bay that runs through it)
-        piece("dock_wall", [(112, 60, 184, 96)], 36, fill=16, foot=96, side=(132, 60, 144, 96)),
-        piece("dock_wall_e", [(232, 60, 240, 96)], 36, fill=8, foot=96, side=(232, 60, 240, 96)),
-    ], "submarine", "bay", "cradle_w", "cradle_e", "tank", "dock_pillar", "dock_wall", "dock_wall_e", "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
+        piece("dock_wall", [(112, 60, 240, 96)], 36, fill=16, foot=96, side=(132, 60, 144, 96)),
+    ], "submarine", "bay", "cradle_w", "cradle_e", "tank", "dock_pillar", "dock_wall", "partition_n", "partition_s", "girder_a", "girder_b", "girder_c", "beams_e", "beams_se", "beams_sw")
 
 
 SHIPYARD_FLOOR = ("62627b", "628b83", "739c8b", "8bb4ac", "9c8b94", "a4cdbd")
@@ -2846,9 +2841,7 @@ if os.environ.get("VOXEL_DRAFT"):
 
 # Where a room's drawing is not judged: a thing made by hand stands there
 # (a piece's `made`), which the drawing shows otherwise.
-REMADE = {
-    "LAYOUT_SLATEPORT_CITY_STERNS_SHIPYARD_1F": [(176, 24, 240, 160)],
-}
+REMADE = {}
 
 for _spec in SPECS:
     _room = _spec.get("interior")

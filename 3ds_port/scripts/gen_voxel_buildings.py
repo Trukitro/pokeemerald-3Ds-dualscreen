@@ -922,6 +922,11 @@ def interior_specs(spec):
                 # made by hand, as the thing it is (vb.Barrel, vb.Drum): its
                 # parts, in the piece's own pixels from its rectangle's corner
                 parts = pc["made"](x0 * 16, y0 * 16)
+            elif pc.get("arch"):
+                # rounded across its width and still its drawing (vb.Arch):
+                # `arch` is (the height in its middle, how high its top is at
+                # the back as a part of that)
+                parts = [vb.Arch(pc["name"], obj, *pc["arch"])]
             elif pc.get("dome"):
                 # a round thing in a room - a tank, a submarine's nose -
                 # lifted off its own pixels as a rock is off the sea: every

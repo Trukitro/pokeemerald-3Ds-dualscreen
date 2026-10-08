@@ -1480,6 +1480,73 @@ class Drum:
                      (xb, yb, zf, xb, self.foot - yb), centre, SHADE_ART, tag % "end")
 
 
+class Arch:
+    """A thing with a rounded top across its width - a tank's housing, a
+    cylinder's end - that is still its drawing, exactly.
+
+    Column by column of the drawing: the column stands `H` tall, where H
+    follows half an ellipse across the thing's width (`hmax` in the middle,
+    nothing at its edges); the last H rows of the column are its front,
+    upright at its foot, and the rows above them its top, laid back from the
+    front's upper edge. A box does the same with one height for every
+    column, which is why a round tank came out a box. `back`: how high the
+    top is at its far end, as a part of H - 1 for a level roof (a vault), less
+    for a top that climbs to the front (a cylinder's nose coming up out of
+    what it is housed in). Every point is (u, y, v + y): the drawing from the
+    GBA's camera whatever the heights are.
+    """
+
+    def __init__(self, name, art, hmax, back=1.0, sides=0.0):
+        self.name, self.art, self.hmax, self.back = name, art, float(hmax), float(back)
+        # how tall it stands at its two edges: a housing's upright sides
+        # under its rounded top (nothing: a cylinder's end)
+        self.sides = float(sides)
+
+    def emit(self, mesh):
+        W, H = self.art.size
+        px = self.art.load()
+        runs = {}
+        for u in range(W):
+            rows = [v for v in range(H) if px[u, v][3] >= 128]
+            if rows:
+                runs[u] = (rows[0], rows[-1] + 1)
+        if not runs:
+            return
+        u0, u1 = min(runs), max(runs) + 1
+        xc, rx = (u0 + u1) / 2.0, (u1 - u0) / 2.0
+        prev = None
+        for u in range(u0, u1):
+            if u not in runs:
+                prev = None
+                continue
+            top, foot = runs[u]
+            t = (u + 0.5 - xc) / rx
+            h = max(1.0, self.sides + (self.hmax - self.sides) * math.sqrt(max(0.0, 1.0 - t * t)))
+            h = min(h, foot - top - 1.0)
+            if h < 1.0:
+                prev = None
+                continue
+            y0 = self.back * h
+            a, b = float(u), float(u + 1)
+            mesh.poly([(a, 0.0, foot, a, foot), (b, 0.0, foot, b, foot),
+                       (b, h, foot, b, foot - h), (a, h, foot, a, foot - h)], SHADE_ART,
+                      self.name + ".front")
+            mesh.poly([(a, h, foot, a, foot - h), (b, h, foot, b, foot - h),
+                       (b, y0, top + y0, b, top), (a, y0, top + y0, a, top)], SHADE_ART,
+                      self.name + ".roof~proj")
+            line = (h, foot, y0, top + y0, u + 0.5, top, foot - h)
+            if prev is not None:
+                # the step between two columns, which the GBA's camera never
+                # sees: closed, with the taller column's own texels
+                (hp, fp, yp, zp, up, tp, vp) = prev
+                tall = prev if hp >= h else line
+                uu = tall[4]
+                mesh.poly([(a, hp, fp, uu, tall[6]), (a, h, foot, uu, tall[6]),
+                           (a, y0, top + y0, uu, tall[5]), (a, yp, zp, uu, tall[5])],
+                          SHADE_WEST if hp < h else SHADE_EAST, self.name + ".step~behind~proj")
+            prev = line
+
+
 class Lit:
     """A part whose every face is a card's (SHADE_CARD)."""
 
