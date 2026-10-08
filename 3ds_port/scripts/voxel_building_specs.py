@@ -1879,7 +1879,8 @@ SPECS = [
         "name": "fence",
         "components": {
             "primary": "gTileset_General",
-            "layouts": ["LAYOUT_ROUTE104", "LAYOUT_PETALBURG_WOODS", "LAYOUT_SLATEPORT_CITY"],
+            "layouts": ["LAYOUT_ROUTE104", "LAYOUT_PETALBURG_WOODS", "LAYOUT_SLATEPORT_CITY",
+                        "LAYOUT_ROUTE110"],
             "tiles": {0x149},
             "height": 10, "block": 4,
         },
@@ -2527,6 +2528,44 @@ SPECS += [
                                    ("moored", 36, 37, 3, 2, [(36, 37), (35, 48)]),
                                    # the two-master by the harbour's doors
                                    ("two_master", 33, 35, 3, 4, [(33, 35)]))
+]
+
+# ── Route 110 ─────────────────────────────────────────────────────────────
+#
+# The two gatehouses of the Seaside Cycling Road, yellow brick under a flat
+# grey roof, and the Trick House, each a box under its roof as it is drawn;
+# and the route's kerbs and fences, the General tileset's.
+SPECS += [
+    {"name": "route110_gate_%s" % name,
+     "layout": "LAYOUT_ROUTE110",
+     "rect": (x, y, 6, 5),
+     "ground": [GRASS],
+     "parts": lambda: box_building(96, 80, 38),
+     "exact": [(0, 0, 96, 80, True)]}
+    for (name, x, y) in (("north", 14, 12), ("south", 15, 84))
+] + [
+    {"name": "route110_trick_house",
+     "layout": "LAYOUT_ROUTE110",
+     "rect": (9, 61, 5, 6),
+     "ground": [GRASS],
+     "parts": lambda: box_building(80, 96, 70),
+     "exact": []},
+    {"name": "route110_kerbs",
+     "components": {
+         "primary": "gTileset_General",
+         "layouts": ["LAYOUT_ROUTE110"],
+         "tiles": {0x045, 0x047, 0x04E, 0x03E, 0x040, 0x03D, 0x03F, 0x04D, 0x04F},
+         "height": 6, "block": 2,
+     },
+     "ground": [GRASS]},
+    {"name": "route110_posts",
+     "components": {
+         "primary": "gTileset_General",
+         "layouts": ["LAYOUT_ROUTE110"],
+         "tiles": {0x132, 0x133, 0x134, 0x138, 0x139, 0x140, 0x141, 0x142, 0x148, 0x14A, 0x14C},
+         "height": 10, "block": 2,
+     },
+     "ground": [GRASS]},
 ]
 
 # The rowing boat pulled up on the grass by the harbour: a hull rounded off

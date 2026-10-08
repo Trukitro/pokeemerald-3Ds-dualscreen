@@ -666,3 +666,50 @@ every reported item is ticked. Work one area to the end before the next.
 
 23 blocked cell(s) still flat in this area.
 <!-- /audit:AbandonedShip -->
+
+<!-- audit:Route110 -->
+### Route110 - audit of 2026-10-08
+
+- [ ] **Route110**: 155 flat cell(s) in 39 object(s) - `build/audit/Route110.png`
+  - [ ] (9, 0), 1 cell(s), tiles 00E
+  - [ ] (18, 5)-(34, 13), 40 cell(s), tiles 307 309 30A 30D 334 335 34C 350 351 352 353 354 358 359 35A 35B 35C 360 361 362 363 368 36B 370 371 372 373 376
+  - [ ] (23, 10)-(25, 10), 3 cell(s), tiles 30A 334 335
+  - [ ] (20, 12)-(20, 13), 2 cell(s), tiles 369 37B
+  - [ ] (23, 12)-(23, 13), 2 cell(s), tiles 364 36A
+  - [ ] (25, 12)-(25, 14), 3 cell(s), tiles 369 37C 37E
+  - [ ] (29, 12)-(30, 14), 4 cell(s), tiles 36A 36D 377 37D
+  - [ ] (25, 16)-(25, 21), 6 cell(s), tiles 338 340 374 3A8
+  - [ ] (29, 16)-(30, 21), 7 cell(s), tiles 339 341 375 377 3A9
+  - [ ] (16, 25)-(17, 25), 2 cell(s), tiles 026 027
+  - [ ] (8, 31), 1 cell(s), tiles 300
+  - [ ] (31, 31), 1 cell(s), tiles 304
+  - [ ] (18, 34), 1 cell(s), tiles 315
+  - [ ] (24, 34), 1 cell(s), tiles 315
+  - [ ] (10, 38), 1 cell(s), tiles 355
+  - [ ] (14, 38)-(15, 38), 2 cell(s), tiles 356 357
+  - [ ] (10, 42)-(10, 44), 3 cell(s), tiles 338 340 3AA
+  - [ ] (14, 42)-(15, 44), 4 cell(s), tiles 339 341 367 3AB
+  - [ ] (10, 50), 1 cell(s), tiles 32C
+  - [ ] (14, 50), 1 cell(s), tiles 32D
+  - [ ] (7, 54)-(7, 55), 2 cell(s), tiles 33A 342
+  - [ ] (21, 54)-(21, 55), 2 cell(s), tiles 33B 343
+  - [ ] (8, 58)-(15, 60), 10 cell(s), tiles 306 309 30D 315 334
+  - [ ] (19, 58)-(20, 58), 2 cell(s), tiles 30B 335
+  - [ ] (1, 64)-(4, 64), 4 cell(s), tiles 0CE
+  - [ ] (15, 64)-(15, 65), 2 cell(s), tiles 338 340
+  - [ ] (19, 64)-(19, 65), 2 cell(s), tiles 339 341
+  - [ ] (15, 68), 1 cell(s), tiles 355
+  - [ ] (19, 68)-(20, 68), 2 cell(s), tiles 356 357
+  - [ ] (15, 72)-(15, 73), 2 cell(s), tiles 338 340
+  - [ ] (19, 72)-(20, 73), 3 cell(s), tiles 339 341 367
+  - [ ] (13, 78), 1 cell(s), tiles 300
+  - [ ] (30, 78)-(30, 79), 2 cell(s), tiles 33B 343
+  - [ ] (17, 81), 1 cell(s), tiles 315
+  - [ ] (22, 81), 1 cell(s), tiles 315
+  - [ ] (21, 86)-(27, 90), 13 cell(s), tiles 309 30A 30D 334 33A 354 360 368 370 371
+  - [ ] (30, 86)-(36, 91), 14 cell(s), tiles 30A 30B 30D 335 33B 354 35C 363 36B 372 373
+  - [ ] (27, 90)-(27, 91), 2 cell(s), tiles 369 37B
+  - [ ] (30, 90)-(31, 91), 3 cell(s), tiles 364 36A 381
+
+155 blocked cell(s) still flat in this area.
+<!-- /audit:Route110 -->
