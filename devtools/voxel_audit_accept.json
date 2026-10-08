@@ -353,5 +353,14 @@
       12,
       "the railed opening: a view down to the dock on the floor below, which is flat in it"
     ]
+  ],
+  "SlateportCity_SternsShipyard_1F": [
+    [
+      7,
+      4,
+      15,
+      9,
+      "the dry dock, left as drawn: stood up it never read as the long machine it is (see shipyard_1f)"
+    ]
   ]
 }
