@@ -517,7 +517,7 @@ def slateport_museum():
             + [box_part("steps", 32, 64, 88, 84, 80)])
 
 
-def market_stall(width):
+def market_stall(width, lid=(1, 26), rim=(26, 29), depth=28, high=26):
     """A market stall: a canopy on two posts, open all round. `width` is its
     rectangle's, in pixels; the canopy is drawn eight columns in from each
     side, rows 1-28, and its posts under its front corners, four columns each.
@@ -528,7 +528,8 @@ def market_stall(width):
     posts' own shaft repeated up to it. Nothing else: no front under the
     canopy, no sides, no back - a box's faces dressed with the drawing put a
     second pair of posts on its sides and a skirt before the sellers."""
-    x0, x1, front, high = 8, width - 8, 48, 26
+    x0, x1, front = 8, width - 8, 48
+    drop = rim[1] - rim[0]          # the canopy's front edge, hanging from it
 
     def post(name, x, z=None):
         z = front if z is None else z
@@ -537,12 +538,12 @@ def market_stall(width):
                      caps=None, west=False, east=False)
 
     lid = Prism("canopy", x0, x1,
-                [(front, high - 3), (front, high), (front - 28, high), (front - 28, high - 3)],
-                edges={0: Tile(x0, 26, x1, 29, top=high), 1: Strip((1, 26))}, skip=(2, 3),
+                [(front, high - drop), (front, high), (front - depth, high), (front - depth, high - drop)],
+                edges={0: Tile(x0, rim[0], x1, rim[1], top=high), 1: Strip(lid)}, skip=(2, 3),
                 caps=None, west=False, east=False)
     return [lid, post("post_w", x0 + 1), post("post_e", x1 - 5),
             # and the two behind, which the drawing's camera does not show
-            post("post_nw", x0 + 1, front - 26), post("post_ne", x1 - 5, front - 26)]
+            post("post_nw", x0 + 1, front - depth + 2), post("post_ne", x1 - 5, front - depth + 2)]
 
 
 def standing_card(width=16, height=16):
@@ -2283,6 +2284,19 @@ SPECS += [
      "interior": {"layout": "LAYOUT_BATTLE_TENT_LOBBY", "ground": [0x210],
                   "shade": [0x211, 0x209, 0x208], "pieces": own_shell(battle_tent_lobby())}},
 ]
+
+# The market's two orange awnings, over its gate and over the path north of
+# the Battle Tent: the stall's canopy with a scalloped edge eight rows deep,
+# hung high enough to walk under.
+SPECS += [
+    {"name": "slateport_awning_%s" % name,
+     "layout": "LAYOUT_SLATEPORT_CITY",
+     "rect": (x, y, 5, 3),
+     "ground": ground,
+     "parts": lambda: market_stall(80, lid=(1, 24), rim=(24, 32), depth=23, high=32),
+     "exact": []}
+    for (name, x, y, ground) in (("gate", 8, 30, [0x211, 0x285, 0x210, 0x212, 0x209]),
+                                 ("north", 16, 7, [GRASS]))]
 
 SPECS += [
     {"name": "slateport_card_%03x" % tile,
