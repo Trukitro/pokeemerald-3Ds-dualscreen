@@ -2798,21 +2798,57 @@ def terrace_lattice(layout, standing):
 BRIDGES = {"LAYOUT_ROUTE110": 16}
 
 
+BRIDGE_RAMP = 3     # cells a deck takes to climb from where it is entered
+
+
 def bridge_deck(layout, h, rise):
+    """The road is every walkable cell at the deck's own level (4) or at both
+    levels (15, where it is crossed under), reached from one of the latter,
+    and the cells without a level (0) that lead onto it. Where it is entered
+    from the ground - at a gatehouse - it is on the ground, and climbs to its
+    height over the next BRIDGE_RAMP cells: a ramp, then level until it comes
+    down at the other end. A deck up everywhere stood a wall at each gate;
+    one up only over its crossings was a road of steps."""
     n = PER_CELL
-    deck = {(x, y) for y in range(layout.h) for x in range(layout.w) if layout.elevation(x, y) == 15}
-    # and the rows of the deck where it crosses a kerb, which are the deck's
-    # own level alone (4): deck north and south of them, or east and west
-    deck |= {(x, y) for y in range(layout.h) for x in range(layout.w)
-             if layout.elevation(x, y) == 4 and not layout.blocked(x, y)
-             and (((x, y - 1) in deck and (x, y + 1) in deck) or ((x - 1, y) in deck and (x + 1, y) in deck))}
-    for y in range(layout.h):
-        for x in range(layout.w):
-            if (x, y) not in deck:
-                continue
-            for j in range(n + 1):
-                for i in range(n + 1):
-                    h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], float(rise))
+    W, H = layout.w, layout.h
+    inside = lambda x, y: 0 <= x < W and 0 <= y < H
+    road = lambda x, y: inside(x, y) and not layout.blocked(x, y) and layout.elevation(x, y) in (4, 15, 0)
+    todo = [(x, y) for y in range(H) for x in range(W) if layout.elevation(x, y) == 15]
+    deck = set(todo)
+    while todo:
+        x, y = todo.pop()
+        for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if q not in deck and road(*q) and (layout.elevation(*q) != 0 or layout.elevation(x, y) != 0):
+                deck.add(q)
+                todo.append(q)
+    # entered from the ground: a deck cell not crossed under, beside a
+    # walkable cell that is not the deck's
+    dist = {c: 0 for c in deck if layout.elevation(*c) != 15 and any(
+        inside(*q) and q not in deck and not layout.blocked(*q)
+        for q in ((c[0] + 1, c[1]), (c[0] - 1, c[1]), (c[0], c[1] + 1), (c[0], c[1] - 1)))}
+    todo = list(dist)
+    while todo:
+        nxt = []
+        for (x, y) in todo:
+            for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if q in deck and q not in dist:
+                    dist[q] = dist[(x, y)] + 1
+                    nxt.append(q)
+        todo = nxt
+    # a corner is as high as the lowest cell of the deck that touches it
+    corner = {}
+    for (x, y) in deck:
+        d = dist.get((x, y), BRIDGE_RAMP)
+        for c in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)):
+            corner[c] = min(corner.get(c, BRIDGE_RAMP), d)
+    for (x, y) in deck:
+        a, b, c, d = (rise * min(BRIDGE_RAMP, corner[k]) / float(BRIDGE_RAMP)
+                      for k in ((x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)))
+        for j in range(n + 1):
+            for i in range(n + 1):
+                u, v = i / n, j / n
+                value = (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v
+                h[y * n + j][x * n + i] = max(h[y * n + j][x * n + i], value)
 
 
 def layout_heights(layout_id):
