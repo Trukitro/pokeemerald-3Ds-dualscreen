@@ -542,62 +542,37 @@ every reported item is ticked. Work one area to the end before the next.
 ### AbandonedShip - audit of 2026-10-08
 
 - [x] **AbandonedShip_CaptainsOffice**: nothing blocked lies flat
-- [ ] **AbandonedShip_Corridors_1F**: 2 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Corridors_1F.png`
-  - [ ] (7, 0)-(7, 1), 2 cell(s), tiles 201
-- [ ] **AbandonedShip_Corridors_B1F**: 4 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Corridors_B1F.png`
+- [x] **AbandonedShip_Corridors_1F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 2 cell(s): the black between and round the rooms: nothing is there
+- [ ] **AbandonedShip_Corridors_B1F**: 2 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Corridors_B1F.png`
   - [ ] (1, 2), 1 cell(s), tiles 2A7
   - [ ] (9, 2), 1 cell(s), tiles 2A7
-  - [ ] (12, 6), 1 cell(s), tiles 2AC
-  - [ ] (0, 8), 1 cell(s), tiles 2AD
+  - left flat, 2 cell(s): a hole torn in the floor: it is a hole
 - [x] **AbandonedShip_Deck**: nothing blocked lies flat
-- [ ] **AbandonedShip_HiddenFloorCorridors**: 3 flat cell(s) in 3 object(s) - `build/audit/AbandonedShip_HiddenFloorCorridors.png`
-  - [ ] (0, 3), 1 cell(s), tiles 2AD
-  - [ ] (12, 4), 1 cell(s), tiles 2AC
-  - [ ] (0, 5), 1 cell(s), tiles 2AD
-- [ ] **AbandonedShip_HiddenFloorRooms**: 78 flat cell(s) in 16 object(s) - `build/audit/AbandonedShip_HiddenFloorRooms.png`
-  - [ ] (1, 2), 1 cell(s), tiles 268
-  - [ ] (18, 2)-(20, 3), 5 cell(s), tiles 20F 217 235 25E 25F
-  - [ ] (22, 2)-(23, 3), 3 cell(s), tiles 29A 2A0 2A2
-  - [ ] (40, 2)-(41, 3), 4 cell(s), tiles 299 29A 2A0 2A2
-  - [ ] (12, 3), 1 cell(s), tiles 2AA
-  - [ ] (15, 3), 1 cell(s), tiles 2AB
-  - [ ] (29, 3)-(43, 7), 24 cell(s), tiles 201 23E 23F 2AA 2AB
-  - [ ] (1, 5), 1 cell(s), tiles 2AB
-  - [ ] (0, 7)-(27, 7), 28 cell(s), tiles 201
-  - [ ] (7, 10), 1 cell(s), tiles 235
-  - [ ] (40, 10)-(41, 11), 4 cell(s), tiles 299 29A 2A0 2A2
-  - [ ] (27, 11), 1 cell(s), tiles 2AA
-  - [ ] (30, 11), 1 cell(s), tiles 2AB
-  - [ ] (1, 13), 1 cell(s), tiles 2AB
-  - [ ] (42, 13), 1 cell(s), tiles 2AA
-  - [ ] (12, 14), 1 cell(s), tiles 2AA
+- [x] **AbandonedShip_HiddenFloorCorridors**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 3 cell(s): a hole torn in the floor: it is a hole
+- [ ] **AbandonedShip_HiddenFloorRooms**: 7 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_HiddenFloorRooms.png`
+  - [ ] (43, 3)-(43, 6), 4 cell(s), tiles 23F
+  - [ ] (29, 4)-(29, 6), 3 cell(s), tiles 23E
+  - left flat, 10 cell(s): a hole torn in the floor: it is a hole
+  - left flat, 43 cell(s): the black between and round the rooms: nothing is there
 - [x] **AbandonedShip_Room_B1F**: nothing blocked lies flat
-- [ ] **AbandonedShip_Rooms2_1F**: 7 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms2_1F.png`
-  - [ ] (0, 8)-(3, 8), 4 cell(s), tiles 201
-  - [ ] (6, 8)-(8, 8), 3 cell(s), tiles 201
-- [ ] **AbandonedShip_Rooms2_B1F**: 11 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Rooms2_B1F.png`
-  - [ ] (7, 3), 1 cell(s), tiles 2AA
-  - [ ] (16, 4)-(17, 7), 5 cell(s), tiles 23F 2AA
-  - [ ] (9, 5)-(10, 7), 4 cell(s), tiles 23E 2AB
-  - [ ] (1, 6), 1 cell(s), tiles 2AB
-- [ ] **AbandonedShip_Rooms_1F**: 28 flat cell(s) in 8 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
-  - [ ] (16, 3), 1 cell(s), tiles 2AA
-  - [ ] (1, 4), 1 cell(s), tiles 2AB
-  - [ ] (10, 6), 1 cell(s), tiles 2AB
-  - [ ] (0, 8)-(12, 8), 13 cell(s), tiles 201
-  - [ ] (15, 8)-(17, 8), 3 cell(s), tiles 201
-  - [ ] (16, 13)-(17, 16), 5 cell(s), tiles 23F 2AA
+- [x] **AbandonedShip_Rooms2_1F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 7 cell(s): the black between and round the rooms: nothing is there
+- [ ] **AbandonedShip_Rooms2_B1F**: 7 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms2_B1F.png`
+  - [ ] (17, 4)-(17, 7), 4 cell(s), tiles 23F
+  - [ ] (9, 5)-(9, 7), 3 cell(s), tiles 23E
+  - left flat, 4 cell(s): a hole torn in the floor: it is a hole
+- [ ] **AbandonedShip_Rooms_1F**: 7 flat cell(s) in 2 object(s) - `build/audit/AbandonedShip_Rooms_1F.png`
+  - [ ] (17, 13)-(17, 16), 4 cell(s), tiles 23F
   - [ ] (9, 14)-(9, 16), 3 cell(s), tiles 23E
-  - [ ] (1, 16), 1 cell(s), tiles 2AB
-- [ ] **AbandonedShip_Rooms_B1F**: 28 flat cell(s) in 4 object(s) - `build/audit/AbandonedShip_Rooms_B1F.png`
-  - [ ] (7, 2)-(9, 7), 13 cell(s), tiles 201 2AA
-  - [ ] (16, 2)-(18, 7), 13 cell(s), tiles 201 2AA
-  - [ ] (1, 7), 1 cell(s), tiles 2AB
-  - [ ] (25, 7), 1 cell(s), tiles 2AA
-- [ ] **AbandonedShip_Underwater1**: 16 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Underwater1.png`
-  - [ ] (0, 0)-(7, 1), 16 cell(s), tiles 2CC 2CD 2CE 2D4 2D5 2D6 2D7
-- [ ] **AbandonedShip_Underwater2**: 41 flat cell(s) in 1 object(s) - `build/audit/AbandonedShip_Underwater2.png`
-  - [ ] (0, 0)-(20, 1), 41 cell(s), tiles 2CC 2CD 2CE 2D4 2D5 2D6 2D7 2D8 2D9 2DA 2DB 2DD
+  - left flat, 5 cell(s): a hole torn in the floor: it is a hole
+  - left flat, 16 cell(s): the black between and round the rooms: nothing is there
+- [x] **AbandonedShip_Rooms_B1F**: nothing blocked lies flat that is not left so on purpose
+  - left flat, 24 cell(s): the black between and round the rooms: nothing is there
+  - left flat, 4 cell(s): a hole torn in the floor: it is a hole
+- [x] **AbandonedShip_Underwater1**: nothing blocked lies flat
+- [x] **AbandonedShip_Underwater2**: nothing blocked lies flat
 
-218 blocked cell(s) still flat in this area.
+23 blocked cell(s) still flat in this area.
 <!-- /audit:AbandonedShip -->

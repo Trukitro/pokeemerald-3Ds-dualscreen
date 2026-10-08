@@ -2567,6 +2567,15 @@ SPECS += [
 ]
 
 
+# The two flooded rooms: a wall of portholes two cells tall, the rest water.
+SPECS += [
+    {"name": "ship_" + layout.lower(),
+     "interior": {"layout": "LAYOUT_ABANDONED_SHIP_" + layout, "ground": [0x2CF],
+                  "shade": [0x2C9], "pieces": own_shell(plain_room(width, height, 1, False))}}
+    for layout, width, height in (("UNDERWATER1", 8, 8), ("UNDERWATER2", 21, 7))
+]
+
+
 def ship_cabins(layout_id):
     """The ship's cabins, several to a layout, read off the layout itself. A
     cabin begins at its top-left corner tile (236) and is as wide as the row
@@ -2596,13 +2605,22 @@ def ship_cabins(layout_id):
             side = (X + 16, Y, X + 32, Y + 32)
             # the back wall, between the passages through it
             run = None
+            # (open where a passage comes through from the cabin north of
+            # it; a door of the wall's own - walked into, drawn on it -
+            # leaves the wall whole)
+            through = lambda c: not blocked(c, y + 1) and y > 0 and not blocked(c, y - 1)
             for c in list(range(x + 1, x2)) + [x2]:
-                solid = c < x2 and blocked(c, y + 1)
+                solid = c < x2 and not through(c)
                 if solid and run is None:
                     run = c
                 if not solid and run is not None:
-                    pieces.append(piece("wall_%d_%d" % (k, run), [(run * 16, Y, c * 16, Y + 32)], 32,
-                                        fill=16, foot=Y + 32, side=side))
+                    # in stretches of six cells at most: a wall thirteen
+                    # cells long, six rooms of them, put the layout's page
+                    # past the console's 512x512
+                    for a in range(run, c, 6):
+                        b = min(c, a + 6)
+                        pieces.append(piece("wall_%d_%d" % (k, a), [(a * 16, Y, b * 16, Y + 32)], 32,
+                                            fill=16, foot=Y + 32, side=side))
                     run = None
             # the side walls
             for tag, c, s0, s1, wx in (("w", x, X + 10, X + 16, X + 16), ("e", x2, XE, XE + 6, XE)):
@@ -2620,7 +2638,8 @@ def ship_cabins(layout_id):
                     elif r0 > y:
                         a, b = (wx, r * 16), (wx, r0 * 16)
                         pieces.append(piece("side_%d_%s_%d" % (k, tag, r0), [], 32, side=side,
-                                            walls=[(a, b) if tag == "w" else (b, a)]))
+                                            walls=[(a, b) if tag == "w" else (b, a)],
+                                            cells=[(c, q) for q in range(r0, r)]))
             # A passage between two cabins crosses the black between them:
             # nothing is drawn there, and from the console's camera it was a
             # hole to the void on either hand. A wall closes it - across the
@@ -2632,8 +2651,8 @@ def ship_cabins(layout_id):
                                         walls=[((XE + 6, r * 16), (XE + 26, r * 16))]))
                     pieces[-1]["added"] = True
             for c in range(x + 1, x2):
-                if not blocked(c, y + 1):
-                    top = (y - 1) * 16 if y > 0 and not blocked(c, y - 1) else Y
+                if through(c):
+                    top = (y - 1) * 16
                     pieces.append(piece("pass_%d_%d" % (k, c), [], 32, side=side,
                                         walls=[((c * 16, Y + 32), (c * 16, top)),
                                                ((c * 16 + 16, top), (c * 16 + 16, Y + 32))]))
@@ -2647,9 +2666,13 @@ def ship_cabins(layout_id):
             m, X, Y = lay.metatile(x, y), x * 16, y * 16
             if m in (0x250, 0x254):
                 pieces.append(piece("bed_%d_%d" % (x, y), [(X, Y - 7, X + 32, Y + 32)], 8, leave=fl, solid=True))
-            elif m == 0x256:
+            # (20F: the table's top in the wall's shade; 299: the desk with
+            # its chair; 235 and 268: the bin in the wall's shade)
+            elif m in (0x256, 0x20F):
                 pieces.append(piece("table_%d_%d" % (x, y), [(X, Y, X + 32, Y + 32)], 8, leave=fl, solid=True))
-            elif m == 0x262:
+            elif m == 0x299:
+                pieces.append(piece("desk_%d_%d" % (x, y), [(X, Y, X + 32, Y + 32)], 8, leave=fl, solid=True))
+            elif m in (0x262, 0x235, 0x268):
                 pieces.append(piece("bin_%d_%d" % (x, y), [(X + 2, Y, X + 14, Y + 16)], 8, leave=fl, solid=True))
             elif m in (0x260, 0x261):
                 pieces.append(piece("chair_%d_%d" % (x, y), [(X + 2, Y, X + 14, Y + 16)], 6, leave=fl, solid=True))

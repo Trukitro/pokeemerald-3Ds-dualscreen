@@ -337,5 +337,12 @@
       2,
       "an alcove's side wall: its thickness, drawn as a strip beside the wall that stands"
     ]
-  ]
+  ],
+  "AbandonedShip#tiles": {
+    "201": "the black between and round the rooms: nothing is there",
+    "2AA": "a hole torn in the floor: it is a hole",
+    "2AB": "a hole torn in the floor: it is a hole",
+    "2AC": "a hole torn in the floor: it is a hole",
+    "2AD": "a hole torn in the floor: it is a hole"
+  }
 }

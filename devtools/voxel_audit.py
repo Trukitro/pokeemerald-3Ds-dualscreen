@@ -123,10 +123,15 @@ def objects(flat):
 def accepted(name, flat):
     """Split the flat cells: (those still to do, {why: count} of those left
     flat on purpose - devtools/voxel_audit_accept.json)."""
-    rules = json.load(open(ACCEPT, encoding="utf-8")).get(name, []) if os.path.exists(ACCEPT) else []
+    table = json.load(open(ACCEPT, encoding="utf-8")) if os.path.exists(ACCEPT) else {}
+    rules = table.get(name, [])
+    # "<Area>#tiles": {"2AA": why}: a tile left flat wherever the area has it
+    tiles = table.get(name.split("_")[0] + "#tiles", {})
     todo, left = {}, {}
     for (x, y), tile in flat.items():
         why = next((r[4] for r in rules if r[0] <= x <= r[2] and r[1] <= y <= r[3]), None)
+        if why is None:
+            why = tiles.get(tile.upper())
         if why is None:
             todo[(x, y)] = tile
         else:
