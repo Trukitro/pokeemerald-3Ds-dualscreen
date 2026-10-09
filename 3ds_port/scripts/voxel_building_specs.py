@@ -2557,10 +2557,25 @@ SPECS += [
      "components": {
          "secondary": "gTileset_Mauville",
          "layouts": ["LAYOUT_ROUTE110"],
-         "tiles": {0x2F1, 0x2F2, 0x2F3, 0x34C, 0x30A, 0x309, 0x30B, 0x306, 0x307},
+         "tiles": {0x2F1, 0x2F2, 0x2F3, 0x34C, 0x30A, 0x309, 0x30B, 0x306, 0x307, 0x351, 0x352,
+                   0x344, 0x345},
          "height": 12, "block": 2,
      },
      "ground": [0x170, GRASS, 0x171]},
+] + [
+    # Step two: where a railing turns - the curved corner tiles, half road
+    # and half railing. The road's own colours are cleared from the tile's
+    # edge in, and what is left, the railing, is read column by column.
+    {"name": "route110_curve_%03x" % tile,
+     "layout": "LAYOUT_ROUTE110",
+     "rect": (x, y, 1, 1),
+     "owned": {(0, 0)},
+     # (on the road: what is cleared from under the railing is road)
+     "ground": [0x2FE],
+     "clear": ("9cb4de", "bdcde6", "dee6ee"),
+     "relief": {"height": 12}}
+    for (tile, x, y) in ((0x334, 20, 10), (0x335, 23, 10), (0x336, 26, 79), (0x337, 14, 32))
+] + [
     {"name": "route110_kerbs",
      "components": {
          "primary": "gTileset_General",
