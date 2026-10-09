@@ -2563,6 +2563,21 @@ SPECS += [
      },
      "ground": [0x170, GRASS, 0x171]},
 ] + [
+    # Step three: the railings down the sides of the spans that run north
+    # and south, a thin line seen from above.
+    {"name": "route110_side_rails",
+     "components": {
+         "secondary": "gTileset_Mauville",
+         "layouts": ["LAYOUT_ROUTE110"],
+         # (not 35D/35E and 3AA/3AB, the railings where the road crosses the
+         # grass and is walked under: the east one's shade on the lawn did
+         # not pass the proof, and one side alone would be worse than none)
+         "tiles": {0x328, 0x329, 0x31C, 0x346, 0x347, 0x324, 0x325, 0x374, 0x375,
+                   0x369, 0x36A, 0x355, 0x356, 0x3A8, 0x3A9},
+         "height": 12, "block": 2,
+     },
+     "ground": [0x170, GRASS, 0x171, 0x00D, 0x03E, 0x04E, 0x0C7]},
+] + [
     # Step two: where a railing turns - the curved corner tiles, half road
     # and half railing. The road's own colours are cleared from the tile's
     # edge in, and what is left, the railing, is read column by column.
